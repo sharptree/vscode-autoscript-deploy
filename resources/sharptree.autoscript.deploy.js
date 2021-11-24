@@ -81,7 +81,7 @@ function deployScript(scriptSource) {
         var autoScriptSet;
 
         try {
-            autoScriptSet = service.getMboSet("AUTOSCRIPT", userInfo);
+            autoScriptSet = MXServer.getMXServer().getMboSet("AUTOSCRIPT", userInfo);
             var sqlf = new SqlFormat("autoscript = :1");
             sqlf.setObject(1, "AUTOSCRIPT", "AUTOSCRIPT", scriptConfig.autoscript);
 

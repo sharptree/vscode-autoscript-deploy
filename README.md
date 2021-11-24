@@ -56,8 +56,13 @@ var scriptConfig = {
 - Java 8 (Nashorn) is required.
 - Initial configuration must be done by a user in the administrative group defined by `ADMINGROUP` `MAXVARS` entry.  Typically this is `MAXADMIN`.
 
-
 ## Release Notes
+
+### 1.0.1
+
+- Add checks for supported versions of Maximo and Java.
+- Improve deployment progress feedback.
+- Fixed compatibility issue with Maximo versions prior to 7.6.1.2.
 
 ### 1.0.0
 

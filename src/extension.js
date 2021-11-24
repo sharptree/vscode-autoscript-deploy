@@ -4,9 +4,12 @@ import { window, commands, workspace, ProgressLocation } from 'vscode';
 import MaximoConfig from './maximo/maximo-config';
 import MaximoClient from './maximo/maximo-client';
 import { validateSettings } from './settings';
+import * as path from 'path'
 
 var password;
 var lastUser;
+var lastHost;
+var lastPort;
 
 export function activate(context) {
 
@@ -30,6 +33,14 @@ export function activate(context) {
 
 			// if the last user doesn't match the current user then request the password.
 			if (lastUser && lastUser !== userName) {
+				password = null;
+			}
+
+			if (lastHost && lastHost !== host) {
+				password = null;
+			}
+
+			if (lastPort && lastPort !== port) {
 				password = null;
 			}
 
@@ -66,6 +77,9 @@ export function activate(context) {
 				client = new MaximoClient(config);
 				var loginSuccessful = await client.connect().then((success) => {
 					lastUser = userName;
+					lastHost = host;
+					lastPort = port;
+
 					return true;
 				}, (error) => {
 					// clear the password on error
@@ -76,6 +90,28 @@ export function activate(context) {
 					return false;
 				});
 				if (loginSuccessful) {
+
+					var version = await client.maximoVersion();
+					const supportedVersions = ['7608', '7609', '76010', '76011', '7610', '7611', '7612'];
+
+					if (!version) {
+						window.showErrorMessage(`Could not determine the Maximo version. Only Maximo 7.6.0.8 and greater are supported`, { modal: true });
+						return;
+					} else {
+						var checkVersion = version.substr(1, version.indexOf('-') - 1);
+						if (!supportedVersions.includes(checkVersion)) {
+							window.showErrorMessage(`The Maximo version ${version} is not supported.`, { modal: true });
+							return;
+						}
+					}
+
+					var javaVersion = await client.javaVersion();
+
+					if (!javaVersion || javaVersion !== '1.8') {
+						window.showErrorMessage(`Maximo Java version ${javaVersion} is not supported. Only Java version 1.8 is supported.`, { modal: true });
+						return;
+					}
+
 					if (!await client.installed()) {
 						await window.showInformationMessage('Configurations are required to deploy automation scripts.  Do you want to configure Maximo now?', { modal: true }, ...['Yes']).then(async (response) => {
 							if (response === 'Yes') {
@@ -101,24 +137,31 @@ export function activate(context) {
 							let document = editor.document;
 
 							if (document) {
-								let fileName = document.fileName;
+								let fileName = path.basename(document.fileName);
 								if (fileName.endsWith('.js')) {
 									// Get the document text
 									const script = document.getText();
-
-									console.log(script);
-
 									if (script && script.trim().length > 0) {
-										var result = await client.postScript(script);
-										if (result) {
-											if (result.status === 'error') {
-												window.showErrorMessage(result.message, { modal: true });
-											} else {
-												window.setStatusBarMessage('Successfully deployed script.', 5000);
-											}
-										} else {
-											window.showErrorMessage('Did not receive a response from Maximo.', { modal: true });
-										}
+										await new Promise(resolve => setTimeout(resolve, 500));
+										var result = await window.withProgress({ cancellable: false, title: `Script`, location: ProgressLocation.Notification },
+											async (progress) => {
+												progress.report({ message: `Deploying script ${fileName}`, increment: 0 });
+
+												await new Promise(resolve => setTimeout(resolve, 500));
+												let result = await client.postScript(script, progress, fileName);
+
+												if (result) {
+													if (result.status === 'error') {
+														window.showErrorMessage(result.message, { modal: true });
+													} else {
+														progress.report({ increment: 100, message: `Successfully deployed ${fileName}` });
+														await new Promise(resolve => setTimeout(resolve, 2000));
+													}
+												} else {
+													window.showErrorMessage('Did not receive a response from Maximo.', { modal: true });
+												}
+												return result;
+											});
 									} else {
 										window.showErrorMessage('The selected Automation Script cannot be empty.', { modal: true });
 									}

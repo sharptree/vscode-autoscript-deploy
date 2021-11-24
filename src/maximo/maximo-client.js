@@ -39,7 +39,6 @@ export default class MaximoClient {
 
         this.jar = new CookieJar();
 
-
         this.client = wrapper(axios.create({
             withCredentials: true,
             httpsAgent: (config.allowUntrustedCerts ? httpsAgent : undefined),
@@ -136,10 +135,13 @@ export default class MaximoClient {
         await this.client.post("logout", { withCredentials: true });
     }
 
-    async postScript(script) {
+    async postScript(script, progress, fileName) {
+
         if (!this._isConnected) {
             await this.connect();
         }
+
+        progress.report({ increment: 10, message: `Deploying script ${fileName}` });
 
         const options = {
             url: 'script/sharptree.autoscript.deploy',
@@ -151,7 +153,11 @@ export default class MaximoClient {
             data: script
         }
 
+        progress.report({ increment: 50, message: `Deploying script ${fileName}` });
+        await new Promise(resolve => setTimeout(resolve, 100));
         const result = await this.client.request(options);
+
+        progress.report({ increment: 90, message: `Deploying script ${fileName}` });
         return result.data;
 
     }
@@ -172,6 +178,59 @@ export default class MaximoClient {
         // @ts-ignore
         const response = await this.client.request(options);
         return response.data.member.length !== 0;
+    }
+
+    async javaVersion() {
+        if (!this._isConnected) {
+            await this.connect();
+        }
+
+        const headers = new Map();
+        headers['Content-Type'] = 'application/json';
+        var options = {
+            url: '',
+            method: MaximoClient.Method.GET,
+            headers: { common: headers },
+        }
+
+        // @ts-ignore
+        var response = await this.client.request(options);
+
+        if (response.data.thisserver) {
+            options = {
+                url: 'members/thisserver/jvm',
+                method: MaximoClient.Method.GET,
+                headers: { common: headers },
+            }
+
+            // @ts-ignore
+            response = await this.client.request(options);
+            console.log("Version is ", response);
+
+            return response.data.specVersion;
+        } else {
+            return 'unavailable';
+        }
+    }
+
+    async maximoVersion() {
+        if (!this._isConnected) {
+            await this.connect();
+        }
+
+        const headers = new Map();
+        headers['Content-Type'] = 'application/json';
+        const options = {
+            url: '',
+            method: MaximoClient.Method.GET,
+            headers: { common: headers },
+        }
+
+        // @ts-ignore
+        const response = await this.client.request(options);
+
+        return response.data.maxupg;
+
     }
 
     async install(progress) {

@@ -3,14 +3,15 @@
 	"displayName": "maximo-script-deploy",
 	"description": "Maximo Automation Script Deploy",
 	"publisher": "Sharptree",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"icon": "app-icon.png",
+	"categories": [
+		"Programming Languages",
+		"Other"
+	],
 	"engines": {
 		"vscode": "^1.62.0"
 	},
-	"categories": [
-		"Other"
-	],
 	"activationEvents": [
 		"onCommand:maximo-script-deploy.deploy"
 	],

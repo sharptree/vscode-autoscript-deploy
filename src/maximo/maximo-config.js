@@ -10,7 +10,7 @@ export default class MaximoConfig {
         context = "maximo",
         allowUntrustedCerts = false,
         connectTimeout = 5000,
-        responseTimeout = 5000,
+        responseTimeout = 30000,
         lean = true,
         authType = MaximoConfig.AuthType.MAXAUTH,
     }
