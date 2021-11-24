@@ -1,0 +1,430 @@
+// @ts-nocheck
+load("nashorn:parser.js");
+
+MboConstants = Java.type("psdi.mbo.MboConstants");
+SqlFormat = Java.type("psdi.mbo.SqlFormat");
+MXServer = Java.type("psdi.server.MXServer");
+
+MXException = Java.type("psdi.util.MXException");
+MXAccessException = Java.type("psdi.util.MXAccessException");
+MXApplicationException = Java.type("psdi.util.MXApplicationException");
+RuntimeException = Java.type("java.lang.RuntimeException");
+System = Java.type("java.lang.System");
+
+// Global input variables
+scriptSource = "";
+
+main();
+
+function main() {
+    var response = {};
+    try {
+        checkPermissions("SHARPTREE_UTILS", "DEPLOYSCRIPT");
+
+        if (requestBody) {
+
+            if (httpMethod != "POST") {
+                throw new ScriptError("only_post_supported", "Only the HTTP POST method is supported when deploying automation scripts.");
+            }
+            scriptSource = requestBody;
+            if (!scriptSource) {
+                throw new ScriptError("no_script_source", "A script source must be the request body.");
+            }
+        }
+
+        // if the script source is available then call the deploy script.  
+        // This allows the deployScript function to be called from the context directly if the script it loaded from another script.
+        if (scriptSource) {
+            deployScript(scriptSource);
+        }
+
+    } catch (error) {
+        response.status = "error";
+
+        if (error instanceof ScriptError) {
+            response.message = error.message;
+            response.reason = error.reason;
+        } else if (error instanceof Error) {
+            response.message = error.message;
+        } else if (error instanceof MXException) {
+            response.reason = error.getErrorGroup() + "_" + error.getErrorKey();
+            response.message = error.getMessage();
+        } else if (error instanceof RuntimeException) {
+            if (error.getCause() instanceof MXException) {
+                response.reason = error.getCause().getErrorGroup() + "_" + error.getCause().getErrorKey();
+                response.message = error.getCause().getMessage();
+            } else {
+                response.reason = "runtime_exception";
+                response.message = error.getMessage();
+            }
+        } else {
+            response.cause = error;
+        }
+        if (requestBody) {
+            responseBody = JSON.stringify(response);
+        }
+        return;
+    }
+
+    response.status = "success";
+    if (requestBody) {
+        responseBody = JSON.stringify(response);
+    }
+    return;
+}
+
+function deployScript(scriptSource) {
+    var scriptConfig = getConfigFromScript(scriptSource);
+
+    if (scriptConfig) {
+        validateScriptConfig(scriptConfig);
+        var autoScriptSet;
+
+        try {
+            autoScriptSet = service.getMboSet("AUTOSCRIPT", userInfo);
+            var sqlf = new SqlFormat("autoscript = :1");
+            sqlf.setObject(1, "AUTOSCRIPT", "AUTOSCRIPT", scriptConfig.autoscript);
+
+            autoScriptSet.setWhere(sqlf.format());
+
+            var autoscript;
+
+            if (autoScriptSet.isEmpty()) {
+                autoscript = autoScriptSet.add();
+                autoscript.setValue("AUTOSCRIPT", scriptConfig.autoscript);
+                autoscript.setValue("SCRIPTLANGUAGE", "nashorn");
+                autoscript.setValue("ACTIVE", true);
+            } else {
+                autoscript = autoScriptSet.getMbo(0);
+            }
+            autoscript.setValue("SOURCE", scriptSource);
+
+            var autoScriptId = autoscript.getUniqueIDValue();
+
+            // Delete all the launch points to ensure they are recreated correctly.
+            // Deleting the launch variables first so the script variables can be deleted without reference errors.
+            scriptLaunchPointSet = autoscript.getMboSet("SCRIPTLAUNCHPOINT");
+            scriptLaunchPointSet.deleteAll();
+
+            autoScriptSet.save();
+
+            //Refetch the auto script
+            autoScriptSet.reset();
+            autoscript = autoScriptSet.getMboForUniqueId(autoScriptId);
+
+            // Delete the script variables to ensure they are recreated correctly.
+            autoScriptVarsSet = autoscript.getMboSet("AUTOSCRIPTVARS");
+            autoScriptVarsSet.deleteAll();
+
+            autoScriptSet.save();
+
+            //Refetch the auto script
+            autoScriptSet.reset();
+            autoscript = autoScriptSet.getMboForUniqueId(autoScriptId);
+
+            scriptLaunchPointSet = autoscript.getMboSet("SCRIPTLAUNCHPOINT");
+            autoScriptVarsSet = autoscript.getMboSet("AUTOSCRIPTVARS");
+
+            if (scriptConfig.description) {
+                autoscript.setValue("DESCRIPTION", scriptConfig.description);
+            }
+
+            setValueIfAvailable(autoscript, "DESCRIPTION", scriptConfig.description);
+            setValueIfAvailable(autoscript, "VERSION", scriptConfig.version);
+            setValueIfAvailable(autoscript, "ACTIVE", scriptConfig.active);
+            setValueIfAvailable(autoscript, "LOGLEVEL", scriptConfig.logLevel);
+
+            if (typeof scriptConfig.autoScriptVars !== 'undefined') {
+                scriptConfig.autoScriptVars.forEach(function (element) {
+                    if (typeof element.varname !== 'undefined') {
+                        var autoScriptVar = autoScriptVarsSet.add();
+                        autoScriptVar.setValue("VARNAME", element.varname);
+                        setValueIfAvailable(autoScriptVar, "DESCRIPTION", element.description);
+                        setValueIfAvailable(autoScriptVar, "VARBINDINGTYPE", element.varBindingType);
+                        setValueIfAvailable(autoScriptVar, "VARTYPE", element.varType);
+                        setValueIfAvailable(autoScriptVar, "ALLOWOVERRIDE", element.allowOverride);
+                        setValueIfAvailable(autoScriptVar, "NOVALIDATION", element.noValidation);
+                        setValueIfAvailable(autoScriptVar, "NOACCESSCHECK", element.noAccessCheck);
+                        setValueIfAvailable(autoScriptVar, "NOACTION", element.noAction);
+                        setValueIfAvailable(autoScriptVar, "LITERALDATATYPE", element.literalDataType);
+                        setValueIfAvailable(autoScriptVar, "VARBINDINGVALUE", element.varBindingValue);
+                    }
+                });
+            }
+
+            if (scriptConfig.scriptLaunchPoints) {
+                scriptConfig.scriptLaunchPoints.forEach(function (element) {
+                    if (typeof element.launchPointName !== 'undefined' && typeof element.launchPointType !== 'undefined') {
+                        var scriptLaunchPoint = scriptLaunchPointSet.add();
+                        scriptLaunchPoint.setValue('LAUNCHPOINTNAME', element.launchPointName);
+                        scriptLaunchPoint.setValue('LAUNCHPOINTTYPE', element.launchPointType, MboConstants.NOACCESSCHECK);
+
+                        if (typeof element.active !== 'undefined') {
+                            scriptLaunchPoint.setValue('ACTIVE', element.active);
+                        } else {
+                            scriptLaunchPoint.setValue('ACTIVE', true);
+                        }
+
+                        setValueIfAvailable(scriptLaunchPoint, "DESCRIPTION", element.description);
+
+                        if (element.launchPointType === 'OBJECT') {
+                            if (typeof element.objectName === 'undefined') {
+                                throw new ScriptError("missing_attribute", "The objectName is a required attribute when defining an Object launch point.");
+                            }
+
+                            scriptLaunchPoint.setValue("OBJECTNAME", element.objectName);
+
+                            setValueIfAvailable(scriptLaunchPoint, "CONDITION", element.condition);
+
+                            if (typeof element.initializeValue !== 'undefined' && element.initializeValue) {
+                                scriptLaunchPoint.setValue("EVENTTYPE", "0");
+                            } else if (typeof element.validateApplication !== 'undefined' && element.validateApplication) {
+                                scriptLaunchPoint.setValue("EVENTTYPE", "1");
+                            } else if (typeof element.allowObjectCreation !== 'undefined' && element.allowObjectCreation) {
+                                scriptLaunchPoint.setValue("EVENTTYPE", "2");
+                            } else if (typeof element.allowObjectDeletion !== 'undefined' && element.allowObjectDeletion) {
+                                scriptLaunchPoint.setValue("EVENTTYPE", "3");
+                            } else if (typeof element.save !== 'undefined' && element.save) {
+                                scriptLaunchPoint.setValue("EVENTTYPE", "4");
+                                var saveActionAdded = false;
+                                if (typeof element.add !== 'undefined' && element.add) {
+                                    scriptLaunchPoint.setValue("ADD", true);
+                                    saveActionAdded = true;
+                                }
+                                if (typeof element.update !== 'undefined' && element.update) {
+                                    scriptLaunchPoint.setValue("UPDATE", true);
+                                    saveActionAdded = true;
+                                }
+                                if (typeof element.delete !== 'undefined' && element.delete) {
+                                    scriptLaunchPoint.setValue("DELETE", true);
+                                    saveActionAdded = true;
+                                }
+
+                                if (!saveActionAdded) {
+                                    throw new ScriptError("missing_save_action", "At least one object save action of either add, update, or delete must be provided.");
+                                }
+
+                                var saveWhenAdded = false
+                                if (typeof element.beforeSave !== 'undefined' && element.beforeSave) {
+                                    scriptLaunchPoint.setValue("EVCONTEXT", "0");
+                                    saveWhenAdded = true;
+                                } else if (typeof element.afterSave !== 'undefined' && element.afterSave) {
+                                    scriptLaunchPoint.setValue("EVCONTEXT", "1");
+                                    saveWhenAdded = true;
+                                } else if (typeof element.afterCommit !== 'undefined' && element.afterCommit) {
+                                    scriptLaunchPoint.setValue("EVCONTEXT", "2");
+                                    saveWhenAdded = true;
+                                }
+
+                                if (!saveWhenAdded) {
+                                    throw new ScriptError("missing_action_type", "A save action type of beforeSave, afterSave, or afterCommit must be provided.");
+                                }
+
+                            } else {
+                                throw new ScriptError("missing_attribute", "One of the following attributes is required when defining an Object launch point: initializeValue, validateApplication, allowObjectCreation, allowObjectDeletion, or save.")
+                            }
+
+                        } else if (element.launchPointType === 'ATTRIBUTE') {
+                            if (element.objectName === 'undefined') {
+                                throw new ScriptError("missing_attribute", "The objectName is a required attribute when defining an Attribute launch point.");
+                            }
+                            if (element.objectName === 'attributeName') {
+                                throw new ScriptError("missing_attribute", "The attributeName is a required attribute when defining an Attribute launch point.");
+                            }
+                            scriptLaunchPoint.setValue("OBJECTNAME", element.objectName);
+                            scriptLaunchPoint.setValue("ATTRIBUTENAME", element.attributeName);
+
+                            if (typeof element.initializeAccessRestriction !== 'undefined') {
+                                scriptLaunchPoint.setValue("ATTRIBUTEEVENT", "0");
+                            } else if (typeof element.initializeValue !== 'undefined') {
+                                scriptLaunchPoint.setValue("ATTRIBUTEEVENT", "1");
+                            } else if (typeof element.validate !== 'undefined') {
+                                scriptLaunchPoint.setValue("ATTRIBUTEEVENT", "2");
+                            } else if (typeof element.retrieveList !== 'undefined') {
+                                scriptLaunchPoint.setValue("ATTRIBUTEEVENT", "3");
+                            } else if (typeof element.runAction !== 'undefined') {
+                                scriptLaunchPoint.setValue("ATTRIBUTEEVENT", "4");
+                            } else {
+                                throw new ScriptError("missing_attribute", "One of the following attributes is required when defining an Attribute launch point: initializeAccessRestriction, initializeValue, validate, retrieveList, or runAction.")
+                            }
+                        } else if (element.launchPointType === 'ACTION') {
+                            if (typeof element.actionName === 'undefined') {
+                                throw new ScriptError("missing_attribute", "The actionName is required when defining an Action launch point");
+                            }
+                            scriptLaunchPoint.setValue("ACTIONNAME", element.actionName);
+                            setValueIfAvailable(scriptLaunchPoint, "OBJECTNAME", element.objectName);
+
+                        } else if (element.launchPointType === 'CUSTOMCONDITION') {
+                            setValueIfAvailable(scriptLaunchPoint, "OBJECTNAME", element.objectName);
+                        } else {
+                            throw new ScriptError("unknown_launchpoint_type", "The launch point type " + element.launchPointType + " is not supported.");
+                        }
+
+                        if (typeof element.launchPointVars !== 'undefined') {
+
+                            var launchPointVarsSet = scriptLaunchPoint.getMboSet("LAUNCHPOINTVARS");
+
+                            if (launchPointVarsSet.isEmpty()) {
+                                throw new ScriptError("no_variable_defined", "A launch point variable has been defined, but there are no script variables defined.");
+                            }
+
+                            element.launchPointVars.forEach(function (elementChild) {
+
+                                if (typeof elementChild.varName === 'undefined' || typeof elementChild.varBindingValue === 'undefined') {
+                                    throw new ScriptError("missing_attribute", "A varName and varBindingValue are required when defining a launch point variable.");
+                                }
+
+                                var launchPointVars = launchPointVarsSet.moveFirst();
+                                var found = false;
+                                while (launchPointVars && !found) {
+                                    if (launchPointVars.getString("VARNAME").equalsIgnoreCase(elementChild.varName)) {
+                                        launchPointVars.setValue("VARBINDINGVALUE", elementChild.varBindingValue);
+                                        found = true;
+                                    }
+
+                                    launchPointVars = launchPointVarsSet.moveNext();
+                                }
+
+                                if (!found) {
+                                    throw new ScriptError("no_variable_defined", "The launch point variable " + elementChild.varName + " has been defined, but there is no corresponding script variable.");
+                                }
+                            });
+                        }
+                    } else {
+                        throw new ScriptError("missing_attribute", "The launchPointName and launchPointType are required attributes when defining a script launch point.");
+                    }
+                });
+            }
+
+            autoScriptSet.save();
+
+        } finally {
+            close(autoScriptSet);
+        }
+    } else {
+        throw new ScriptError("config_not_found", "Configuration variable scriptConfig was not found in the script, cannot deploy the script without a config.");
+    }
+}
+
+function setValueIfAvailable(mbo, attribute, value) {
+    if (typeof value !== 'undefined') {
+        mbo.setValue(attribute, value);
+    }
+}
+
+
+function checkPermissions(app, optionName) {
+    if (!userInfo) {
+        throw new ScriptError("no_user_info", "The userInfo global variable has not been set, therefore the user permissions cannot be verified.");
+    }
+
+    if (!MXServer.getMXServer().lookup("SECURITY").getProfile(userInfo).hasAppOption(app, optionName) && !isInAdminGroup()) {
+        throw new ScriptError("no_permission", "The user " + userInfo.getUserName() + " does not have access to the " + optionName + " option in the " + app + " application.");
+    }
+}
+
+// Determines if the current user is in the administrator group, returns true if the user is, false otherwise.
+function isInAdminGroup() {
+    var user = userInfo.getUserName();
+    service.log_info("Determining if the user " + user + " is in the administrator group.");
+    var groupUserSet;
+
+    try {
+        groupUserSet = MXServer.getMXServer().getMboSet("GROUPUSER", MXServer.getMXServer().getSystemUserInfo());
+
+        // Get the ADMINGROUP MAXVAR value.
+        var adminGroup = MXServer.getMXServer().lookup("MAXVARS").getString("ADMINGROUP", null);
+
+        // Query for the current user and the found admin group.  
+        // The current user is determined by the implicity `user` variable.
+        sqlFormat = new SqlFormat("userid = :1 and groupname = :2");
+        sqlFormat.setObject(1, "GROUPUSER", "USERID", user);
+        sqlFormat.setObject(2, "GROUPUSER", "GROUPNAME", adminGroup);
+        groupUserSet.setWhere(sqlFormat.format());
+
+        if (!groupUserSet.isEmpty()) {
+            service.log_info("The user " + user + " is in the administrator group " + adminGroup + ".");
+            return true;
+        } else {
+            service.log_info("The user " + user + " is not in the administrator group " + adminGroup + ".");
+            return false;
+        }
+
+    } finally {
+        close(groupUserSet);
+    }
+}
+
+function getConfigFromScript(scriptSource) {
+    if (scriptSource) {
+        var ast = parse(scriptSource);
+        if (ast.type === "Program" && ast.body) {
+            var result;
+            ast.body.forEach(function (element) {
+                if (element.type === "VariableDeclaration") {
+                    if (element.declarations) {
+                        element.declarations.forEach(function (declaration) {
+                            if (declaration.id && declaration.id.type === "Identifier" && declaration.id.name === "scriptConfig") {
+                                result = astToJavaScript(declaration.init);
+                            }
+                        });
+                    }
+                }
+            });
+
+            if (result) {
+                return result;
+            } else {
+                throw new ScriptError("config_not_found", "Configuration variable scriptConfig was not found in the script, cannot deploy the script without a config.");
+            }
+        } else {
+            throw new ScriptError("script_wrong_type", "The script must be of type Program and have a body to be deployed.");
+        }
+    } else {
+        throw new ScriptError("no_script_source", "The script source is required to deploy the script.");
+    }
+}
+
+function validateScriptConfig(scriptConfig) {
+    if (!scriptConfig.autoscript || scriptConfig.autoscript.trim().length === 0) {
+        throw new ScriptError("script_name_required", "The auto script name (autoscript) is required in the script configuration.");
+    }
+}
+
+function astToJavaScript(ast) {
+    var javaScript = {};
+
+    if (ast.type === "ObjectExpression" && ast.properties) {
+        ast.properties.map(function (property) {
+            if (property.value.type == "Literal") {
+                javaScript[property.key.value] = property.value.value;
+            } else if (property.value.type == "ArrayExpression") {
+                var child = [];
+                property.value.elements.map(function (element) {
+                    child.push(astToJavaScript(element));
+                });
+                javaScript[property.key.value] = child;
+            }
+        });
+    }
+    return javaScript;
+}
+
+// Cleans up the MboSet connections and closes the set.
+function close(set) {
+    if (set) {
+        set.cleanup();
+        set.close();
+    }
+}
+
+function ScriptError(reason, message) {
+    Error.call(this, message);
+    this.reason = reason;
+    this.message = message;
+}
+
+// ConfigurationError derives from Error
+ScriptError.prototype = Object.create(Error.prototype);
+ScriptError.prototype.constructor = ScriptError;
+ScriptError.prototype.element;
