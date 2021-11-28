@@ -10,6 +10,7 @@ var password;
 var lastUser;
 var lastHost;
 var lastPort;
+var lastContext;
 
 export function activate(context) {
 
@@ -30,6 +31,7 @@ export function activate(context) {
 			const port = settings.get('maximo.port');
 			const authType = settings.get('maximo.authenticationType')
 			const allowUntrustedCerts = settings.get('maximo.allowUntrustedCerts');
+			const maximoContext = settings.get('maximo.context');
 
 			// if the last user doesn't match the current user then request the password.
 			if (lastUser && lastUser !== userName) {
@@ -41,6 +43,10 @@ export function activate(context) {
 			}
 
 			if (lastPort && lastPort !== port) {
+				password = null;
+			}
+
+			if (lastContext && lastContext !== maximoContext) {
 				password = null;
 			}
 
@@ -67,6 +73,7 @@ export function activate(context) {
 				useSSL: useSSL,
 				host: host,
 				port: port,
+				context: maximoContext,
 				authType: authType,
 				allowUntrustedCerts: allowUntrustedCerts
 			});
@@ -79,6 +86,7 @@ export function activate(context) {
 					lastUser = userName;
 					lastHost = host;
 					lastPort = port;
+					lastContext = maximoContext;
 
 					return true;
 				}, (error) => {
@@ -89,6 +97,9 @@ export function activate(context) {
 					window.showInformationMessage(error.message, { modal: true });
 					return false;
 				});
+
+
+
 				if (loginSuccessful) {
 
 					var version = await client.maximoVersion();
@@ -105,12 +116,12 @@ export function activate(context) {
 						}
 					}
 
-					var javaVersion = await client.javaVersion();
+					// var javaVersion = await client.javaVersion();
 
-					if (!javaVersion || javaVersion !== '1.8') {
-						window.showErrorMessage(`Maximo Java version ${javaVersion} is not supported. Only Java version 1.8 is supported.`, { modal: true });
-						return;
-					}
+					// if (!javaVersion || (javaVersion !== '1.8' && javaVersion !== 'no-permission')) {
+					// 	window.showErrorMessage(`Maximo Java version ${javaVersion} is not supported. Only Java version 1.8 is supported.`, { modal: true });
+					// 	return;&
+					// }
 
 					if (!await client.installed()) {
 						await window.showInformationMessage('Configurations are required to deploy automation scripts.  Do you want to configure Maximo now?', { modal: true }, ...['Yes']).then(async (response) => {
@@ -120,6 +131,24 @@ export function activate(context) {
 									location: ProgressLocation.Notification
 								}, async (progress) => {
 									var result = await client.install(progress);
+									if (result && result.status === 'error') {
+										window.showErrorMessage(result.message, { modal: true });
+									} else {
+										window.showInformationMessage('Maximo configuration successful.', { modal: true });
+									}
+								}
+								);
+							}
+						});
+						return;
+					} else if (await client.upgradeRequired()) {
+						await window.showInformationMessage('Updated configurations are required to deploy automation scripts.  Do you want to configure Maximo now?', { modal: true }, ...['Yes']).then(async (response) => {
+							if (response === 'Yes') {
+								await window.withProgress({
+									title: 'Configuring Maximo...',
+									location: ProgressLocation.Notification
+								}, async (progress) => {
+									var result = await client.upgrade(progress);
 									if (result && result.status === 'error') {
 										window.showErrorMessage(result.message, { modal: true });
 									} else {

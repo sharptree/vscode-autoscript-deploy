@@ -6,6 +6,7 @@ import {
     CookieJar,
     Cookie
 } from 'tough-cookie';
+import * as semver from 'semver';
 import {
     InvalidApiKeyError,
     LoginFailedError,
@@ -31,6 +32,9 @@ export default class MaximoClient {
 
         // keep a reference to the config for later use.
         this.config = config;
+
+        this.requiredScriptVersion = '^1.1.0';
+        this.currentScriptVersion = '1.1.0';
 
         // Allows untrusted certificates agent.
         let httpsAgent = new https.Agent({
@@ -180,6 +184,31 @@ export default class MaximoClient {
         return response.data.member.length !== 0;
     }
 
+    async upgradeRequired() {
+        if (!this._isConnected) {
+            await this.connect();
+        }
+
+        const headers = new Map();
+        headers['Content-Type'] = 'application/json';
+        const options = {
+            url: 'script/SHARPTREE.AUTOSCRIPT.DEPLOY/version',
+            method: MaximoClient.Method.GET,
+            headers: { common: headers },
+        }
+        try {
+            const response = await this.client.request(options);
+            if (typeof response.data.version !== 'undefined') {
+                return !semver.satisfies(response.data.version, this.requiredScriptVersion);
+            } else {
+                return true;
+            }
+        } catch (error) {
+            return true;
+        }
+
+    }
+
     async javaVersion() {
         if (!this._isConnected) {
             await this.connect();
@@ -203,11 +232,25 @@ export default class MaximoClient {
                 headers: { common: headers },
             }
 
-            // @ts-ignore
-            response = await this.client.request(options);
-            console.log("Version is ", response);
+            // @ts-ignore    
+            response = await this.client.request(options).catch((error) => {
+                // if the user doesn't have access to check the Java version then just skip it.                
+                if (typeof error.reasonCode !== 'undefined' && error.reasonCode === 'BMXAA9051E') {
+                    return 'no-permission';
+                } else {
+                    throw error;
+                }
+            });
 
-            return response.data.specVersion;
+            if (response === 'no-permission') {
+                return response;
+            }
+
+            if (typeof response.data !== 'undefined') {
+                return response.data.specVersion;
+            } else {
+                return 'unavailable';
+            }
         } else {
             return 'unavailable';
         }
@@ -233,7 +276,56 @@ export default class MaximoClient {
 
     }
 
+    async upgrade(progress) {
+        if (!this._isConnected) {
+            throw new MaximoError("Maximo client is not connected.");
+        }
+
+        progress.report({ increment: 0 });
+
+
+        const headers = new Map();
+        headers['Content-Type'] = 'application/json';
+        let options = {
+            url: 'os/mxscript?oslc.select=autoscript&oslc.where=autoscript="SHARPTREE.AUTOSCRIPT.DEPLOY"',
+            method: MaximoClient.Method.GET,
+            headers: { common: headers },
+        }
+
+        // @ts-ignore
+        let response = await this.client.request(options);
+        if (response.data.member.length !== 0) {
+            let scriptURI = response.data.member[0].href;
+            let source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.deploy.js')).toString();
+
+            let deployScript = {
+                "autoscript": "sharptree.autoscript.deploy",
+                "description": "Sharptree Automation Script Deploy Script",
+                "status": "Active",
+                "version": this.currentScriptVersion,
+                "scriptlanguage": "nashorn",
+                "source": source
+            }
+
+            headers['x-method-override'] = 'PATCH';
+
+            const options = {
+                url: scriptURI,
+                method: MaximoClient.Method.POST,
+                headers: { common: headers },
+                data: deployScript
+            }
+            progress.report({ increment: 80 });
+            response = await this.client.request(options);
+        } else {
+            install(progress);
+        }
+
+        progress.report({ increment: 100 });
+    }
+
     async install(progress) {
+
         if (!this._isConnected) {
             throw new MaximoError("Maximo client is not connected.");
         }
@@ -258,7 +350,7 @@ export default class MaximoClient {
             "autoscript": "sharptree.autoscript.deploy",
             "description": "Sharptree Autoscript Deploy Script",
             "status": "Active",
-            "version": "1.0.0",
+            "version": this.currentScriptVersion,
             "scriptlanguage": "nashorn",
             "source": source
         }
@@ -271,6 +363,7 @@ export default class MaximoClient {
         }
         progress.report({ increment: 80 });
         // @ts-ignore
+
         const response = await this.client.request(options);
 
         progress.report({ increment: 100 });
@@ -308,7 +401,7 @@ export default class MaximoClient {
                 let deployScript = {
                     "description": "Sharptree AutoScript Deploy Bootstrap",
                     "status": "Active",
-                    "version": "1.0.0",
+                    "version": this.currentScriptVersion,
                     "scriptlanguage": "nashorn",
                     "source": source
                 }

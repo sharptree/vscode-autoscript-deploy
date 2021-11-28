@@ -1,6 +1,8 @@
 // @ts-nocheck
 load("nashorn:parser.js");
 
+RESTRequest = Java.type("com.ibm.tivoli.oslc.RESTRequest");
+
 MboConstants = Java.type("psdi.mbo.MboConstants");
 SqlFormat = Java.type("psdi.mbo.SqlFormat");
 MXServer = Java.type("psdi.server.MXServer");
@@ -21,14 +23,21 @@ function main() {
     try {
         checkPermissions("SHARPTREE_UTILS", "DEPLOYSCRIPT");
 
-        if (requestBody) {
-
+        if (typeof requestBody !== 'undefined') {
             if (httpMethod != "POST") {
                 throw new ScriptError("only_post_supported", "Only the HTTP POST method is supported when deploying automation scripts.");
             }
             scriptSource = requestBody;
             if (!scriptSource) {
                 throw new ScriptError("no_script_source", "A script source must be the request body.");
+            }
+        } else if (httpMethod === 'GET') {
+            var action = getRequestAction();
+            if (action.startsWith('version')) {
+                var response = { "version": getScriptVersion('SHARPTREE.AUTOSCRIPT.DEPLOY') };
+                responseBody = JSON.stringify(response);
+
+                return;
             }
         }
 
@@ -60,9 +69,12 @@ function main() {
         } else {
             response.cause = error;
         }
-        if (requestBody) {
+        if (typeof requestBody !== 'undefined' && typeof responseBody !== 'undefined') {
             responseBody = JSON.stringify(response);
         }
+
+        service.log_error(error);
+
         return;
     }
 
@@ -408,6 +420,59 @@ function astToJavaScript(ast) {
         });
     }
     return javaScript;
+}
+
+function getRequestAction() {
+
+    var field = RESTRequest.class.getDeclaredField("request");
+    field.setAccessible(true);
+    var httpRequest = field.get(request);
+
+    var requestURI = httpRequest.getRequestURI();
+    var contextPath = httpRequest.getContextPath();
+    var resourceReq = requestURI;
+
+    if (contextPath && contextPath !== '') {
+        resourceReq = requestURI.substring(contextPath.length());
+    }
+
+    if (!resourceReq.startsWith("/")) {
+        resourceReq = "/" + resourceReq;
+    }
+
+    if (!resourceReq.startsWith('/oslc/script/' + service.scriptName)) {
+        return null;
+    }
+
+    var baseReqPath = '/oslc/script/' + service.scriptName;
+
+    var action = resourceReq.substring(baseReqPath.length);
+    if (action.startsWith("/")) {
+        action = action.substring(1);
+    }
+
+    if (!action || action.trim() === '') {
+        return null;
+    }
+
+    return action.toLowerCase();
+}
+
+function getScriptVersion(scriptName) {
+    var mboset;
+    try {
+        mboset = MXServer.getMXServer().getMboSet("AUTOSCRIPT", userInfo);
+        var sqlf = new SqlFormat("autoscript = :1");
+        sqlf.setObject(1, "AUTOSCRIPT", "AUTOSCRIPT", scriptName);
+        mboset.setWhere(sqlf.format());
+        if (mboset.isEmpty()) {
+            return 'unknown';
+        } else {
+            return mboset.getMbo(0).getString("VERSION");
+        }
+    } finally {
+        close(mboset);
+    }
 }
 
 // Cleans up the MboSet connections and closes the set.

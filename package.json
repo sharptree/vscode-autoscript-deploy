@@ -3,7 +3,7 @@
 	"displayName": "maximo-script-deploy",
 	"description": "Maximo Automation Script Deploy",
 	"publisher": "Sharptree",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"icon": "app-icon.png",
 	"categories": [
 		"Programming Languages",
@@ -29,6 +29,11 @@
 					"type": "string",
 					"default": null,
 					"description": "The Maximo user name."
+				},
+				"sharptree.maximo.context": {
+					"type": "string",
+					"default": "maximo",
+					"description": "The Maximo URL Context."
 				},
 				"sharptree.maximo.port": {
 					"type": "number",
@@ -100,7 +105,9 @@
 	},
 	"dependencies": {
 		"axios": "^0.21.4",
+		"axios-cookiejar-support": "^2.0.3",
 		"is-valid-hostname": "^1.0.2",
+		"semver": "^7.3.5",
 		"tough-cookie": "^4.0.0"
 	}
 }
