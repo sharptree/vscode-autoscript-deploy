@@ -57,6 +57,10 @@ var scriptConfig = {
 - Initial configuration must be done by a user in the administrative group defined by `ADMINGROUP` `MAXVARS` entry.  Typically this is `MAXADMIN`.
 
 ## Release Notes
+### 1.0.3
+- Added context support
+- Added automatic upgrade path support
+
 ### 1.0.2
 - Removed check for Java version due to permission issues checking Maximo JVM information.
 
