@@ -16,6 +16,10 @@ System = Java.type("java.lang.System");
 // Global input variables
 scriptSource = "";
 
+MXLoggerFactory = Java.type("psdi.util.logging.MXLoggerFactory");
+
+var logger = MXLoggerFactory.getLogger("maximo.script." + service.getScriptName());
+
 main();
 
 function main() {
@@ -310,6 +314,13 @@ function deployScript(scriptSource) {
 
             autoScriptSet.save();
 
+            // try {
+            //     save the configuration details.               
+            //     service.invokeScript("SHARPTREE.AUTOSCRIPT.CONFIG").createOrUpdateScript(scriptConfig.autoscript, scriptSource, userInfo.getUserName());
+            // } catch (error) {
+            //     log_error("Error saving script configuration history." + JSON.stringify(error));
+            // }
+
         } finally {
             close(autoScriptSet);
         }
@@ -473,6 +484,23 @@ function getScriptVersion(scriptName) {
     } finally {
         close(mboset);
     }
+}
+
+// Logging functions provided for compatibility with older versions where service.log_xxxx is not available.
+function log_debug(msg) {
+    logger.debug(msg);
+}
+
+function log_info(msg) {
+    logger.info(msg);
+}
+
+function log_warn(msg) {
+    logger.warn(msg);
+}
+
+function log_error(msg) {
+    logger.error(msg);
 }
 
 // Cleans up the MboSet connections and closes the set.
