@@ -32,6 +32,7 @@ export function activate(context) {
 			const authType = settings.get('maximo.authenticationType')
 			const allowUntrustedCerts = settings.get('maximo.allowUntrustedCerts');
 			const maximoContext = settings.get('maximo.context');
+			const timeout = settings.get('maximo.timeout');
 
 			// if the last user doesn't match the current user then request the password.
 			if (lastUser && lastUser !== userName) {
@@ -74,6 +75,8 @@ export function activate(context) {
 				host: host,
 				port: port,
 				context: maximoContext,
+				connectTimeout: timeout * 1000,
+				responseTimeout: timeout * 1000,
 				authType: authType,
 				allowUntrustedCerts: allowUntrustedCerts
 			});
@@ -181,7 +184,13 @@ export function activate(context) {
 
 												if (result) {
 													if (result.status === 'error') {
-														window.showErrorMessage(result.message, { modal: true });
+														if (result.message) {
+															window.showErrorMessage(result.message, { modal: true });
+														} else if (result.cause) {
+															window.showErrorMessage(`Error: ${JSON.stringify(result.cause)}`, { modal: true });
+														} else {
+															window.showErrorMessage('An unknown error occurred: ' + JSON.stringify(result), { modal: true });
+														}
 													} else {
 														progress.report({ increment: 100, message: `Successfully deployed ${fileName}` });
 														await new Promise(resolve => setTimeout(resolve, 2000));

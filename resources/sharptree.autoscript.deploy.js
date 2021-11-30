@@ -194,7 +194,7 @@ function deployScript(scriptSource, language) {
 
                         setValueIfAvailable(scriptLaunchPoint, "DESCRIPTION", element.description);
 
-                        if (element.launchPointType === 'OBJECT') {
+                        if (element.launchPointType.toUpperCase() === 'OBJECT') {
                             if (typeof element.objectName === 'undefined') {
                                 throw new ScriptError("missing_attribute", "The objectName is a required attribute when defining an Object launch point.");
                             }
@@ -251,37 +251,37 @@ function deployScript(scriptSource, language) {
                                 throw new ScriptError("missing_attribute", "One of the following attributes is required when defining an Object launch point: initializeValue, validateApplication, allowObjectCreation, allowObjectDeletion, or save.")
                             }
 
-                        } else if (element.launchPointType === 'ATTRIBUTE') {
+                        } else if (element.launchPointType.toUpperCase() === 'ATTRIBUTE') {
                             if (element.objectName === 'undefined') {
                                 throw new ScriptError("missing_attribute", "The objectName is a required attribute when defining an Attribute launch point.");
                             }
-                            if (element.objectName === 'attributeName') {
+                            if (element.attributeName === 'undefined') {
                                 throw new ScriptError("missing_attribute", "The attributeName is a required attribute when defining an Attribute launch point.");
                             }
                             scriptLaunchPoint.setValue("OBJECTNAME", element.objectName);
                             scriptLaunchPoint.setValue("ATTRIBUTENAME", element.attributeName);
 
-                            if (typeof element.initializeAccessRestriction !== 'undefined') {
+                            if (typeof element.initializeAccessRestriction !== 'undefined' && element.initializeAccessRestriction) {
                                 scriptLaunchPoint.setValue("ATTRIBUTEEVENT", "0");
-                            } else if (typeof element.initializeValue !== 'undefined') {
+                            } else if (typeof element.initializeValue !== 'undefined' && element.initializeValue) {
                                 scriptLaunchPoint.setValue("ATTRIBUTEEVENT", "1");
-                            } else if (typeof element.validate !== 'undefined') {
+                            } else if (typeof element.validate !== 'undefined' && element.validate) {
                                 scriptLaunchPoint.setValue("ATTRIBUTEEVENT", "2");
-                            } else if (typeof element.retrieveList !== 'undefined') {
+                            } else if (typeof element.retrieveList !== 'undefined' && element.retrieveList) {
                                 scriptLaunchPoint.setValue("ATTRIBUTEEVENT", "3");
-                            } else if (typeof element.runAction !== 'undefined') {
+                            } else if (typeof element.runAction !== 'undefined' && element.runAction) {
                                 scriptLaunchPoint.setValue("ATTRIBUTEEVENT", "4");
                             } else {
-                                throw new ScriptError("missing_attribute", "One of the following attributes is required when defining an Attribute launch point: initializeAccessRestriction, initializeValue, validate, retrieveList, or runAction.")
+                                throw new ScriptError("missing_attribute", "One of the following attributes is required when defining an Attribute launch point: initializeAccessRestriction, initializeValue, validate, retrieveList or runAction.")
                             }
-                        } else if (element.launchPointType === 'ACTION') {
+                        } else if (element.launchPointType.toUpperCase() === 'ACTION') {
                             if (typeof element.actionName === 'undefined') {
                                 throw new ScriptError("missing_attribute", "The actionName is required when defining an Action launch point");
                             }
                             scriptLaunchPoint.setValue("ACTIONNAME", element.actionName);
                             setValueIfAvailable(scriptLaunchPoint, "OBJECTNAME", element.objectName);
 
-                        } else if (element.launchPointType === 'CUSTOMCONDITION') {
+                        } else if (element.launchPointType.toUpperCase() === 'CUSTOMCONDITION') {
                             setValueIfAvailable(scriptLaunchPoint, "OBJECTNAME", element.objectName);
                         } else {
                             throw new ScriptError("unknown_launchpoint_type", "The launch point type " + element.launchPointType + " is not supported.");

@@ -33,8 +33,8 @@ export default class MaximoClient {
         // keep a reference to the config for later use.
         this.config = config;
 
-        this.requiredScriptVersion = '1.3.0';
-        this.currentScriptVersion = '1.3.0';
+        this.requiredScriptVersion = '1.4.0';
+        this.currentScriptVersion = '1.4.0';
 
         // Allows untrusted certificates agent.
         let httpsAgent = new https.Agent({

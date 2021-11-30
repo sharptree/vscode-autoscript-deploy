@@ -3,7 +3,7 @@
 	"displayName": "maximo-script-deploy",
 	"description": "Maximo Automation Script Deploy",
 	"publisher": "Sharptree",
-	"version": "1.0.4",
+	"version": "1.0.6",
 	"icon": "app-icon.png",
 	"categories": [
 		"Programming Languages",
@@ -44,6 +44,13 @@
 					"type": "boolean",
 					"default": true,
 					"description": "Connect to Maximo using SSL?"
+				},
+				"sharptree.maximo.timeout": {
+					"type": "number",
+					"default": 30,
+					"description": "The timeout in seconds.",
+					"minimum": 0,
+					"maximum": 300
 				},
 				"sharptree.maximo.authenticationType": {
 					"type": "string",

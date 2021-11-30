@@ -378,7 +378,7 @@ function internalParse(exports) {
     var _if = { keyword: "if" }, _import = { keyword: "import" };
     var _lambda = { keyword: "lambda" }, _nonlocal = { keyword: "nonlocal" };
     var _pass = { keyword: "pass" }, _raise = { keyword: "raise" };
-    var _return = { keyword: "return", beforeExpr: true }, _try = { keyword: "try" };
+    var _return = { keyword: "return", beforeExpr: true }, _try = { keyword: "try" }, _catch = { keyword: "catch" }
     var _while = { keyword: "while" }, _with = { keyword: "with" }, _yield = { keyword: "yield" };
 
     // The keywords that denote values.
@@ -1653,6 +1653,19 @@ function internalParse(exports) {
     function eat(type) {
         if (tokType === type) {
             next();
+
+            if (type === _finally || type == _try) {
+                if (tokType === _colon) {
+                    next();
+                    if (tokType === _newline) {
+                        next();
+                        if (tokType === _indent) {
+                            next();
+                        }
+                    }
+                }
+            }
+
             return true;
         }
     }
@@ -1849,26 +1862,52 @@ function internalParse(exports) {
                 else { node.argument = parseExpression(); }
                 return finishNode(node, "ReturnStatement");
 
-            case _try: // TODO, and remove parseBlock
+            case _try: // TODO, and remove parseBlock                
                 next();
-                node.block = parseBlock();
-                node.handler = null;
-                if (tokType === _catch) {
-                    var clause = startNode();
+                if (tokType === _colon) {
                     next();
-                    expect(_parenL);
-                    clause.param = parseIdent();
+                    if (tokType === _newline) {
+                        next();
+                        if (tokType === _indent) {
+                            next();
+                        }
+                    }
+                }
+
+                node.block = parseBlock();
+
+                node.handler = null;
+
+                if (tokType === _except) {
+                    var clause = startNode();
+
+                    while (tokType !== _colon) {
+                        next();
+                    }
+                    next();
+                    if (tokType === _newline) {
+                        next();
+                    }
+
+                    if (tokType === _indent) {
+                        next();
+                    }
+
+                    // expect(_parenL);
+
+                    // clause.param = parseIdent();
                     if (strict && isStrictBadIdWord(clause.param.name))
                         raise(clause.param.start, "Binding " + clause.param.name + " in strict mode");
-                    expect(_parenR);
+                    // expect(_parenR);
                     clause.guard = null;
                     clause.body = parseBlock();
                     node.handler = finishNode(clause, "CatchClause");
                 }
                 node.guardedHandlers = empty;
+
                 node.finalizer = eat(_finally) ? parseBlock() : null;
                 if (!node.handler && !node.finalizer)
-                    raise(node.start, "Missing catch or finally clause");
+                    raise(node.start, "Missing except or finally clause");
                 return finishNode(node, "TryStatement");
 
             case _while:
@@ -1908,9 +1947,11 @@ function internalParse(exports) {
     // Parse indent-enclosed block of statements
 
     function parseBlock() {
+
         var node = startNode();
         node.body = [];
         while (tokType !== _dedent && tokType !== _eof) {
+
             var stmt = parseStatement();
             if (stmt) node.body.push(stmt);
         }
