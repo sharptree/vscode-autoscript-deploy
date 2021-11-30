@@ -1,7 +1,7 @@
 // @ts-nocheck
 /*
-    Bootstrap script that is used to install the Sharptree Automation Script deploy utility.
-*/
+ *   Bootstrap script that is used to install the Sharptree Automation Script deploy utility.
+ */
 var MboConstants = Java.type("psdi.mbo.MboConstants");
 
 var SqlFormat = Java.type("psdi.mbo.SqlFormat");

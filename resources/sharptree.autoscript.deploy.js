@@ -27,7 +27,12 @@ function main() {
     try {
         checkPermissions("SHARPTREE_UTILS", "DEPLOYSCRIPT");
 
+        var action;
+
         if (typeof requestBody !== 'undefined') {
+
+            action = getRequestAction();
+
             if (httpMethod != "POST") {
                 throw new ScriptError("only_post_supported", "Only the HTTP POST method is supported when deploying automation scripts.");
             }
@@ -36,7 +41,9 @@ function main() {
                 throw new ScriptError("no_script_source", "A script source must be the request body.");
             }
         } else if (httpMethod === 'GET') {
-            var action = getRequestAction();
+
+            action = getRequestAction();
+
             if (action.startsWith('version')) {
                 var response = { "version": getScriptVersion('SHARPTREE.AUTOSCRIPT.DEPLOY') };
                 responseBody = JSON.stringify(response);
@@ -48,7 +55,7 @@ function main() {
         // if the script source is available then call the deploy script.  
         // This allows the deployScript function to be called from the context directly if the script it loaded from another script.
         if (scriptSource) {
-            deployScript(scriptSource);
+            deployScript(scriptSource, action);
         }
 
     } catch (error) {
@@ -57,6 +64,9 @@ function main() {
         if (error instanceof ScriptError) {
             response.message = error.message;
             response.reason = error.reason;
+        } else if (error instanceof SyntaxError) {
+            response.reason = "syntax_error";
+            response.message = error.message;
         } else if (error instanceof Error) {
             response.message = error.message;
         } else if (error instanceof MXException) {
@@ -73,7 +83,8 @@ function main() {
         } else {
             response.cause = error;
         }
-        if (typeof requestBody !== 'undefined' && typeof responseBody !== 'undefined') {
+
+        if (typeof httpMethod !== 'undefined') {
             responseBody = JSON.stringify(response);
         }
 
@@ -89,8 +100,8 @@ function main() {
     return;
 }
 
-function deployScript(scriptSource) {
-    var scriptConfig = getConfigFromScript(scriptSource);
+function deployScript(scriptSource, language) {
+    var scriptConfig = getConfigFromScript(scriptSource, language);
 
     if (scriptConfig) {
         validateScriptConfig(scriptConfig);
@@ -108,7 +119,7 @@ function deployScript(scriptSource) {
             if (autoScriptSet.isEmpty()) {
                 autoscript = autoScriptSet.add();
                 autoscript.setValue("AUTOSCRIPT", scriptConfig.autoscript);
-                autoscript.setValue("SCRIPTLANGUAGE", "nashorn");
+                autoscript.setValue("SCRIPTLANGUAGE", language ? language : "nashorn");
                 autoscript.setValue("ACTIVE", true);
             } else {
                 autoscript = autoScriptSet.getMbo(0);
@@ -314,12 +325,12 @@ function deployScript(scriptSource) {
 
             autoScriptSet.save();
 
-            // try {
-            //     save the configuration details.               
-            //     service.invokeScript("SHARPTREE.AUTOSCRIPT.CONFIG").createOrUpdateScript(scriptConfig.autoscript, scriptSource, userInfo.getUserName());
-            // } catch (error) {
-            //     log_error("Error saving script configuration history." + JSON.stringify(error));
-            // }
+            try {
+                // save the configuration details.               
+                service.invokeScript("SHARPTREE.AUTOSCRIPT.STORE").createOrUpdateScript(scriptConfig.autoscript.toUpperCase(), scriptSource, userInfo.getUserName());
+            } catch (error) {
+                log_error("Error saving script configuration history." + JSON.stringify(error));
+            }
 
         } finally {
             close(autoScriptSet);
@@ -378,9 +389,9 @@ function isInAdminGroup() {
     }
 }
 
-function getConfigFromScript(scriptSource) {
+function getConfigFromScript(scriptSource, language) {
     if (scriptSource) {
-        var ast = parse(scriptSource);
+        var ast = language === 'python' ? service.invokeScript("SHARPTREE.AUTOSCRIPT.FILBERT").parse(scriptSource) : parse(scriptSource);
         if (ast.type === "Program" && ast.body) {
             var result;
             ast.body.forEach(function (element) {
@@ -429,7 +440,10 @@ function astToJavaScript(ast) {
                 javaScript[property.key.value] = child;
             }
         });
+    } else if (ast.type === "Literal" && ast.value) {
+        javaScript = JSON.parse(ast.value);
     }
+
     return javaScript;
 }
 
@@ -451,13 +465,14 @@ function getRequestAction() {
         resourceReq = "/" + resourceReq;
     }
 
-    if (!resourceReq.startsWith('/oslc/script/' + service.scriptName)) {
+    if (!resourceReq.toLowerCase().startsWith('/oslc/script/' + service.scriptName.toLowerCase())) {
         return null;
     }
 
     var baseReqPath = '/oslc/script/' + service.scriptName;
 
     var action = resourceReq.substring(baseReqPath.length);
+
     if (action.startsWith("/")) {
         action = action.substring(1);
     }

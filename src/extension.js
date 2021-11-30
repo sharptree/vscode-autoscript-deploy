@@ -130,7 +130,7 @@ export function activate(context) {
 									title: 'Configuring Maximo...',
 									location: ProgressLocation.Notification
 								}, async (progress) => {
-									var result = await client.install(progress);
+									var result = await client.installOrUpgrade(progress, true);
 									if (result && result.status === 'error') {
 										window.showErrorMessage(result.message, { modal: true });
 									} else {
@@ -148,7 +148,7 @@ export function activate(context) {
 									title: 'Configuring Maximo...',
 									location: ProgressLocation.Notification
 								}, async (progress) => {
-									var result = await client.upgrade(progress);
+									var result = await client.installOrUpgrade(progress);
 									if (result && result.status === 'error') {
 										window.showErrorMessage(result.message, { modal: true });
 									} else {
@@ -167,7 +167,7 @@ export function activate(context) {
 
 							if (document) {
 								let fileName = path.basename(document.fileName);
-								if (fileName.endsWith('.js')) {
+								if (fileName.endsWith('.js') || fileName.endsWith('.py')) {
 									// Get the document text
 									const script = document.getText();
 									if (script && script.trim().length > 0) {
@@ -195,7 +195,7 @@ export function activate(context) {
 										window.showErrorMessage('The selected Automation Script cannot be empty.', { modal: true });
 									}
 								} else {
-									window.showErrorMessage('The selected Automation Script must have a Javascript (\'.js\') file extension.', { modal: true });
+									window.showErrorMessage('The selected Automation Script must have a Javascript (\'.js\') or Python (\'.py\') file extension.', { modal: true });
 								}
 							} else {
 								window.showErrorMessage('An Automation Script must be selected to deploy.', { modal: true });

@@ -33,8 +33,8 @@ export default class MaximoClient {
         // keep a reference to the config for later use.
         this.config = config;
 
-        this.requiredScriptVersion = '^1.2.0';
-        this.currentScriptVersion = '1.2.0';
+        this.requiredScriptVersion = '1.3.0';
+        this.currentScriptVersion = '1.3.0';
 
         // Allows untrusted certificates agent.
         let httpsAgent = new https.Agent({
@@ -145,10 +145,12 @@ export default class MaximoClient {
             await this.connect();
         }
 
+        let isPython = fileName.endsWith('.py');
+
         progress.report({ increment: 10, message: `Deploying script ${fileName}` });
 
         const options = {
-            url: 'script/sharptree.autoscript.deploy',
+            url: 'script/sharptree.autoscript.deploy' + (isPython ? '/python' : ''),
             method: MaximoClient.Method.POST,
             headers: {
                 'Content-Type': 'ext/plain',
@@ -199,7 +201,9 @@ export default class MaximoClient {
         try {
             const response = await this.client.request(options);
             if (typeof response.data.version !== 'undefined') {
-                return !semver.satisfies(response.data.version, this.requiredScriptVersion);
+                console.log("Current version is " + response.data.version);
+                console.log(semver.lt(response.data.version, this.requiredScriptVersion));
+                return semver.lt(response.data.version, this.requiredScriptVersion);
             } else {
                 return true;
             }
@@ -276,98 +280,108 @@ export default class MaximoClient {
 
     }
 
-    async upgrade(progress) {
+
+    async installOrUpgrade(progress, bootstrap) {
+
         if (!this._isConnected) {
             throw new MaximoError("Maximo client is not connected.");
         }
 
         progress.report({ increment: 0 });
 
+        if (bootstrap) {
+            var result = await this._bootstrap(progress);
 
-        const headers = new Map();
-        headers['Content-Type'] = 'application/json';
-        let options = {
-            url: 'os/mxscript?oslc.select=autoscript&oslc.where=autoscript="SHARPTREE.AUTOSCRIPT.DEPLOY"',
-            method: MaximoClient.Method.GET,
-            headers: { common: headers },
+            if (result.status === 'error') {
+                progress.report({ increment: 100 });
+                return result;
+            }
+
+            progress.report({ increment: 20, message: 'Performed bootstrap installation.' });
+            await new Promise(resolve => setTimeout(resolve, 500));
         }
 
-        // @ts-ignore
-        let response = await this.client.request(options);
-        if (response.data.member.length !== 0) {
-            let scriptURI = response.data.member[0].href;
-            let source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.deploy.js')).toString();
+        let source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.deploy.js')).toString();
+        await this._installOrUpdateScript('sharptree.autoscript.deploy', 'Sharptree Automation Script Deploy Script', source, progress, 40);
 
+        source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.filbert.js')).toString();
+        await this._installOrUpdateScript('sharptree.autoscript.filbert', 'Sharptree Automation Script Python Parser', source, progress, 60);
+
+        source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.store.js')).toString();
+        await this._installOrUpdateScript('sharptree.autoscript.store', 'Sharptree Automation Script Storage Script', source, progress, 80);
+
+        progress.report({ increment: 100 });
+
+    }
+
+    async _installOrUpdateScript(script, description, source, progress, increment) {
+        let scriptURI = await this._getScriptURI(script);
+
+        let headers = new Map();
+        headers['Content-Type'] = 'application/json';
+
+        // update if a script uri was found.
+        if (scriptURI) {
             let deployScript = {
-                "autoscript": "sharptree.autoscript.deploy",
-                "description": "Sharptree Automation Script Deploy Script",
+                "description": description,
+                "status": "Active",
+                "version": this.currentScriptVersion,
+                "source": source
+            }
+
+            headers['x-method-override'] = 'PATCH';
+
+            let options = {
+                url: scriptURI,
+                method: MaximoClient.Method.POST,
+                headers: { common: headers },
+                data: deployScript
+            }
+
+            await this.client.request(options);
+
+            progress.report({ increment: increment, message: `Updated ${script}.` });
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+        } else {
+            const deployScript = {
+                "autoscript": script,
+                "description": description,
                 "status": "Active",
                 "version": this.currentScriptVersion,
                 "scriptlanguage": "nashorn",
                 "source": source
             }
 
-            headers['x-method-override'] = 'PATCH';
-
             const options = {
-                url: scriptURI,
+                url: 'os/mxscript',
                 method: MaximoClient.Method.POST,
                 headers: { common: headers },
                 data: deployScript
             }
-            progress.report({ increment: 80 });
-            response = await this.client.request(options);
-        } else {
-            install(progress);
-        }
 
-        progress.report({ increment: 100 });
+            await this.client.request(options);
+            progress.report({ increment: increment, message: `Installed ${script}.` });
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
     }
 
-    async install(progress) {
-
-        if (!this._isConnected) {
-            throw new MaximoError("Maximo client is not connected.");
-        }
-
-        progress.report({ increment: 0 });
-
-        var result = await this._bootstrap(progress);
-
-        progress.report({ increment: 60 });
-
-        if (result.status === 'error') {
-            progress.report({ increment: 100 });
-            return result;
-        }
-
+    async _getScriptURI(script) {
         const headers = new Map();
         headers['Content-Type'] = 'application/json';
 
-        let source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.deploy.js')).toString();
-
-        let deployScript = {
-            "autoscript": "sharptree.autoscript.deploy",
-            "description": "Sharptree Autoscript Deploy Script",
-            "status": "Active",
-            "version": this.currentScriptVersion,
-            "scriptlanguage": "nashorn",
-            "source": source
-        }
-
-        const options = {
-            url: 'os/mxscript',
-            method: MaximoClient.Method.POST,
+        let options = {
+            url: `os/mxscript?oslc.select=autoscript&oslc.where=autoscript="${script}"`,
+            method: MaximoClient.Method.GET,
             headers: { common: headers },
-            data: deployScript
         }
-        progress.report({ increment: 80 });
-        // @ts-ignore
 
-        const response = await this.client.request(options);
-
-        progress.report({ increment: 100 });
-
+        let response = await this.client.request(options);
+        if (response.data.member.length !== 0) {
+            return response.data.member[0].href;
+        } else {
+            return null;
+        }
     }
 
     async _bootstrap(progress) {

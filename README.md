@@ -57,11 +57,18 @@ var scriptConfig = {
 - Initial configuration must be done by a user in the administrative group defined by `ADMINGROUP` `MAXVARS` entry.  Typically this is `MAXADMIN`.
 
 ## Release Notes
+### 1.0.4
+
+- Added Python support.
+- Added deployment tracking.
+- 
 ### 1.0.3
-- Added context support
-- Added automatic upgrade path support
+
+- Added context support.
+- Added automatic upgrade path support.
 
 ### 1.0.2
+
 - Removed check for Java version due to permission issues checking Maximo JVM information.
 
 ### 1.0.1
@@ -72,4 +79,4 @@ var scriptConfig = {
 
 ### 1.0.0
 
-Initial release of the Sharptree VS Code Automation Script Deployment Utility
+Initial release of the Sharptree VS Code Automation Script Deployment Utility.
