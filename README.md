@@ -57,10 +57,11 @@ var scriptConfig = {
 - Initial configuration must be done by a user in the administrative group defined by `ADMINGROUP` `MAXVARS` entry.  Typically this is `MAXADMIN`.
 
 ## Release Notes
-### 1.0.5
+### 1.0.6
 
 - Fixed checks for attribute launch points.
 - Added setting for network timeout.
+- Fixed try / catch / finally Python parsing support.
   
 ### 1.0.4
 

@@ -5,6 +5,7 @@
 	"publisher": "Sharptree",
 	"version": "1.0.6",
 	"icon": "app-icon.png",
+	"repository": {},
 	"categories": [
 		"Programming Languages",
 		"Other"
@@ -13,6 +14,7 @@
 		"vscode": "^1.62.0"
 	},
 	"activationEvents": [
+		"onCommand:maximo-script-deploy.extract",
 		"onCommand:maximo-script-deploy.deploy"
 	],
 	"main": "./dist/extension",
@@ -77,6 +79,10 @@
 			{
 				"command": "maximo-script-deploy.deploy",
 				"title": "Deploy Automation Script"
+			},
+			{
+				"command": "maximo-script-deploy.extract",
+				"title": "Extract Automation Scripts"
 			}
 		],
 		"keybindings": [

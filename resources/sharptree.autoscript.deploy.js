@@ -20,9 +20,12 @@ MXLoggerFactory = Java.type("psdi.util.logging.MXLoggerFactory");
 
 var logger = MXLoggerFactory.getLogger("maximo.script." + service.getScriptName());
 
-main();
+if (typeof httpMethod !== 'undefined') {
+    main();
+}
 
 function main() {
+
     var response = {};
     try {
         checkPermissions("SHARPTREE_UTILS", "DEPLOYSCRIPT");

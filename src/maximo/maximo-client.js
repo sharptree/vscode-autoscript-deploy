@@ -314,6 +314,47 @@ export default class MaximoClient {
 
     }
 
+    async getAllScriptNames() {
+        const headers = new Map();
+        headers['Content-Type'] = 'application/json';
+
+        let options = {
+            url: `os/mxscript?oslc.select=autoscript&oslc.pageSize=10`,
+            method: MaximoClient.Method.GET,
+            headers: { common: headers },
+        }
+
+        var scriptNames = [];
+        let hasMorePages = true;
+
+        while (hasMorePages) {
+            let response = await this.client.request(options);
+            if (response.data.member.length !== 0) {
+                response.data.member.forEach(member => {
+                    if (!member.autoscript.startsWith("SHARPTREE.AUTOSCRIPT")) {
+                        scriptNames.push(member.autoscript.toLowerCase());
+                    }
+                });
+            }
+            hasMorePages = typeof response.data.responseInfo.nextPage !== 'undefined'
+
+            if (hasMorePages) {
+                let pageNumber = response.data.responseInfo.pagenum + 1;
+                options.url = `os/mxscript?oslc.select=autoscript&oslc.pageSize=10&pageno=${pageNumber}`;
+            }
+        }
+
+        return scriptNames;
+    }
+
+    async getPageData(url) {
+
+    }
+
+    async extractScript(script) {
+
+    }
+
     async _installOrUpdateScript(script, description, source, progress, increment) {
         let scriptURI = await this._getScriptURI(script);
 

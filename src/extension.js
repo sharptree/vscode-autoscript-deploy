@@ -13,8 +13,7 @@ var lastPort;
 var lastContext;
 
 export function activate(context) {
-
-	let disposable = commands.registerCommand(
+	let disposableDeploy = commands.registerCommand(
 		"maximo-script-deploy.deploy",
 		async function () {
 
@@ -218,7 +217,7 @@ export function activate(context) {
 				if (error && typeof error.message !== 'undefined') {
 					window.showErrorMessage(error.message, { modal: true });
 				} else {
-					window.showErrorMessage('An unexpected error occured: ' + error, { modal: true });
+					window.showErrorMessage('An unexpected error occurred: ' + error, { modal: true });
 				}
 
 			} finally {
@@ -232,9 +231,153 @@ export function activate(context) {
 		}
 	);
 
-	context.subscriptions.push(disposable);
+	let disposableExtract = commands.registerCommand(
+		"maximo-script-deploy.extract",
+		async function () {
+
+			// make sure we have all the settings.
+			if (!validateSettings()) {
+				return;
+			}
+
+			const settings = workspace.getConfiguration('sharptree');
+
+			const host = settings.get('maximo.host');
+			const userName = settings.get('maximo.user');
+			const useSSL = settings.get('maximo.useSSL');
+			const port = settings.get('maximo.port');
+			const authType = settings.get('maximo.authenticationType')
+			const allowUntrustedCerts = settings.get('maximo.allowUntrustedCerts');
+			const maximoContext = settings.get('maximo.context');
+			const timeout = settings.get('maximo.timeout');
+
+			// if the last user doesn't match the current user then request the password.
+			if (lastUser && lastUser !== userName) {
+				password = null;
+			}
+
+			if (lastHost && lastHost !== host) {
+				password = null;
+			}
+
+			if (lastPort && lastPort !== port) {
+				password = null;
+			}
+
+			if (lastContext && lastContext !== maximoContext) {
+				password = null;
+			}
+
+			if (!password) {
+				password = await window.showInputBox({
+					prompt: `Enter ${userName}'s password`,
+					password: true,
+					validateInput: text => {
+						if (!text || text.trim() === '') {
+							return 'A password is required';
+						}
+					}
+				});
+			}
+
+			// if the password has not been set then just return.
+			if (!password || password.trim() === '') {
+				return;
+			}
+
+			const config = new MaximoConfig({
+				username: userName,
+				password: password,
+				useSSL: useSSL,
+				host: host,
+				port: port,
+				context: maximoContext,
+				connectTimeout: timeout * 1000,
+				responseTimeout: timeout * 1000,
+				authType: authType,
+				allowUntrustedCerts: allowUntrustedCerts
+			});
+
+			let client;
+
+			try {
+				client = new MaximoClient(config);
+				var loginSuccessful = await client.connect().then((success) => {
+					lastUser = userName;
+					lastHost = host;
+					lastPort = port;
+					lastContext = maximoContext;
+
+					return true;
+				}, (error) => {
+					// clear the password on error
+					password = null;
+					lastUser = null;
+					// show the error message to the user.
+					window.showInformationMessage(error.message, { modal: true });
+					return false;
+				});
+
+				if (loginSuccessful) {
+					let scriptNames = await client.getAllScriptNames();
+					if (typeof scriptNames !== 'undefined' && scriptNames.length > 0) {
+
+						await window.showInformationMessage('Do you want to extract ' + (scriptNames.length > 1 ? 'the ' + scriptNames.length + ' automation scripts?' : ' the one automation script?'), { modal: true }, ...['Yes']).then(async (response) => {
+							if (response === 'Yes') {
+								await window.withProgress({
+									title: 'Extracting Automation Scripts...',
+									location: ProgressLocation.Notification
+								}, async (progress, cancelToken) => {
+									let percent = Math.round(((1) / scriptNames.length) * 100);
+									await asyncForEach(scriptNames, async (script, index) => {
+										await new Promise(resolve => setTimeout(resolve, 500));
+
+										console.log(`${script} ${percent} ${index} ${scriptNames.length}`);
+										progress.report({ increment: percent, message: `Extracting ${script}` });
+
+										if (cancelToken.isCancellationRequested) {
+											return;
+										}
+									});
+
+									window.showInformationMessage('Automation scripts extracted.', { modal: true });
+
+								}
+								);
+							}
+						});
+
+					} else {
+						window.showErrorMessage("No scripts were found to extract.", { modal: true });
+					}
+
+				}
+			} catch (error) {
+				if (error && typeof error.message !== 'undefined') {
+					window.showErrorMessage(error.message, { modal: true });
+				} else {
+					window.showErrorMessage('An unexpected error occurred: ' + error, { modal: true });
+				}
+
+			} finally {
+				// if the client exists then disconnect it.
+				if (client) {
+					await client.disconnect().catch((error) => {
+						//do nothing with this
+					});
+				}
+			}
+		});
+
+	context.subscriptions.push(disposableDeploy, disposableExtract);
+
 }
 
+async function asyncForEach(array, callback) {
+	for (let index = 0; index < array.length; index++) {
+		await callback(array[index], index, array);
+	}
+}
 // this method is called when your extension is deactivated
 function deactivate() { }
 

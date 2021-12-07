@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-nochecky
 function parse(source) {
     var exports = {};
     internalParse(exports)
