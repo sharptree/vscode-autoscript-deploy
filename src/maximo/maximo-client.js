@@ -314,12 +314,16 @@ export default class MaximoClient {
 
     }
 
-    async getAllScriptNames() {
+    async getAllScriptNames(progress) {
         const headers = new Map();
+        const pageSize = 10;
+
         headers['Content-Type'] = 'application/json';
 
+
+
         let options = {
-            url: `os/mxscript?oslc.select=autoscript&oslc.pageSize=10`,
+            url: `os/mxscript?oslc.select=autoscript&oslc.pageSize=${pageSize}&collectioncount=1&oslc.where=autoscript!="[SHARPTREE.AUTOSCRIPT.DEPLOY,SHARPTREE.AUTOSCRIPT.STORE,SHARPTREE.AUTOSCRIPT.DEPLOY.HISTORY,SHARPTREE.AUTOSCRIPT.FILBERT,SHARPTREE.AUTOSCRIPT.EXTRACT]" and scriptlanguage!="MBR"`,
             method: MaximoClient.Method.GET,
             headers: { common: headers },
         }
@@ -327,9 +331,26 @@ export default class MaximoClient {
         var scriptNames = [];
         let hasMorePages = true;
 
+
+        let percent = 0;
+
+        let totalCount = 0;
+        let currentCount = 0;
         while (hasMorePages) {
             let response = await this.client.request(options);
+
+            if (percent === 0 && response.data.responseInfo.totalPages !== 'undefined') {
+                percent = Math.round((1 / response.data.responseInfo.totalPages) * 100);
+            }
+
+            if (totalCount === 0 && response.data.responseInfo.totalCount !== 'undefined') {
+                totalCount = response.data.responseInfo.totalCount;
+            }
+
             if (response.data.member.length !== 0) {
+                currentCount += response.data.member.length;
+
+                progress.report({ increment: percent, message: `Getting scripts ${currentCount} of ${totalCount}` });
                 response.data.member.forEach(member => {
                     if (!member.autoscript.startsWith("SHARPTREE.AUTOSCRIPT")) {
                         scriptNames.push(member.autoscript.toLowerCase());
@@ -340,7 +361,7 @@ export default class MaximoClient {
 
             if (hasMorePages) {
                 let pageNumber = response.data.responseInfo.pagenum + 1;
-                options.url = `os/mxscript?oslc.select=autoscript&oslc.pageSize=10&pageno=${pageNumber}`;
+                options.url = `os/mxscript?oslc.select=autoscript&oslc.pageSize=10&pageno=${pageNumber}&collectioncount=1&oslc.where=autoscript!="[SHARPTREE.AUTOSCRIPT.DEPLOY,SHARPTREE.AUTOSCRIPT.STORE,SHARPTREE.AUTOSCRIPT.DEPLOY.HISTORY,SHARPTREE.AUTOSCRIPT.FILBERT,SHARPTREE.AUTOSCRIPT.EXTRACT]" and scriptlanguage!="MBR"`;
             }
         }
 
@@ -351,8 +372,24 @@ export default class MaximoClient {
 
     }
 
-    async extractScript(script) {
+    async getScript(scriptName) {
 
+        const headers = new Map();
+        headers['Content-Type'] = 'application/json';
+
+        let options = {
+            url: `script/sharptree.autoscript.extract/${scriptName}`,
+            method: MaximoClient.Method.GET,
+            headers: { common: headers },
+        }
+
+        let response = await this.client.request(options);
+
+        if (response.data.status === 'success') {
+            return response.data;
+        } else {
+            throw new Error(response.data.message);
+        }
     }
 
     async _installOrUpdateScript(script, description, source, progress, increment) {

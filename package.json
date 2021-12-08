@@ -35,7 +35,12 @@
 				"sharptree.maximo.context": {
 					"type": "string",
 					"default": "maximo",
-					"description": "The Maximo URL Context."
+					"description": "The Maximo URL context."
+				},
+				"sharptree.maximo.extract.location": {
+					"type": "string",
+					"default": "",
+					"description": "The Maximo script extraction location."
 				},
 				"sharptree.maximo.port": {
 					"type": "number",
@@ -119,6 +124,7 @@
 	"dependencies": {
 		"axios": "^0.21.4",
 		"axios-cookiejar-support": "^2.0.3",
+		"crypto": "^1.0.1",
 		"is-valid-hostname": "^1.0.2",
 		"semver": "^7.3.5",
 		"tough-cookie": "^4.0.0"

@@ -85,7 +85,7 @@ function getScriptLanguage(scriptName) {
         if (!autoScriptSet.isEmpty()) {
             var autoScript = autoScriptSet.getMbo(0);
 
-            return autoScript.getString("SCRIPTLANGAUGE");
+            return autoScript.getString("SCRIPTLANGUAGE");
 
         } else {
             throw new ScriptError("script_not_found", "The automation script " + scriptName + " was not found.");
@@ -107,8 +107,30 @@ function extractScript(scriptName) {
 
         if (!autoScriptSet.isEmpty()) {
             var autoScript = autoScriptSet.getMbo(0);
+            var source = autoScript.getString("SOURCE");
 
-            return autoScript.getString("SOURCE") + "\n\nscriptConfig=" + extractScriptConfiguration(autoScript);
+            var scriptLanguage = autoScript.getString("SCRIPTLANGUAGE");
+
+            if (scriptLanguage === 'MBR') {
+                throw new ScriptError("mbr_not_supported", "MBR language support is not available.");
+            }
+
+            var isPython = false;
+            switch (scriptLanguage.toLowerCase()) {
+                case 'python':
+                case 'jython':
+                    isPython = true;
+                    break;
+            }
+
+            source = removeScriptConfigFromSource(source, isPython);
+
+            if (isPython) {
+                return source + '\n\nscriptConfig="""' + extractScriptConfiguration(autoScript) + '"""';
+            } else {
+                return source + "\n\nvar scriptConfig=" + extractScriptConfiguration(autoScript) + ";";
+            }
+
 
         } else {
             throw new ScriptError("script_not_found", "The automation script " + scriptName + " was not found.");
@@ -119,12 +141,145 @@ function extractScript(scriptName) {
     }
 }
 
+function removeScriptConfigFromSource(source, isPython) {
+
+
+    var result;
+
+    var braces = 0;
+    var inBrace = false;
+    var inQuote = false;
+    var quoteChar;
+    var ignoreNext = false;
+    var startIndex = -1;
+    var endIndex = -1;
+    var lineComment = false;
+    var blockComment = false;
+    var word = '';
+
+    var inScriptConfig = false;
+    var lineStart = 0;
+
+    if (isPython) {
+        tripleQuoteCount = 0;
+
+        for (var i = 0; i < source.length; i++) {
+            var c = source.charAt(i);
+            if (c === ' ' || c === '\t' || c === '\n') {
+                if (c === '\n') {
+                    lineStart = i;
+                }
+                word = '';
+            } else {
+                word += c;
+            }
+            if (!inScriptConfig) {
+                if (word === '#') { lineComment = true; }
+
+                if (!lineComment) {
+                    if (word === 'scriptConfig') {
+                        inScriptConfig = true;
+                        startIndex = lineStart;
+                    }
+                } else {
+                    if (lineComment && c === '\n') { lineComment = false; }
+                }
+            } else {
+                if (word === '"""' || word.indexOf('"""') > -1) {
+                    tripleQuoteCount++;
+                    word = '';
+                }
+            }
+
+            if (tripleQuoteCount == 2) {
+                endIndex = i + 1;
+                break;
+            }
+        }
+    } else {
+        for (var i = 0; i < source.length; i++) {
+            var c = source.charAt(i);
+
+            if (c === ' ' || c === '\t' || c === '\n') {
+                if (c === '\n') {
+                    lineStart = i;
+                }
+                word = '';
+            } else {
+                word += c;
+            }
+
+            if (!inScriptConfig) {
+                if (word === '//') { lineComment = true; }
+
+                if (word == '/*') { blockComment = true; }
+
+                if (!lineComment && !blockComment) {
+                    if (word === 'scriptConfig') {
+                        inScriptConfig = true;
+                        startIndex = lineStart;
+                    }
+                } else {
+                    if (lineComment && c === '\n') { lineComment = false; }
+                    if (blockComment && word === '*/') { blockComment = false; }
+                }
+            } else {
+                if (!inBrace) {
+                    if (c === '{') {
+                        inBrace = true;
+                        braces = 1;
+                    }
+                } else {
+                    if (braces === 0) {
+                        if (c === ';' || (c !== '\n' && c !== ' ')) {
+                            endIndex = i + 1;
+                            break;
+                        }
+                    } else {
+                        if (!inQuote) {
+                            if (c === "{") {
+                                braces++;
+                            } else if (c === "}") {
+                                braces--;
+                            } else if (c === '"' || c === "'") {
+                                inQuote = true;
+                                quoteChar = c;
+                            }
+                        } else {
+                            if (c === "\\") {
+                                ignoreNext = true;
+                            } else if (!ignoreNext && c === quoteChar) {
+                                inQuote = false;
+                            } else {
+                                ignoreNext = false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (endIndex > 0) {
+        if (startIndex > 0) {
+            result = source.substring(0, startIndex) + source.substring(endIndex);
+        } else {
+            result = source.substring(endIndex);
+        }
+    } else {
+        // did not contain a configuration.
+        result = source;
+    }
+
+    return result;
+}
+
 function extractScriptConfiguration(autoScript) {
     var scriptConfig = {};
     scriptConfig.autoscript = autoScript.getString("AUTOSCRIPT");
     scriptConfig.description = autoScript.getString("DESCRIPTION");
     scriptConfig.version = autoScript.getString("VERSION");
-    scriptConfig.active = autoScript.getString("ACTIVE");
+    scriptConfig.active = autoScript.getBoolean("ACTIVE");
     scriptConfig.logLevel = autoScript.getString("LOGLEVEL");
 
     var autoScriptVarsSet = autoScript.getMboSet("AUTOSCRIPTVARS");
