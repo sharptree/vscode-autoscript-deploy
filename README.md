@@ -144,6 +144,10 @@ To deploy a script, open script in Visual Studio Code, then bring up the Visual 
 
 ![Deploy Automation Script](./images/pallete_password_deploy_example.gif)
 
+After the script has been deployed you can view the script in Maximo. Each deployment replaces the script launch point configuration with the configuration defined in the `scriptConfig` JSON.
+
+![Maximo Automation Script](images/example_script_maximo.png)
+
 ## Extract Automation Scripts
 To extract the scripts currently deployed to Maximo, bring up the Visual Studio Code Command Pallette (`View > Command Pallette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Extract Automation Scripts`. The extension will query Maximo for the available scripts and then prompt for confirmation to extract the scripts as shown below. Scripts are saved to the directory specified in the `Extract Location` setting. If the setting has not been configured the scripted are extracted to the current workspace folder.
 
