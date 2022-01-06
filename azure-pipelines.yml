@@ -15,11 +15,13 @@ steps:
       versionSpec: "16.x"
     displayName: "Install Node.js"
 
+  - script: npm install
+    displayName: Install NPM
+
   - bash: |
-      npm install
       sudo npm install -g webpack
       sudo npm install -g vsce
-    displayName: Install NPM, VSCE and Webpack
+    displayName: Install VSCE and Webpack
 
   - script: npm run vsce:package
     displayName: Create VSIX
