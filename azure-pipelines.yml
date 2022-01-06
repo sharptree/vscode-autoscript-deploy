@@ -9,6 +9,9 @@ trigger:
 pool:
   vmImage: ubuntu-latest
 
+variables:
+  - group: vscode-autoscript-deploy
+
 steps:
   - task: NodeTool@0
     inputs:
@@ -61,7 +64,7 @@ steps:
 
       workingDirectory: "$(System.DefaultWorkingDirectory)/_rkotze.git-mob-vs-code"
 
-    displayName: "npm install and build"
+    displayName: "Publish to Marketplace"
 
     env:
       MARKETPLACE_PAT: $(marketplace_pat)
