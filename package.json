@@ -131,7 +131,6 @@
 		"axios-cookiejar-support": "^2.0.3",
 		"axios-oauth-client": "^1.4.4",
 		"axios-token-interceptor": "^0.2.0",
-		"crypto": "^1.0.1",
 		"is-valid-hostname": "^1.0.2",
 		"semver": "^7.3.5",
 		"tough-cookie": "^4.0.0"
