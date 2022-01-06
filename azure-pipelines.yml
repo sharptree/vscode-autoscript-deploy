@@ -24,6 +24,7 @@ steps:
   - bash: |
       sudo npm install -g webpack
       sudo npm install -g vsce
+      echo $(github_pat)
     displayName: Install VSCE and Webpack
 
   - script: npm run vsce:package
@@ -76,5 +77,6 @@ steps:
       git push github HEAD:main
 
     displayName: "Publish GitHub Pages"
+
     env:
       GITHUB_PAT: $(github_pat)
