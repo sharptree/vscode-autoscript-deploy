@@ -24,7 +24,7 @@ steps:
   - bash: |
       sudo npm install -g webpack
       sudo npm install -g vsce
-      echo $(github_pat)
+      echo "##[debug] $github_pat"
     displayName: Install VSCE and Webpack
 
   - script: npm run vsce:package
