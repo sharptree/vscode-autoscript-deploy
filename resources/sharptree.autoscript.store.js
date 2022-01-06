@@ -195,7 +195,7 @@ function createOrUpdateScript(scriptName, script, userName) {
         scriptInfo.deployed = System.currentTimeMillis();
         scriptInfo.deployedBy = userName;
         scriptInfo.deployedAsDate = DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(ZonedDateTime.now());
-        scriptInfo.hash = DigestUtils.sha256Hex(script);
+        scriptInfo.hash = DigestUtils.shaHex(script);
 
 
         if (toBeCreated) {
@@ -317,7 +317,7 @@ function _calculateSignature(config) {
 
     // remove an existing signature so it isn't included in the hash
     delete evalConfig.signature;
-    return DigestUtils.sha256Hex(JSON.stringify(evalConfig, null, 4));
+    return DigestUtils.shaHex(JSON.stringify(evalConfig, null, 4));
 }
 
 function ConfigError(reason, message) {

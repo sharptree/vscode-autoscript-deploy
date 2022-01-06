@@ -55,6 +55,7 @@ export default class MaximoConfig {
             MAXAUTH: "MAXAUTH",
             BASIC: "BASIC",
             FORM: "FORM",
+            OIDC: "OIDC",
         };
     }
 }

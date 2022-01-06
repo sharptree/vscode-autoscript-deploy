@@ -1,12 +1,56 @@
 # VS Code Automation Script Deployment Utility
 
-Integrates deploying [Maximo Automation Scripts](https://www.ibm.com/docs/SSLLAM_7.6.0/com.ibm.mbs.doc/autoscript/c_automation_scripts.html) into VS Code. 
+Integrates deploying [Maximo Automation Scripts](https://www.ibm.com/docs/SSLLAM_7.6.0/com.ibm.mbs.doc/autoscript/c_automation_scripts.html) directly from Visual Studio Code. 
 
-The extension allows developers to describe the automation script through the use of a `scriptConfig` variable and then deploy the script directly to Maximo from VSCode.  The provided `SHARPTREE.AUTOSCRIPT.DEPLOY` Automation Script provides support for build pipelines and automated deploying of Automation Scripts from a Git repository.
+The extension allows developers to describe the automation script through the use of a `scriptConfig` variable and then deploy the script directly to Maximo from Visual Studio Code. The provided `SHARPTREE.AUTOSCRIPT.DEPLOY` automation script provides support for build pipelines and automated deploying of automation scripts from a Git repository. 
+
+# Configuration
+## Visual Studio Code Settings
+After installation you must provide connection details for your target instance of Maximo. The connection settings are found in the VS Code Settings (`⌘ + ,` or `ctrl + ,`) under the `Maximo` heading. The table below provides a list of the available settings.
+
+| Property      | Description |
+| :---          |    :----   |
+| Allow Untrusted Certs        | When checked, ignores SSL validation rules.|
+| Authentication Type | The type of authentication used by the target Maximo instance. OIDC is the authentication mechanism for MAS8.|
+| Context | The part of the URL that follows the hostname, by default it is `maximo`.|
+| Extract Location | Directory where extracted files will be stored.|
+| Host | The Maximo host name without the http/s protocol prefix. |
+| Port | The Maximo port number, 80 for http, 443 for https or your custom port such as 9080.|
+| Timeout | The time in seconds to wait for Maximo to respond.|
+| User | The user that will be used to connect to Maximo. |
+| Use SLL | When checked, SSL will be used, the provided port must be configured for SSL | 
+
+## Maximo Configuration
+The very first time you connect to Maximo this extension will add several required automation scripts to Maximo. To deploy these scripts the extension requires that you be in the Maximo Administrators group and have access to the `MXSCRIPT` object structure. To perform the configuration bring up the Visual Studio Code Command Pallette (`View > Command Pallette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Deploy Automation Script`. You will be prompted for a password and then a dialog will be displayed prompting you to configure Maximo.
+
+![Configure Maximo Prompt](images/install_scripts.png)
+
+Click the `Yes` button to proceed. The configuration should take less than a minute and a progress indicator will be displayed in the bottom right of the screen.
+
+![Configure Maximo Progress](images/install_scripts_progress.png)
+
+Upon completion the a dialog will be displayed confirming the configuration was successful.
+
+![Configuration Complete](images/install_scripts_complete.png)
+
+The extension is now ready to deploy automation scripts. This process is only for the initial configuration, after the initial configuration, any user that is in the Maximo Administrators group or has been granted the `Deploy Automation Script` under the `SHARPTREE_UTILS` object structure as shown below.
+
+![Sharptree Utils Deploy Automation Script Permission](./images/sharptree_utils_permission.png)
+
+### Maximo Configuration Details
+As part of the configuration, an integration object named `SHARPTREE_UTILS` is create and the automation scripts listed below are also created.
+| Script | Description |
+|:--     | :--         |
+| SHARPTREE.AUTOSCRIPT.DEPLOY | The primary script used for deploying and managing automation scripts. |
+| SHARPTREE.AUTOSCRIPT.DEPLOY.HISTORY | Created after the first script is deployed, contains a JSON with a history of all scripts deployed. |
+| SHARPTREE.AUTOSCRIPT.FILBERT | Script for parsing Python scripts to a abstract structure tree (AST) to extract the embedded configuration JSON. |
+| SHARPTREE.AUTOSCRIPT.STORE | Script for managing the storage of the deploy history. |
+| SHARPTREE.AUTOSCRIPT.EXTRACT | Script for extracting scripts from Maximo. |
 
 ## scriptConfig Variable
 Each script must define a variable named `scriptConfig` that is a JSON object describing how to deploy the script.  At a minimum the `autoscript` attribute is required, all other attributes are optional.  All configuration attributes are available and are defined by their label name without spaces, in camel case.  The example below provides the basic structure.
 
+### JavaScript / Nashorn Example
 ```javascript
 main();
 
@@ -48,15 +92,90 @@ var scriptConfig = {
 
 ```
 
+### Python / Jython
+
+For Python / Jython scripts the same JSON script configuration is used, just triple quote it as a `string` value.
+
+```python
+
+def main():
+    # entry point for the script.
+
+main()    
+
+scriptConfig = """{
+    "autoscript":"EXAMPLE_SCRIPT",
+    "description":"An example script for deployment",
+    "version":"1.0.4",
+    "active":true,
+    "logLevel":"INFO",
+    "autoScriptVars":[
+        {
+            "varname":"examplevar",
+            "description":"An example variable"
+        }
+    ],
+    "scriptLaunchPoints":[
+        {
+            "launchPointName":"EXAMPLELP",
+            "launchPointType":"OBJECT",
+            "description":"An example launch point for Labor",
+            "objectName":"LABOR",
+            "save":true,
+            "add":true,
+            "update":true,
+            "beforeSave":true,
+            "launchPointVars":[
+                {
+                "varName":"examplevar",
+                "varBindingValue":"Example binding"
+                }
+            ]
+        }
+    ],
+}"""
+
+```
+
+## Deploy Automation Script
+To deploy a script, open script in Visual Studio Code, then bring up the Visual Studio Code Command Pallette (`View > Command Pallette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Deploy Automation Script`. If this is the first time deploying a script after starting Visual Studio Code you will be prompted for your Maximo password as this extension does not store passwords. The script is then deployed as can be seen below.
+
+![Deploy Automation Script](./images/pallete_password_deploy_example.gif)
+
+## Extract Automation Scripts
+To extract the scripts currently deployed to Maximo, bring up the Visual Studio Code Command Pallette (`View > Command Pallette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Extract Automation Scripts`. The extension will query Maximo for the available scripts and then prompt for confirmation to extract the scripts as shown below.
+
+![Extract Automation Script](images/pallete_password_extract_example.gif)
+
 ## Requirements
 
-- Maximo 7.6.0.8 or higher.
-- Only JavaScript is supported, Jython and Python scripts are not supported.
-- Files must have a `.js` extension.
-- Java 8 (Nashorn) is required.
+- Maximo 7.6.0.8 or higher, Maximo Application Suite 8 is supported.
+- ~~Only JavaScript is supported, Jython and Python scripts are not supported.~~ We now support Jython and Python scripts.
+- Files must have a `.js` or `.py` extension.
+- Java 8 (Nashorn) is required, this is a system requirement not for deployed scripts.
 - Initial configuration must be done by a user in the administrative group defined by `ADMINGROUP` `MAXVARS` entry.  Typically this is `MAXADMIN`.
 
 ## Release Notes
+### 1.0.12
+- MAS 8 with OIDC login support.
+- Fixes for Form based login.
+  
+### 1.0.11
+- Updated documentation with Python / Jython example.
+  
+### 1.0.10
+- Fixed Windows path handling.
+
+### 1.0.9
+- Fixed paging size
+- Fixed extract script naming issue.
+  
+### 1.0.8
+- Moved the version dependency back to 1.46.
+
+### 1.0.7
+- Added extract script functionality.
+
 ### 1.0.6
 
 - Fixed checks for attribute launch points.

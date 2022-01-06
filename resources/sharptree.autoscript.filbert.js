@@ -3372,7 +3372,6 @@ function internalParse(exports) {
                 var s = "";
                 for (var i = 0; i < arguments.length; i++)
                     s += i === 0 ? arguments[i] : " " + arguments[i];
-                console.log(s);
             },
             range: function (start, stop, step) {
                 if (stop === undefined) {

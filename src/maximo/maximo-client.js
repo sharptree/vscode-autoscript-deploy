@@ -29,12 +29,12 @@ export default class MaximoClient {
         if (!(config instanceof MaximoConfig)) {
             throw "config parameter must be an instance of MaximoConfig";
         }
-
+        this.maxVersion = 'undefined';
         // keep a reference to the config for later use.
         this.config = config;
 
-        this.requiredScriptVersion = '1.4.0';
-        this.currentScriptVersion = '1.4.0';
+        this.requiredScriptVersion = '1.6.0';
+        this.currentScriptVersion = '1.6.0';
 
         // Allows untrusted certificates agent.
         let httpsAgent = new https.Agent({
@@ -43,31 +43,40 @@ export default class MaximoClient {
 
         this.jar = new CookieJar();
 
-        this.client = wrapper(axios.create({
+        this.client = axios.create({
             withCredentials: true,
             httpsAgent: (config.allowUntrustedCerts ? httpsAgent : undefined),
             baseURL: config.baseURL,
             timeout: config.connectTimeout,
-        }));
+
+        });
 
         this.client.interceptors.request.use(function (request) {
             // If the requested URL is the login endpoint, the inject the auth headers.            
             if (request.url === "login") {
-                if (config.authType = MaximoConfig.AuthType.MAXAUTH) {
+                if (this.config.authType == 'MAXAUTH') {
                     // Send the maxauth header
-                    request.headers.common['maxauth'] = config.maxauth;
+                    request.headers.common['maxauth'] = this.config.maxauth;
+                } else if (this.config.authType == 'OIDC') {
+                    request.validateStatus = function (status) {
+                        return status == 200 || status == 302;
+                    }
+                    request.maxRedirects = 0;
+                    request.auth = { 'username': this.config.username, 'password': this.config.password };
+                    request.headers.common['maxauth'] = this.config.maxauth;
                 } else {
                     // Configure support for HTTP Basic authentication
                     request.auth = { 'username': config.username, 'password': config.password };
                 }
-            } else if (request.url === 'j_security_check') {
+            } else if (request.url === this.config.formLoginURL) {
                 // add the x-www-form-urlencoded header
-                // request.headers['content-type'] = 'application/x-www-form-urlencoded';
+                request.headers['content-type'] = 'application/x-www-form-urlencoded';
                 request.validateStatus = function (status) {
                     return status == 200 || status == 302;
                 }
+                request.maxRedirects = 0;
 
-                request.data = `j_username=${config.username}&j_password=${config.password}`;
+                request.data = `j_username=${this.config.username}&j_password=${this.config.password}`;
 
             } else {
                 // if (request.headers['content-type'] === 'application/x-www-form-urlencoded') {
@@ -76,12 +85,12 @@ export default class MaximoClient {
 
                 // // Add the x-public-uri header to ensure Maximo response URI's are properly addressed for external access.
                 // // https://www.ibm.com/docs/en/memas?topic=imam-downloading-work-orders-by-using-maximo-mxapiwodetail-api
-                request.headers['x-public-uri'] = config.baseURL;
+                request.headers['x-public-uri'] = this.config.baseURL;
             }
 
-            request.params = { "lean": (config.lean ? "true" : "false") };
+            request.params = { "lean": (this.config.lean ? "true" : "false") };
 
-            this.jar.getCookies(config.baseURL, function (err, cookies) {
+            this.jar.getCookies((request.url && request.url.startsWith("http")) ? request.url : request.baseURL, function (err, cookies) {
                 request.headers['cookie'] = cookies.join('; ');
             });
 
@@ -102,9 +111,10 @@ export default class MaximoClient {
                     }
 
                     parsedCookies.forEach((cookie) => {
-                        this.jar.setCookieSync(cookie, config.baseURL);
+                        this.jar.setCookieSync(cookie, cookie.url ? cookie.url : response.request.protocol + "//" + response.request.host);
                     });
                 }
+
                 return response;
             }.bind(this),
 
@@ -121,8 +131,60 @@ export default class MaximoClient {
     }
 
     async connect() {
-        if (this.config.authType === MaximoConfig.AuthType.FORM) {
-            return await this.client.post(config.formLoginURL(), { withCredentials: true }).then(this._responseHandler.bind(this));
+        if (this.config.authType === 'FORM') {
+            // process the Form authentication
+            const maxRedirects = 5;
+
+            var response = await this.client.post(this.config.formLoginURL, { withCredentials: true });
+            if (!response) {
+                throw new MaximoError(this.config.host + " is not responding for Form authentication.");
+            }
+            var redirectUri = response.headers['location'];
+            for (var i = 0; i < maxRedirects; i++) {
+                if (redirectUri == null) {
+                    break;
+                }
+                this.jar.getCookiesSync(redirectUri);
+                // make the new request                
+                response = await this.client.get(redirectUri, {
+                    auth: { 'username': this.config.username, 'password': this.config.password },
+                    maxRedirects: 0,
+                    validateStatus: function (status) {
+                        return (status >= 200 && status < 300) || status == 302 || status >= 400;
+                    }
+                });
+
+                redirectUri = response.headers['location'];
+            }
+
+            this._responseHandler(response);
+            // return await this.client.post(this.config.formLoginURL, { withCredentials: true }).then(this._responseHandler.bind(this));
+        } else if (this.config.authType === 'OIDC') {
+            // process the OIDC authentication
+            const maxRedirects = 5;
+
+            var response = await this.client.post("login", { withCredentials: true });
+            var redirectUri = response.headers['location'];
+            for (var i = 0; i < maxRedirects; i++) {
+                if (redirectUri == null) {
+                    break;
+                }
+                this.jar.getCookiesSync(redirectUri);
+                // make the new request                
+                response = await this.client.get(redirectUri, {
+                    auth: { 'username': this.config.username, 'password': this.config.password },
+                    maxRedirects: 0,
+                    validateStatus: function (status) {
+                        return (status >= 200 && status < 300) || status == 302 || status >= 400;
+                    }
+                });
+
+                redirectUri = response.headers['location'];
+            }
+
+            this._responseHandler(response);
+
+
         } else {
             return await this.client.post("login", { withCredentials: true }).then(this._responseHandler.bind(this));
         }
@@ -130,13 +192,23 @@ export default class MaximoClient {
 
     _responseHandler(response) {
         if (response.status == 200) {
+            if (response.data && response.data.maxupg) {
+                this.maxVersion = response.data.maxupg;
+            }
             this._isConnected = true;
+        } else if (response.status == 401) {
+            this._isConnected = false;
+            throw new LoginFailedError("You cannot log in at this time. Contact the system administrator.");
+        } else {
+            this._isConnected = false;
         }
     }
 
     async disconnect() {
         // we don't care about the response status because if it fails there is nothing we can do about it.
-        await this.client.post("logout", { withCredentials: true });
+        if (this._isConnected) {
+            await this.client.post("logout", { withCredentials: true });
+        }
     }
 
     async postScript(script, progress, fileName) {
@@ -183,6 +255,11 @@ export default class MaximoClient {
 
         // @ts-ignore
         const response = await this.client.request(options);
+
+        if (!response || response.headers['content-type'] !== 'application/json') {
+            throw new MaximoError("Received an unexpected response from the server. Content-Type header is not application/json.");
+        }
+
         return response.data.member.length !== 0;
     }
 
@@ -265,19 +342,22 @@ export default class MaximoClient {
             await this.connect();
         }
 
-        const headers = new Map();
-        headers['Content-Type'] = 'application/json';
-        const options = {
-            url: '',
-            method: MaximoClient.Method.GET,
-            headers: { common: headers },
+        if (typeof this.maxVersion !== 'undefined' && this.maxVersion !== 'unknown' && this.maxVersion !== 'undefined') {
+            return this.maxVersion;
+        } else {
+            const headers = new Map();
+            headers['Content-Type'] = 'application/json';
+            const options = {
+                url: '',
+                method: MaximoClient.Method.GET,
+                headers: { common: headers },
+            }
+
+            // @ts-ignore
+            const response = await this.client.request(options);
+            this.maxVersion = response.data.maxupg;
+            return this.maxVersion;
         }
-
-        // @ts-ignore
-        const response = await this.client.request(options);
-
-        return response.data.maxupg;
-
     }
 
 
@@ -310,20 +390,19 @@ export default class MaximoClient {
         source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.store.js')).toString();
         await this._installOrUpdateScript('sharptree.autoscript.store', 'Sharptree Automation Script Storage Script', source, progress, 80);
 
+        source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.extract.js')).toString();
+        await this._installOrUpdateScript('sharptree.autoscript.extract', 'Sharptree Automation Script Extract Script', source, progress, 90);
+
         progress.report({ increment: 100 });
 
     }
 
-    async getAllScriptNames(progress) {
+    async getAllScriptNames() {
         const headers = new Map();
-        const pageSize = 10;
-
         headers['Content-Type'] = 'application/json';
 
-
-
         let options = {
-            url: `os/mxscript?oslc.select=autoscript&oslc.pageSize=${pageSize}&collectioncount=1&oslc.where=autoscript!="[SHARPTREE.AUTOSCRIPT.DEPLOY,SHARPTREE.AUTOSCRIPT.STORE,SHARPTREE.AUTOSCRIPT.DEPLOY.HISTORY,SHARPTREE.AUTOSCRIPT.FILBERT,SHARPTREE.AUTOSCRIPT.EXTRACT]" and scriptlanguage!="MBR"`,
+            url: `os/mxscript?oslc.select=autoscript&oslc.pageSize=10`,
             method: MaximoClient.Method.GET,
             headers: { common: headers },
         }
@@ -331,26 +410,9 @@ export default class MaximoClient {
         var scriptNames = [];
         let hasMorePages = true;
 
-
-        let percent = 0;
-
-        let totalCount = 0;
-        let currentCount = 0;
         while (hasMorePages) {
             let response = await this.client.request(options);
-
-            if (percent === 0 && response.data.responseInfo.totalPages !== 'undefined') {
-                percent = Math.round((1 / response.data.responseInfo.totalPages) * 100);
-            }
-
-            if (totalCount === 0 && response.data.responseInfo.totalCount !== 'undefined') {
-                totalCount = response.data.responseInfo.totalCount;
-            }
-
             if (response.data.member.length !== 0) {
-                currentCount += response.data.member.length;
-
-                progress.report({ increment: percent, message: `Getting scripts ${currentCount} of ${totalCount}` });
                 response.data.member.forEach(member => {
                     if (!member.autoscript.startsWith("SHARPTREE.AUTOSCRIPT")) {
                         scriptNames.push(member.autoscript.toLowerCase());
@@ -361,7 +423,7 @@ export default class MaximoClient {
 
             if (hasMorePages) {
                 let pageNumber = response.data.responseInfo.pagenum + 1;
-                options.url = `os/mxscript?oslc.select=autoscript&oslc.pageSize=10&pageno=${pageNumber}&collectioncount=1&oslc.where=autoscript!="[SHARPTREE.AUTOSCRIPT.DEPLOY,SHARPTREE.AUTOSCRIPT.STORE,SHARPTREE.AUTOSCRIPT.DEPLOY.HISTORY,SHARPTREE.AUTOSCRIPT.FILBERT,SHARPTREE.AUTOSCRIPT.EXTRACT]" and scriptlanguage!="MBR"`;
+                options.url = `os/mxscript?oslc.select=autoscript&oslc.pageSize=10&pageno=${pageNumber}`;
             }
         }
 
@@ -369,6 +431,10 @@ export default class MaximoClient {
     }
 
     async getPageData(url) {
+
+    }
+
+    async extractScript(script) {
 
     }
 
@@ -391,6 +457,7 @@ export default class MaximoClient {
             throw new Error(response.data.message);
         }
     }
+
 
     async _installOrUpdateScript(script, description, source, progress, increment) {
         let scriptURI = await this._getScriptURI(script);
