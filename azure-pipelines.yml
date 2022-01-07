@@ -63,7 +63,7 @@ steps:
 
       PACKAGE_VERSION=$(cat version.txt)
 
-      # vsce publish -p $(marketplace_pat) --packagePath maximo-script-deploy-$PACKAGE_VERSION.vsix
+      vsce publish -p $(marketplace_pat) --packagePath maximo-script-deploy-$PACKAGE_VERSION.vsix
 
     displayName: "Publish to Marketplace"
 
