@@ -5,6 +5,10 @@
 	"publisher": "Sharptree",
 	"version": "1.0.15",
 	"icon": "app-icon.png",
+	"author": {
+		"name": "Jason VenHuizen",
+		"email": "jason@sharptree.io"
+	},
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/sharptree/vscode-autoscript-deploy"
