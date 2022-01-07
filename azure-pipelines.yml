@@ -63,7 +63,7 @@ steps:
 
       PACKAGE_VERSION=$(cat version.txt)
 
-      vsce publish -p $(marketplace_pat) --packagePath maximo-script-deploy-$PACKAGE_VERSION.vsix
+      # vsce publish -p $(marketplace_pat) --packagePath maximo-script-deploy-$PACKAGE_VERSION.vsix
 
     displayName: "Publish to Marketplace"
 
@@ -71,7 +71,7 @@ steps:
       git config --local user.name "Jason VenHuizen"
       git config --local user.email "jason@sharptree.io"
 
-      git remote set-url --push github https://jvenhuizen:$(github_pat)@github.com/sharptree/vscode-autoscript-deploy.git
+      git remote add github github https://jvenhuizen:$(github_pat)@github.com/sharptree/vscode-autoscript-deploy.git
       git push github HEAD:main
 
     displayName: "Publish GitHub Pages"
