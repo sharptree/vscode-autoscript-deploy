@@ -71,7 +71,7 @@ steps:
       git config --local user.name "Jason VenHuizen"
       git config --local user.email "jason@sharptree.io"
 
-      git remote add github github https://jvenhuizen:$(github_pat)@github.com/sharptree/vscode-autoscript-deploy.git
+      git remote add github https://jvenhuizen:$(github_pat)@github.com/sharptree/vscode-autoscript-deploy.git
       git push github HEAD:main
 
     displayName: "Publish GitHub Pages"
