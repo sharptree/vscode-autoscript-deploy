@@ -24,7 +24,7 @@ steps:
   - bash: |
       sudo npm install -g webpack
       sudo npm install -g vsce
-      echo "##[debug] $(github_pat) : $github_pat : $GITHUB_PAT"
+
     displayName: Install VSCE and Webpack
 
   - script: npm run vsce:package
@@ -63,22 +63,17 @@ steps:
 
       PACKAGE_VERSION=$(cat version.txt)
 
-      vsce publish -p $MARKETPLACE_PAT --packagePath maximo-script-deploy-$PACKAGE_VERSION.vsix 
+      vsce publish -p  $(marketplace_pat) --packagePath maximo-script-deploy-$PACKAGE_VERSION.vsix 
 
       workingDirectory: "$(System.DefaultWorkingDirectory)/_rkotze.git-mob-vs-code"
 
     displayName: "Publish to Marketplace"
 
-    env:
-      MARKETPLACE_PAT: $(marketplace_pat)
   - script: |
       git config --local user.name "Jason VenHuizen"
       git config --local user.email "jason@sharptree.io"
 
-      git remote set-url --push github https://jvenhuizen:$GITHUB_PAT@github.com/sharptree/vscode-autoscript-deploy.git
+      git remote set-url --push github https://jvenhuizen:$(github_pat)@github.com/sharptree/vscode-autoscript-deploy.git
       git push github HEAD:main
 
     displayName: "Publish GitHub Pages"
-
-    env:
-      GITHUB_PAT: $(github_pat)
