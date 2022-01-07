@@ -24,11 +24,13 @@ steps:
   - bash: |
       sudo npm install -g webpack
       sudo npm install -g vsce
-      echo "##[debug] $github_pat"
+      echo "##[debug] $(github_pat) : $github_pat : $GITHUB_PAT"
     displayName: Install VSCE and Webpack
 
   - script: npm run vsce:package
     displayName: Create VSIX
+    env:
+      GITHUB_PAT: $(github_pat)
 
   # For releasable builds, we'll want the branch
   # Expects that a 'version.txt' has been laid down by a previous step
