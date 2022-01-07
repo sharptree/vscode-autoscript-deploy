@@ -161,6 +161,13 @@ To extract the scripts currently deployed to Maximo, bring up the Visual Studio 
 - Initial configuration must be done by a user in the administrative group defined by `ADMINGROUP` `MAXVARS` entry.  Typically this is `MAXADMIN`.
 
 ## Release Notes
+
+### 1.0.15 
+- Documentation fixes.  
+
+### 1.0.14
+- Documentation updates and build pipeline testing.
+
 ### 1.0.13
 - Documentation updates.
   
