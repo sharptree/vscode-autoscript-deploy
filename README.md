@@ -2,7 +2,7 @@
 
 Deploy [Maximo Automation Scripts](https://www.ibm.com/docs/SSLLAM_7.6.0/com.ibm.mbs.doc/autoscript/c_automation_scripts.html) directly to Maximo from Visual Studio Code.
 
-The extension allows developers to describe the automation script through the use of a `scriptConfig` variable and then deploy the script directly to Maximo from Visual Studio Code. The provided `SHARPTREE.AUTOSCRIPT.DEPLOY` automation script provides support for build pipelines and automated deploying of automation scripts from a Git repository. 
+The extension allows developers to describe the automation script through the use of a `scriptConfig` variable and then deploy the script directly to Maximo from Visual Studio Code. The provided `SHARPTREE.AUTOSCRIPT.DEPLOY` automation script provides support for build pipelines and automated deployment of automation scripts from a Git repository. 
 
 # Configuration
 ## Visual Studio Code Settings
@@ -21,7 +21,7 @@ After installation you must provide connection details for your target instance 
 | Use SLL | When checked, SSL will be used, the provided port must be configured for SSL | 
 
 ## Maximo Configuration
-The very first time you connect to Maximo this extension will add several required automation scripts to Maximo. To deploy these scripts the extension requires that you be in the Maximo Administrators group and have access to the `MXSCRIPT` object structure. To perform the configuration bring up the Visual Studio Code Command Pallette (`View > Command Pallette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Deploy Automation Script`. You will be prompted for a password and then a dialog will be displayed prompting you to configure Maximo.
+The very first time you connect to Maximo, this extension will add several required automation scripts to Maximo. To deploy these scripts, the extension requires that you be in the Maximo Administrators group and have access to the `MXSCRIPT` object structure. To perform the configuration, bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Deploy Automation Script`. You will be prompted for a password and then a dialog will be displayed prompting you to configure Maximo.
 
 ![Configure Maximo Prompt](images/install_scripts.png)
 
@@ -29,20 +29,20 @@ Click the `Yes` button to proceed. The configuration should take less than a min
 
 ![Configure Maximo Progress](images/install_scripts_progress.png)
 
-Upon completion the a dialog will be displayed confirming the configuration was successful.
+Upon completion a dialog will be displayed confirming the configuration was successful.
 
 ![Configuration Complete](images/install_scripts_complete.png)
 
-The extension is now ready to deploy automation scripts. This process is only for the initial configuration, after the initial configuration, any user that is in the Maximo Administrators group or has been granted the `Deploy Automation Script` permission under the `SHARPTREE_UTILS` object structure as shown below.
+The extension is now ready to deploy automation scripts. This process is only for the initial configuration. After the initial configuration, any user that is in the Maximo Administrators group or has been granted the `Deploy Automation Script` permission under the `SHARPTREE_UTILS` object structure as shown below.
 
 ![Sharptree Utils Deploy Automation Script Permission](./images/sharptree_utils_permission.png)
 
 ### Maximo Configuration Details
-As part of the configuration, an integration object named `SHARPTREE_UTILS` is create and the automation scripts listed below are also created.
+As part of the configuration, an integration object named `SHARPTREE_UTILS` is created and the automation scripts listed below are also created.
 | Script | Description |
 | :--     | :--         |
 | SHARPTREE.AUTOSCRIPT.DEPLOY | The primary script used for deploying and managing automation scripts. |
-| SHARPTREE.AUTOSCRIPT.DEPLOY.HISTORY | Created after the first script is deployed, contains a JSON with a history of all scripts deployed. |
+| SHARPTREE.AUTOSCRIPT.DEPLOY.HISTORY | Created after the first script is deployed. Contains a JSON with a history of all scripts deployed. |
 | SHARPTREE.AUTOSCRIPT.FILBERT | Script for parsing Python scripts to a abstract structure tree (AST) to extract the embedded configuration JSON. |
 | SHARPTREE.AUTOSCRIPT.STORE | Script for managing the storage of the deploy history. |
 | SHARPTREE.AUTOSCRIPT.EXTRACT | Script for extracting scripts from Maximo. |
@@ -140,18 +140,18 @@ scriptConfig = """{
 ```
 
 ## Deploy Automation Script
-To deploy a script, open script in Visual Studio Code, then bring up the Visual Studio Code Command Pallette (`View > Command Pallette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Deploy Automation Script`. If this is the first time deploying a script after starting Visual Studio Code you will be prompted for your Maximo password as this extension does not store passwords. The script is then deployed as can be seen below.
+To deploy a script, open script in Visual Studio Code, then bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Deploy Automation Script`. If this is the first time deploying a script after starting Visual Studio Code you will be prompted for your Maximo password as this extension does not store passwords. The script is then deployed as can be seen below.
 
-![Deploy Automation Script](./images/pallete_password_deploy_example.gif)
+![Deploy Automation Script](./images/palete_password_deploy_example.gif)
 
 After the script has been deployed you can view the script in Maximo. Each deployment replaces the script launch point configuration with the configuration defined in the `scriptConfig` JSON.
 
 ![Maximo Automation Script](images/example_script_maximo.png)
 
 ## Extract Automation Scripts
-To extract the scripts currently deployed to Maximo, bring up the Visual Studio Code Command Pallette (`View > Command Pallette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Extract Automation Scripts`. The extension will query Maximo for the available scripts and then prompt for confirmation to extract the scripts as shown below. Scripts are saved to the directory specified in the `Extract Location` setting. If the setting has not been configured the scripted are extracted to the current workspace folder.
+To extract the scripts currently deployed to Maximo, bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Extract Automation Scripts`. The extension will query Maximo for the available scripts and then prompt for confirmation to extract the scripts as shown below. Scripts are saved to the directory specified in the `Extract Location` setting. If the setting has not been configured, the scripts are extracted to the current workspace folder.
 
-![Extract Automation Script](images/pallete_password_extract_example.gif)
+![Extract Automation Script](images/palete_password_extract_example.gif)
 
 ## Requirements
 
@@ -161,6 +161,13 @@ To extract the scripts currently deployed to Maximo, bring up the Visual Studio 
 - Initial configuration must be done by a user in the administrative group defined by `ADMINGROUP` `MAXVARS` entry.  Typically this is `MAXADMIN`.
 
 ## Release Notes
+
+### 1.0.15 
+- Documentation fixes.  
+
+### 1.0.14
+- Documentation updates and build pipeline testing.
+
 ### 1.0.13
 - Documentation updates.
   

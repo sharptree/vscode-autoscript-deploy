@@ -3,7 +3,7 @@
 	"displayName": "maximo-script-deploy",
 	"description": "Maximo Automation Script Deploy",
 	"publisher": "Sharptree",
-	"version": "1.0.14",
+	"version": "1.0.15",
 	"icon": "app-icon.png",
 	"repository": {
 		"type": "git",
