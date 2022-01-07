@@ -67,11 +67,18 @@ steps:
 
     displayName: "Publish to Marketplace"
 
-  - script: |
+  - bash: |
       git config --local user.name "Jason VenHuizen"
       git config --local user.email "jason@sharptree.io"
 
       git remote set-url --push github https://jvenhuizen:$(github_pat)@github.com/sharptree/vscode-autoscript-deploy.git
       git push github HEAD:main
 
-    displayName: "Publish GitHub Pages"
+      PACKAGE_VERSION=$(cat version.txt)
+      if [ ! $(git tag -l "release/$PACKAGE_VERSION") ]; then
+        git tag "release/$PACKAGE_VERSION"
+      fi
+
+      git push github release/$PACKAGE_VERSION
+
+    displayName: "Publish GitHub"
