@@ -13,6 +13,8 @@ export default class MaximoConfig {
         responseTimeout = 30000,
         lean = true,
         authType = MaximoConfig.AuthType.MAXAUTH,
+        ca,
+        cert
     }
     ) {
         this.username = username;
@@ -26,6 +28,8 @@ export default class MaximoConfig {
         this.responseTimeout = responseTimeout;
         this.lean = lean;
         this.authType = authType;
+        this.ca = ca;
+        this.cert = cert;
     }
 
     get maxauth() {

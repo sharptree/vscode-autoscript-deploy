@@ -36,19 +36,26 @@ export default class MaximoClient {
         this.requiredScriptVersion = '1.6.0';
         this.currentScriptVersion = '1.6.0';
 
+        if (config.ca) {
+            https.globalAgent.options.ca = config.ca;
+        }
+
+        https.globalAgent.options.rejectUnauthorized = !config.allowUntrustedCerts;
+
+        // This is the way it is supposed to be done, but in tested Axios seems to ignore the agent.
         // Allows untrusted certificates agent.
-        let httpsAgent = new https.Agent({
-            rejectUnauthorized: false,
-        });
+        // let httpsAgent = new https.Agent({
+        //     rejectUnauthorized: !config.allowUntrustedCerts,
+        //     ca: config.ca
+        // });
 
         this.jar = new CookieJar();
 
         this.client = axios.create({
             withCredentials: true,
-            httpsAgent: (config.allowUntrustedCerts ? httpsAgent : undefined),
+            // httpsAgent: httpsAgent,
             baseURL: config.baseURL,
             timeout: config.connectTimeout,
-
         });
 
         this.client.interceptors.request.use(function (request) {
@@ -79,10 +86,6 @@ export default class MaximoClient {
                 request.data = `j_username=${this.config.username}&j_password=${this.config.password}`;
 
             } else {
-                // if (request.headers['content-type'] === 'application/x-www-form-urlencoded') {
-                // request.headers['content-type'] = 'application/json';
-                // }
-
                 // // Add the x-public-uri header to ensure Maximo response URI's are properly addressed for external access.
                 // // https://www.ibm.com/docs/en/memas?topic=imam-downloading-work-orders-by-using-maximo-mxapiwodetail-api
                 request.headers['x-public-uri'] = this.config.baseURL;
@@ -186,21 +189,33 @@ export default class MaximoClient {
 
 
         } else {
-            return await this.client.post("login", { withCredentials: true }).then(this._responseHandler.bind(this));
+            await this.client.post("login", {
+                withCredentials: true,
+                validateStatus: function (status) {
+                    return false
+                }
+            }).then(this._responseHandler.bind(this)).catch(function (error) {
+                throw error;
+            });;
+
         }
     }
 
     _responseHandler(response) {
-        if (response.status == 200) {
-            if (response.data && response.data.maxupg) {
-                this.maxVersion = response.data.maxupg;
+        if (response) {
+            if (response.status == 200) {
+                if (response.data && response.data.maxupg) {
+                    this.maxVersion = response.data.maxupg;
+                }
+                this._isConnected = true;
+            } else if (response.status == 401) {
+                this._isConnected = false;
+                throw new LoginFailedError("You cannot log in at this time. Contact the system administrator.");
+            } else {
+                this._isConnected = false;
             }
-            this._isConnected = true;
-        } else if (response.status == 401) {
-            this._isConnected = false;
-            throw new LoginFailedError("You cannot log in at this time. Contact the system administrator.");
         } else {
-            this._isConnected = false;
+            throw new MaximoError("The server return an unexpected response.");
         }
     }
 
@@ -278,8 +293,6 @@ export default class MaximoClient {
         try {
             const response = await this.client.request(options);
             if (typeof response.data.version !== 'undefined') {
-                console.log("Current version is " + response.data.version);
-                console.log(semver.lt(response.data.version, this.requiredScriptVersion));
                 return semver.lt(response.data.version, this.requiredScriptVersion);
             } else {
                 return true;
