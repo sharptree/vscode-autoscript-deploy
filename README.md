@@ -9,10 +9,11 @@ The extension allows developers to describe the automation script through the us
 After installation you must provide connection details for your target instance of Maximo. The connection settings are found in the VS Code Settings (`⌘ + ,` or `ctrl + ,`) under the `Maximo` heading. The table below provides a list of the available settings.
 
 | Property      | Description |
-| :---          |    :----   |
+| :---          | :----       |
 | Allow Untrusted Certs        | When checked, ignores SSL validation rules.|
 | Authentication Type | The type of authentication used by the target Maximo instance. OIDC is the authentication mechanism for MAS8.|
 | Context | The part of the URL that follows the hostname, by default it is `maximo`.|
+| Custom CA | The full chain for the server CA in PEM format. |
 | Extract Location | Directory where extracted files will be stored.|
 | Host | The Maximo host name without the http/s protocol prefix. |
 | Port | The Maximo port number, 80 for http, 443 for https or your custom port such as 9080.|
@@ -161,6 +162,9 @@ To extract the scripts currently deployed to Maximo, bring up the Visual Studio 
 - Initial configuration must be done by a user in the administrative group defined by `ADMINGROUP` `MAXVARS` entry.  Typically this is `MAXADMIN`.
 
 ## Release Notes
+### 1.016
+- Fixed untrusted SSL handling.
+- Added custom CA setting and handling.
 
 ### 1.0.15 
 - Documentation fixes.  

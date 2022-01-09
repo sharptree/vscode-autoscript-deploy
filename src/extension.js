@@ -17,6 +17,7 @@ var lastContext;
 const supportedVersions = ['7608', '7609', '76010', '76011', '7610', '7611', '7612', '7613'];
 
 export function activate(context) {
+
 	let disposableDeploy = commands.registerCommand(
 		"maximo-script-deploy.deploy",
 		async function () {
@@ -36,6 +37,7 @@ export function activate(context) {
 			const allowUntrustedCerts = settings.get('maximo.allowUntrustedCerts');
 			const maximoContext = settings.get('maximo.context');
 			const timeout = settings.get('maximo.timeout');
+			const ca = settings.get("maximo.customCA");
 
 			// if the last user doesn't match the current user then request the password.
 			if (lastUser && lastUser !== userName) {
@@ -81,7 +83,8 @@ export function activate(context) {
 				connectTimeout: timeout * 1000,
 				responseTimeout: timeout * 1000,
 				authType: authType,
-				allowUntrustedCerts: allowUntrustedCerts
+				allowUntrustedCerts: allowUntrustedCerts,
+				ca: ca
 			});
 
 			let client;
@@ -179,6 +182,7 @@ export function activate(context) {
 			const maximoContext = settings.get('maximo.context');
 			const timeout = settings.get('maximo.timeout');
 			const extractLocation = settings.get('maximo.extractLocation');
+			const ca = settings.get("maximo.customCA");
 
 			// if the last user doesn't match the current user then request the password.
 			if (lastUser && lastUser !== userName) {
@@ -224,7 +228,8 @@ export function activate(context) {
 				connectTimeout: timeout * 1000,
 				responseTimeout: timeout * 1000,
 				authType: authType,
-				allowUntrustedCerts: allowUntrustedCerts
+				allowUntrustedCerts: allowUntrustedCerts,
+				ca: ca
 			});
 
 			let client;
@@ -356,11 +361,11 @@ async function login(client) {
 		lastUser = null;
 		// show the error message to the user.
 		if (error.message.includes('ENOTFOUND')) {
-			window.showInformationMessage('The host name "' + client.config.host + '" cannot be found.', { modal: true });
+			window.showErrorMessage('The host name "' + client.config.host + '" cannot be found.', { modal: true });
 		} else if (error.message.includes('ECONNREFUSED')) {
-			window.showInformationMessage('Connection refused to host ' + client.config.host + ' on port ' + client.config.port, { modal: true });
+			window.showErrorMessage('Connection refused to host ' + client.config.host + ' on port ' + client.config.port, { modal: true });
 		} else {
-			window.showInformationMessage(error.message, { modal: true });
+			window.showErrorMessage(error.message, { modal: true });
 		}
 		return false;
 	});
@@ -437,7 +442,6 @@ async function upgraded(client) {
 
 async function versionSupported(client) {
 	var version = await client.maximoVersion();
-	console.log(version);
 
 	if (!version) {
 		window.showErrorMessage(`Could not determine the Maximo version. Only Maximo 7.6.0.8 and greater are supported`, { modal: true });
