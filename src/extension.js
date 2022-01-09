@@ -37,6 +37,7 @@ export function activate(context) {
 			const allowUntrustedCerts = settings.get('maximo.allowUntrustedCerts');
 			const maximoContext = settings.get('maximo.context');
 			const timeout = settings.get('maximo.timeout');
+			const ca = settings.get("maximo.customCA");
 
 			// if the last user doesn't match the current user then request the password.
 			if (lastUser && lastUser !== userName) {
