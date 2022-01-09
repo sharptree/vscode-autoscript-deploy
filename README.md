@@ -11,15 +11,16 @@ After installation you must provide connection details for your target instance 
 | Property      | Description |
 | :---          | :----       |
 | Allow Untrusted Certs        | When checked, ignores SSL validation rules.|
-| Authentication Type | The type of authentication used by the target Maximo instance. OIDC is the authentication mechanism for MAS8.|
 | Context | The part of the URL that follows the hostname, by default it is `maximo`.|
 | Custom CA | The full chain for the server CA in PEM format. |
 | Extract Location | Directory where extracted files will be stored.|
-| Host | The Maximo host name without the http/s protocol prefix. |
+| Host | The Maximo host name *without* the http/s protocol prefix. |
 | Port | The Maximo port number, 80 for http, 443 for https or your custom port such as 9080.|
 | Timeout | The time in seconds to wait for Maximo to respond.|
 | User | The user that will be used to connect to Maximo. |
 | Use SLL | When checked, SSL will be used, the provided port must be configured for SSL | 
+
+> The Authentication Type setting has been removed and replaced with automatic detection of authentication type.
 
 ## Maximo Configuration
 The very first time you connect to Maximo, this extension will add several required automation scripts to Maximo. To deploy these scripts, the extension requires that you be in the Maximo Administrators group and have access to the `MXSCRIPT` object structure. To perform the configuration, bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Deploy Automation Script`. You will be prompted for a password and then a dialog will be displayed prompting you to configure Maximo.
@@ -163,6 +164,9 @@ To extract the scripts currently deployed to Maximo, bring up the Visual Studio 
 - Initial configuration must be done by a user in the administrative group defined by `ADMINGROUP` `MAXVARS` entry.  Typically this is `MAXADMIN`.
 
 ## Release Notes
+### 1.0.18
+- Replaced Authentication Type setting with automatic detection of the authentication type.
+  
 ### 1.016/17
 - Fixed formatting of the Automation Scripts table.
 - Fixed untrusted SSL handling.

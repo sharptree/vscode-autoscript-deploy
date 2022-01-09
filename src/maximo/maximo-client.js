@@ -61,30 +61,13 @@ export default class MaximoClient {
         this.client.interceptors.request.use(function (request) {
             // If the requested URL is the login endpoint, the inject the auth headers.            
             if (request.url === "login") {
-                if (this.config.authType == 'MAXAUTH') {
-                    // Send the maxauth header
-                    request.headers.common['maxauth'] = this.config.maxauth;
-                } else if (this.config.authType == 'OIDC') {
-                    request.validateStatus = function (status) {
-                        return status == 200 || status == 302;
-                    }
-                    request.maxRedirects = 0;
-                    request.auth = { 'username': this.config.username, 'password': this.config.password };
-                    request.headers.common['maxauth'] = this.config.maxauth;
-                } else {
-                    // Configure support for HTTP Basic authentication
-                    request.auth = { 'username': config.username, 'password': config.password };
-                }
-            } else if (request.url === this.config.formLoginURL) {
-                // add the x-www-form-urlencoded header
-                request.headers['content-type'] = 'application/x-www-form-urlencoded';
+
+                this._addAuthHeaders(request);
+
+                request.maxRedirects = 0;
                 request.validateStatus = function (status) {
                     return status == 200 || status == 302;
                 }
-                request.maxRedirects = 0;
-
-                request.data = `j_username=${this.config.username}&j_password=${this.config.password}`;
-
             } else {
                 // // Add the x-public-uri header to ensure Maximo response URI's are properly addressed for external access.
                 // // https://www.ibm.com/docs/en/memas?topic=imam-downloading-work-orders-by-using-maximo-mxapiwodetail-api
@@ -100,28 +83,24 @@ export default class MaximoClient {
             return request;
         }.bind(this));
 
-        this.client.interceptors.response.use(
-            function (response) {
-                const cookies = response.headers['set-cookie'];
-                if (cookies) {
-                    let parsedCookies;
+        this.client.interceptors.response.use(function (response) {
+            const cookies = response.headers['set-cookie'];
+            if (cookies) {
+                let parsedCookies;
 
-                    if (cookies instanceof Array) {
-                        // @ts-ignore
-                        parsedCookies = cookies.map(Cookie.parse);
-                    } else {
-                        parsedCookies = [Cookie.parse(cookies)];
-                    }
-
-                    parsedCookies.forEach((cookie) => {
-                        this.jar.setCookieSync(cookie, cookie.url ? cookie.url : response.request.protocol + "//" + response.request.host);
-                    });
+                if (cookies instanceof Array) {
+                    parsedCookies = cookies.map(Cookie.parse);
+                } else {
+                    parsedCookies = [Cookie.parse(cookies)];
                 }
 
-                return response;
-            }.bind(this),
+                parsedCookies.forEach((cookie) => {
+                    this.jar.setCookieSync(cookie, cookie.url ? cookie.url : response.request.protocol + "//" + response.request.host);
+                });
+            }
 
-            // @ts-ignore
+            return response;
+        }.bind(this),
             this._processError.bind(this)
         );
 
@@ -134,72 +113,168 @@ export default class MaximoClient {
     }
 
     async connect() {
-        if (this.config.authType === 'FORM') {
-            // process the Form authentication
-            const maxRedirects = 5;
+        var response = await this.client.post("login");
 
-            var response = await this.client.post(this.config.formLoginURL, { withCredentials: true });
-            if (!response) {
-                throw new MaximoError(this.config.host + " is not responding for Form authentication.");
-            }
+        var maxRedirects = 5;
+
+        if (response.status == 302 && this._isOIDCAuthRedirectResponse(response)) {
+
             var redirectUri = response.headers['location'];
             for (var i = 0; i < maxRedirects; i++) {
                 if (redirectUri == null) {
                     break;
                 }
-                this.jar.getCookiesSync(redirectUri);
-                // make the new request                
+                // this.jar.getCookiesSync(redirectUri);
+
                 response = await this.client.get(redirectUri, {
-                    auth: { 'username': this.config.username, 'password': this.config.password },
                     maxRedirects: 0,
+                    withCredentials: true,
+                    auth: { 'username': this.config.username, 'password': this.config.password },
                     validateStatus: function (status) {
-                        return (status >= 200 && status < 300) || status == 302 || status >= 400;
+                        return status == 200 || status == 302;
                     }
                 });
-
-                redirectUri = response.headers['location'];
+                if (response.status == 302) {
+                    // get the redirect URL from the header 
+                    redirectUri = response.headers['location'];
+                } else {
+                    break;
+                }
             }
 
-            this._responseHandler(response);
-            // return await this.client.post(this.config.formLoginURL, { withCredentials: true }).then(this._responseHandler.bind(this));
-        } else if (this.config.authType === 'OIDC') {
-            // process the OIDC authentication
-            const maxRedirects = 5;
 
-            var response = await this.client.post("login", { withCredentials: true });
+        } else if (response.status == 302 && this._isLTPAFormRedirect(response)) {
+
             var redirectUri = response.headers['location'];
             for (var i = 0; i < maxRedirects; i++) {
                 if (redirectUri == null) {
                     break;
                 }
-                this.jar.getCookiesSync(redirectUri);
-                // make the new request                
-                response = await this.client.get(redirectUri, {
-                    auth: { 'username': this.config.username, 'password': this.config.password },
-                    maxRedirects: 0,
-                    validateStatus: function (status) {
-                        return (status >= 200 && status < 300) || status == 302 || status >= 400;
+
+                if (redirectUri.includes('login.jsp?')) {
+
+                    const headers = {
+                        'content-type': 'application/x-www-form-urlencoded',
                     }
-                });
+                    const data = `j_username=${this.config.username}&j_password=${this.config.password}`;
 
-                redirectUri = response.headers['location'];
-            }
+                    response = await this.client.post(this.config.formLoginURL, data, {
+                        maxRedirects: 0,
+                        headers: headers,
+                        withCredentials: true,
+                        validateStatus: function (status) {
+                            return status == 200 || status == 302;
+                        }
+                    });
 
-            this._responseHandler(response);
+                    await this.client.get(redirectUri);
+                    response = await this.client.post('login');
+                    break;
+                } else if (redirectUri.includes('loginerror.jsp')) {
+                    this._isConnected = false;
+                    throw new LoginFailedError("You cannot log in at this time. Contact the system administrator.");
+                } else {
 
-
-        } else {
-            await this.client.post("login", {
-                withCredentials: true,
-                validateStatus: function (status) {
-                    return false
+                    response = await this.client.post(redirectUri, {
+                        maxRedirects: 0,
+                        withCredentials: true,
+                        validateStatus: function (status) {
+                            return status == 200 || status == 302;
+                        }
+                    });
+                    if (response.status == 302) {
+                        // get the redirect URL from the header 
+                        redirectUri = response.headers['location'];
+                    } else {
+                        break;
+                    }
                 }
-            }).then(this._responseHandler.bind(this)).catch(function (error) {
-                throw error;
-            });;
+            }
 
         }
+        this._responseHandler(response);
     }
+
+    _addAuthHeaders(request) {
+        request.headers.common['maxauth'] = this.config.maxauth;
+        request.auth = { 'username': this.config.username, 'password': this.config.password };
+
+        request.withCredentials = true;
+    }
+
+    _isLTPAFormRedirect(response) {
+        if (!response) {
+            return false;
+        }
+
+        // Check whether this is a redirect response
+        if (response.statusCode < 300 || response.statusCode >= 400) return false;
+
+        const cookies = response.headers['set-cookie'];
+
+        if (cookies) {
+            var parsedCookies;
+            if (cookies instanceof Array) {
+                parsedCookies = cookies.map(Cookie.parse);
+            } else {
+                parsedCookies = [Cookie.parse(cookies)];
+            }
+
+            if (!parsedCookies || parsedCookies.length == 0) {
+                return false;
+            }
+
+            // MAS8 sets matching cookies: WASOidcStateXXXXXX and WASReqURLOidcXXXXXX
+            // This is from specific observation and may need review/revision
+            var wasPostParamName = 'WASPostParam';
+            var wasPostParamCookie = parsedCookies.filter((c) => c.key.toLowerCase().startsWith(wasPostParamName.toLowerCase()));
+            return (wasPostParamCookie || wasPostParamCookie.length > 0);
+
+        } else {
+            return false;
+        }
+    }
+
+    _isOIDCAuthRedirectResponse(response) {
+        if (!response) {
+            return false;
+        }
+
+        // Check whether this is a redirect response
+        if (response.statusCode < 300 || response.statusCode >= 400) return false;
+
+        const cookies = response.headers['set-cookie'];
+
+        if (cookies) {
+            var parsedCookies;
+            if (cookies instanceof Array) {
+                parsedCookies = cookies.map(Cookie.parse);
+            } else {
+                parsedCookies = [Cookie.parse(cookies)];
+            }
+
+            if (!parsedCookies || parsedCookies.length == 0) {
+                return false;
+            }
+
+            // MAS8 sets matching cookies: WASOidcStateXXXXXX and WASReqURLOidcXXXXXX
+            // This is from specific observation and may need review/revision
+            var oidcStateCookieNamePrefix = 'WASOidcState';
+            var oidcStateCookie = parsedCookies.filter((c) => c.key.toLowerCase().startsWith(oidcStateCookieNamePrefix.toLowerCase()));
+            if (!oidcStateCookie || oidcStateCookie.length == 0) return false;
+
+            // determine the identifier for the corresponsing req url cookie name.
+            var stateIdentifier = oidcStateCookie[0].key.substring(oidcStateCookieNamePrefix.length);
+            var oidcReqUrlCookieNamePrefix = 'WASReqURLOidc';
+            var targetCookieName = oidcReqUrlCookieNamePrefix + stateIdentifier;
+
+            // ensure we have a matching req url cookie
+            return parsedCookies.filter((c) => c.key.toLowerCase() == targetCookieName.toLowerCase()).length > 0;
+        } else {
+            return false;
+        }
+    }
+
 
     _responseHandler(response) {
         if (response) {
@@ -214,8 +289,6 @@ export default class MaximoClient {
             } else {
                 this._isConnected = false;
             }
-        } else {
-            throw new MaximoError("The server return an unexpected response.");
         }
     }
 
@@ -674,12 +747,14 @@ export default class MaximoClient {
                     // Return the generic Maximo error
                     return Promise.reject(new MaximoError(message, reasonCode, statusCode));
                 }
+            } else {
+                // If the error is not a Maximo error just pass on the error.
+                return Promise.reject(error);
             }
         } else {
-            // If the error is not a Maxiimo error just pass on the error.
+            // If the error is not a Maximo error just pass on the error.
             return Promise.reject(error);
         }
-
     }
 
     static get Method() {

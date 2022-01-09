@@ -3,7 +3,7 @@
 	"displayName": "maximo-script-deploy",
 	"description": "Maximo Automation Script Deploy",
 	"publisher": "Sharptree",
-	"version": "1.0.17",
+	"version": "1.0.18",
 	"icon": "app-icon.png",
 	"author": {
 		"name": "Jason VenHuizen",
@@ -71,21 +71,6 @@
 					"description": "The timeout in seconds.",
 					"minimum": 0,
 					"maximum": 300
-				},
-				"sharptree.maximo.authenticationType": {
-					"type": "string",
-					"default": "MAXAUTH",
-					"enum": [
-						"MAXAUTH",
-						"BASIC",
-						"FORM",
-						"OIDC"
-					],
-					"enumDescriptions": [
-						"Maximo Authentication Header",
-						"HTTP Basic Authentication",
-						"Maximo Form Authentication"
-					]
 				},
 				"sharptree.maximo.allowUntrustedCerts": {
 					"type": "boolean",

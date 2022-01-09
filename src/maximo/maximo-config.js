@@ -12,9 +12,7 @@ export default class MaximoConfig {
         connectTimeout = 5000,
         responseTimeout = 30000,
         lean = true,
-        authType = MaximoConfig.AuthType.MAXAUTH,
-        ca,
-        cert
+        ca
     }
     ) {
         this.username = username;
@@ -27,9 +25,7 @@ export default class MaximoConfig {
         this.connectTimeout = connectTimeout;
         this.responseTimeout = responseTimeout;
         this.lean = lean;
-        this.authType = authType;
         this.ca = ca;
-        this.cert = cert;
     }
 
     get maxauth() {
@@ -52,15 +48,6 @@ export default class MaximoConfig {
             (((this.port === 443 && this.useSSL) || (this.port === 80 && !this.useSSL)) ? "" : ":" + this.port) +
             "/" +
             this.context + "/j_security_check";
-    }
-
-    static get AuthType() {
-        return {
-            MAXAUTH: "MAXAUTH",
-            BASIC: "BASIC",
-            FORM: "FORM",
-            OIDC: "OIDC",
-        };
     }
 }
 

@@ -33,7 +33,7 @@ export function activate(context) {
 			const userName = settings.get('maximo.user');
 			const useSSL = settings.get('maximo.useSSL');
 			const port = settings.get('maximo.port');
-			const authType = settings.get('maximo.authenticationType')
+
 			const allowUntrustedCerts = settings.get('maximo.allowUntrustedCerts');
 			const maximoContext = settings.get('maximo.context');
 			const timeout = settings.get('maximo.timeout');
@@ -82,7 +82,6 @@ export function activate(context) {
 				context: maximoContext,
 				connectTimeout: timeout * 1000,
 				responseTimeout: timeout * 1000,
-				authType: authType,
 				allowUntrustedCerts: allowUntrustedCerts,
 				ca: ca
 			});
@@ -177,7 +176,6 @@ export function activate(context) {
 			const userName = settings.get('maximo.user');
 			const useSSL = settings.get('maximo.useSSL');
 			const port = settings.get('maximo.port');
-			const authType = settings.get('maximo.authenticationType')
 			const allowUntrustedCerts = settings.get('maximo.allowUntrustedCerts');
 			const maximoContext = settings.get('maximo.context');
 			const timeout = settings.get('maximo.timeout');
@@ -227,7 +225,6 @@ export function activate(context) {
 				context: maximoContext,
 				connectTimeout: timeout * 1000,
 				responseTimeout: timeout * 1000,
-				authType: authType,
 				allowUntrustedCerts: allowUntrustedCerts,
 				ca: ca
 			});
