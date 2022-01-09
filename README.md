@@ -40,8 +40,9 @@ The extension is now ready to deploy automation scripts. This process is only fo
 
 ### Maximo Configuration Details
 As part of the configuration, an integration object named `SHARPTREE_UTILS` is created and the automation scripts listed below are also created.
-| Script | Description |
-| :--     | :--         |
+
+| Script        | Description |
+| :---          | :----       |
 | SHARPTREE.AUTOSCRIPT.DEPLOY | The primary script used for deploying and managing automation scripts. |
 | SHARPTREE.AUTOSCRIPT.DEPLOY.HISTORY | Created after the first script is deployed. Contains a JSON with a history of all scripts deployed. |
 | SHARPTREE.AUTOSCRIPT.FILBERT | Script for parsing Python scripts to a abstract structure tree (AST) to extract the embedded configuration JSON. |
@@ -162,7 +163,8 @@ To extract the scripts currently deployed to Maximo, bring up the Visual Studio 
 - Initial configuration must be done by a user in the administrative group defined by `ADMINGROUP` `MAXVARS` entry.  Typically this is `MAXADMIN`.
 
 ## Release Notes
-### 1.016
+### 1.016/17
+- Fixed formatting of the Automation Scripts table.
 - Fixed untrusted SSL handling.
 - Added custom CA setting and handling.
 
