@@ -18,7 +18,7 @@ After installation you must provide connection details for your target instance 
 | Port | The Maximo port number, 80 for http, 443 for https or your custom port such as 9080.|
 | Timeout | The time in seconds to wait for Maximo to respond.|
 | User | The user that will be used to connect to Maximo. |
-| Use SLL | When checked, SSL will be used, the provided port must be configured for SSL | 
+| Use SSL | When checked, SSL will be used, the provided port must be configured for SSL | 
 
 > The Authentication Type setting has been removed and replaced with automatic detection of authentication type.
 
@@ -168,6 +168,9 @@ To extract the scripts currently deployed to Maximo, bring up the Visual Studio 
 - Initial configuration must be done by a user in the administrative group defined by `ADMINGROUP` `MAXVARS` entry.  Typically this is `MAXADMIN`.
 
 ## Release Notes
+### 1.0.20
+- Documentation update.
+- 
 ### 1.0.19
 - Documentation updates.
 - Prettier configuration details for preserving property quotes.
