@@ -55,6 +55,10 @@ Each script must define a variable named `scriptConfig` that is a JSON object de
 
 All value names within the `scriptConfig` map to the application label, without spaces and in camel case. For example if the label in the application is `Before Save` the corresponding value name is `beforeSave`.
 
+> Maximo requires that JavaScript objects have quoted properties, as shown below.  If you are using Prettier as your code formatter it may automatically remove these quotes, which will result in errors when deploying.  To retain the quotes go to the Visual Studio Code Settings (`⌘ + ,` or `ctrl + ,`), select `Prettier`, then find the `Quote Props` setting and select the `preserve` option.  
+> 
+> ![Prettier>Quote Props>preserve](./images/prettier_config.png)
+
 ### JavaScript / Nashorn Example
 ```javascript
 main();
@@ -164,10 +168,14 @@ To extract the scripts currently deployed to Maximo, bring up the Visual Studio 
 - Initial configuration must be done by a user in the administrative group defined by `ADMINGROUP` `MAXVARS` entry.  Typically this is `MAXADMIN`.
 
 ## Release Notes
+### 1.0.18/19
+- Documentation updates.
+- Prettier configuration details for preserving property quotes.
 ### 1.0.18
 - Replaced Authentication Type setting with automatic detection of the authentication type.
   
-### 1.016/17
+  
+### 1.0.16/17
 - Fixed formatting of the Automation Scripts table.
 - Fixed untrusted SSL handling.
 - Added custom CA setting and handling.
