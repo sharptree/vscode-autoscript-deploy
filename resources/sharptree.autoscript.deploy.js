@@ -335,6 +335,15 @@ function deployScript(scriptSource, language) {
                 log_error("Error saving script configuration history." + JSON.stringify(error));
             }
 
+            if (scriptConfig.onDeploy) {
+                var deployedScript = service.invokeScript(scriptConfig.autoscript.toUpperCase());
+                if (deployedScript[scriptConfig.onDeploy]) {
+                    deployedScript[scriptConfig.onDeploy]();
+                } else {
+                    log_error("The onDeploy function " + scriptConfig.onDeploy + " does not exist in the deployed script " + scriptConfig.autoscript.toUpperCase());
+                }
+            }
+
         } finally {
             close(autoScriptSet);
         }
