@@ -1,6 +1,12 @@
 // @ts-nocheck
 RESTRequest = Java.type("com.ibm.tivoli.oslc.RESTRequest");
 
+RuntimeException = Java.type("java.lang.RuntimeException");
+System = Java.type("java.lang.System");
+
+URLDecoder = Java.type("java.net.URLDecoder");
+StandardCharsets = Java.type("java.nio.charset.StandardCharsets");
+
 MboConstants = Java.type("psdi.mbo.MboConstants");
 SqlFormat = Java.type("psdi.mbo.SqlFormat");
 MXServer = Java.type("psdi.server.MXServer");
@@ -8,8 +14,6 @@ MXServer = Java.type("psdi.server.MXServer");
 MXException = Java.type("psdi.util.MXException");
 MXAccessException = Java.type("psdi.util.MXAccessException");
 MXApplicationException = Java.type("psdi.util.MXApplicationException");
-RuntimeException = Java.type("java.lang.RuntimeException");
-System = Java.type("java.lang.System");
 
 MXLoggerFactory = Java.type("psdi.util.logging.MXLoggerFactory");
 
@@ -496,7 +500,7 @@ function getRequestScriptName() {
         return null;
     }
 
-    return action.toLowerCase();
+    return URLDecoder.decode(action.toLowerCase(), StandardCharsets.UTF_8.name());
 }
 
 

@@ -168,9 +168,12 @@ To extract the scripts currently deployed to Maximo, bring up the Visual Studio 
 - Initial configuration must be done by a user in the administrative group defined by `ADMINGROUP` `MAXVARS` entry.  Typically this is `MAXADMIN`.
 
 ## Release Notes
+### 1.0.21
+- Fixed error when extracting scripts with spaces in the name.
+
 ### 1.0.20
 - Documentation update.
-- 
+  
 ### 1.0.19
 - Documentation updates.
 - Prettier configuration details for preserving property quotes.
