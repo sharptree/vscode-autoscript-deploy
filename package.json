@@ -3,9 +3,10 @@
 	"displayName": "Maximo Script Deploy",
 	"description": "An extension for deploying Maximo automation scripts from Visual Studio Code.",
 	"publisher": "Sharptree",
-	"version": "1.0.23",
+	"version": "1.0.24",
 	"galleryBanner": {
-		"color": "#372063"
+		"color": "#372063",
+		"theme": "dark"
 	},
 	"icon": "app-icon.png",
 	"author": {

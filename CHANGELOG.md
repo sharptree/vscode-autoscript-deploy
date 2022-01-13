@@ -1,4 +1,7 @@
 # Release Notes
+## 1.0.24
+- Change to dark theme.
+  
 ## 1.0.23
 - Documentation edits.
 - Updated icon.
