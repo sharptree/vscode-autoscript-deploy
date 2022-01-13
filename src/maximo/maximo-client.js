@@ -31,8 +31,8 @@ export default class MaximoClient {
         // keep a reference to the config for later use.
         this.config = config;
 
-        this.requiredScriptVersion = '1.8.0';
-        this.currentScriptVersion = '1.8.0';
+        this.requiredScriptVersion = '1.9.0';
+        this.currentScriptVersion = '1.9.0';
 
         if (config.ca) {
             https.globalAgent.options.ca = config.ca;
@@ -470,9 +470,6 @@ export default class MaximoClient {
 
         let source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.deploy.js')).toString();
         await this._installOrUpdateScript('sharptree.autoscript.deploy', 'Sharptree Automation Script Deploy Script', source, progress, 40);
-
-        source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.filbert.js')).toString();
-        await this._installOrUpdateScript('sharptree.autoscript.filbert', 'Sharptree Automation Script Python Parser', source, progress, 60);
 
         source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.store.js')).toString();
         await this._installOrUpdateScript('sharptree.autoscript.store', 'Sharptree Automation Script Storage Script', source, progress, 80);

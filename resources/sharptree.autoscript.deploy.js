@@ -443,34 +443,46 @@ function isInAdminGroup() {
 
 function getConfigFromScript(scriptSource, language) {
     if (scriptSource) {
-        var ast;
-        try {
-            ast = language === 'python' ? service.invokeScript("SHARPTREE.AUTOSCRIPT.FILBERT").parse(scriptSource) : parse(scriptSource);
-        } catch (error) {
-            log_error(JSON.stringify(error))
-            throw new ScriptError("parsing_error", "Error parsing script, please see log for details.");
-        }
-        if (ast.type === "Program" && ast.body) {
-            var result;
-            ast.body.forEach(function (element) {
-                if (element.type === "VariableDeclaration") {
-                    if (element.declarations) {
-                        element.declarations.forEach(function (declaration) {
-                            if (declaration.id && declaration.id.type === "Identifier" && declaration.id.name === "scriptConfig") {
-                                result = astToJavaScript(declaration.init);
-                            }
-                        });
-                    }
-                }
-            });
-
-            if (result) {
-                return result;
+        if (language === 'python' || language === 'jython') {
+            var regex = / *scriptConfig.*"""((.|\n|\r)*)"""/gm;
+            var found = scriptSource.match(regex);
+            if (found.length == 1) {
+                var config = found[0];
+                config = config.trim().substring(config.indexOf("{"), config.length - 3);
+                return JSON.parse(config)
             } else {
                 throw new ScriptError("config_not_found", "Configuration variable scriptConfig was not found in the script, cannot deploy the script without a config.");
             }
         } else {
-            throw new ScriptError("script_wrong_type", "The script must be of type Program and have a body to be deployed.");
+            var ast;
+            try {
+                ast = parse(scriptSource);
+            } catch (error) {
+                log_error(JSON.stringify(error))
+                throw new ScriptError("parsing_error", "Error parsing script, please see log for details.");
+            }
+            if (ast.type === "Program" && ast.body) {
+                var result;
+                ast.body.forEach(function (element) {
+                    if (element.type === "VariableDeclaration") {
+                        if (element.declarations) {
+                            element.declarations.forEach(function (declaration) {
+                                if (declaration.id && declaration.id.type === "Identifier" && declaration.id.name === "scriptConfig") {
+                                    result = astToJavaScript(declaration.init);
+                                }
+                            });
+                        }
+                    }
+                });
+
+                if (result) {
+                    return result;
+                } else {
+                    throw new ScriptError("config_not_found", "Configuration variable scriptConfig was not found in the script, cannot deploy the script without a config.");
+                }
+            } else {
+                throw new ScriptError("script_wrong_type", "The script must be of type Program and have a body to be deployed.");
+            }
         }
     } else {
         throw new ScriptError("no_script_source", "The script source is required to deploy the script.");

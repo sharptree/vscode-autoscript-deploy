@@ -1,4 +1,7 @@
 # Release Notes
+## 1.0.26
+- Replace Filbert Python/Jython parsing library with regex to extract the config string.
+
 ## 1.0.25
 - Allow for only sending the Maxauth header.
   
