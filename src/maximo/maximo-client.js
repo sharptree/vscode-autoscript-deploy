@@ -1,7 +1,5 @@
-// @ts-nocheck
 import axios from 'axios';
 import https from 'https';
-import { wrapper } from 'axios-cookiejar-support';
 import {
     CookieJar,
     Cookie
