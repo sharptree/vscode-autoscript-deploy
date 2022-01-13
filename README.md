@@ -15,6 +15,7 @@ After installation you must provide connection details for your target instance 
 | Custom CA | The full chain for the server CA in PEM format. |
 | Extract Location | Directory where extracted files will be stored.|
 | Host | The Maximo host name *without* the http/s protocol prefix. |
+| Maxauth Only | Both Maxauth and Basic headers are usually sent for login, however on WebLogic if Basic fails the Maxauth header is ignored. When checked, only the Maxauth header is sent. |
 | Port | The Maximo port number, 80 for http, 443 for https or your custom port such as 9080.|
 | Timeout | The time in seconds to wait for Maximo to respond.|
 | User | The user that will be used to connect to Maximo. |

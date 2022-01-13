@@ -38,6 +38,7 @@ export function activate(context) {
 			const maximoContext = settings.get('maximo.context');
 			const timeout = settings.get('maximo.timeout');
 			const ca = settings.get("maximo.customCA");
+			const maxauthOnly = settings.get("maximo.maxauthOnly");
 
 			// if the last user doesn't match the current user then request the password.
 			if (lastUser && lastUser !== userName) {
@@ -83,7 +84,8 @@ export function activate(context) {
 				connectTimeout: timeout * 1000,
 				responseTimeout: timeout * 1000,
 				allowUntrustedCerts: allowUntrustedCerts,
-				ca: ca
+				ca: ca,
+				maxauthOnly: maxauthOnly
 			});
 
 			let client;
@@ -181,6 +183,7 @@ export function activate(context) {
 			const timeout = settings.get('maximo.timeout');
 			const extractLocation = settings.get('maximo.extractLocation');
 			const ca = settings.get("maximo.customCA");
+			const maxauthOnly = settings.get("maximo.maxauthOnly");
 
 			// if the last user doesn't match the current user then request the password.
 			if (lastUser && lastUser !== userName) {
@@ -226,7 +229,8 @@ export function activate(context) {
 				connectTimeout: timeout * 1000,
 				responseTimeout: timeout * 1000,
 				allowUntrustedCerts: allowUntrustedCerts,
-				ca: ca
+				ca: ca,
+				maxauthOnly: maxauthOnly
 			});
 
 			let client;

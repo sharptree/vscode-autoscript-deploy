@@ -1,4 +1,7 @@
 # Release Notes
+## 1.0.25
+- Allow for only sending the Maxauth header.
+  
 ## 1.0.24
 - Change to dark theme.
   

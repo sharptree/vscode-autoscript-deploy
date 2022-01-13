@@ -194,8 +194,11 @@ export default class MaximoClient {
     }
 
     _addAuthHeaders(request) {
+
         request.headers.common['maxauth'] = this.config.maxauth;
-        request.auth = { 'username': this.config.username, 'password': this.config.password };
+        if (!this.config.maxauthOnly) {
+            request.auth = { 'username': this.config.username, 'password': this.config.password };
+        }
 
         request.withCredentials = true;
     }

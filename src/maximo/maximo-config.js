@@ -12,7 +12,8 @@ export default class MaximoConfig {
         connectTimeout = 5000,
         responseTimeout = 30000,
         lean = true,
-        ca
+        ca,
+        maxauthOnly = false,
     }
     ) {
         this.username = username;
@@ -26,6 +27,7 @@ export default class MaximoConfig {
         this.responseTimeout = responseTimeout;
         this.lean = lean;
         this.ca = ca;
+        this.maxauthOnly = maxauthOnly;
     }
 
     get maxauth() {
