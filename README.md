@@ -55,6 +55,8 @@ Each script must define a variable named `scriptConfig` that is a JSON object de
 
 All value names within the `scriptConfig` map to the application label, without spaces and in camel case. For example if the label in the application is `Before Save` the corresponding value name is `beforeSave`.
 
+An `onDeploy` property can be defined with a value specifying the name of a function in the deployed script that will be called when the script is deployed.  This provides the opportunity to perform configurations in addition to the standard script configurations. Two global variables are provided, the `service` variable, which is the standard the standard com.ibm.tivoli.maximo.script.Service class and the `onDeploy` variable, which is a `boolean` value that indicates that the `onDeploy` function is being invoked.  To execute the `onDeploy` function, the whole script must be evaluated and the `onDeploy` variable allows skipping execution during this evaluation.
+
 > Maximo requires that JavaScript objects have quoted properties, as shown below.  If you are using Prettier as your code formatter it may automatically remove these quotes, which will result in errors when deploying.  To retain the quotes go to the Visual Studio Code Settings (`⌘ + ,` or `ctrl + ,`), select `Prettier`, then find the `Quote Props` setting and select the `preserve` option.  
 > 
 > ![Prettier>Quote Props>preserve](./images/prettier_config.png)
@@ -168,6 +170,9 @@ To extract the scripts currently deployed to Maximo, bring up the Visual Studio 
 - Initial configuration must be done by a user in the administrative group defined by `ADMINGROUP` `MAXVARS` entry.  Typically this is `MAXADMIN`.
 
 ## Release Notes
+### 1.0.22
+- Add feature for defining an `onDeploy` function that will be called when the script is deployed.
+
 ### 1.0.21
 - Fixed error when extracting scripts with spaces in the name.
 
