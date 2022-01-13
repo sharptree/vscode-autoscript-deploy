@@ -7,11 +7,26 @@ MboConstants = Java.type("psdi.mbo.MboConstants");
 SqlFormat = Java.type("psdi.mbo.SqlFormat");
 MXServer = Java.type("psdi.server.MXServer");
 
-MXException = Java.type("psdi.util.MXException");
 MXAccessException = Java.type("psdi.util.MXAccessException");
 MXApplicationException = Java.type("psdi.util.MXApplicationException");
+MXException = Java.type("psdi.util.MXException");
+Version = Java.type("psdi.util.Version");
+
+ScriptBinding = Java.type("com.ibm.tivoli.maximo.script.ScriptBinding");
+
+ScriptContext = Java.type("javax.script.ScriptContext");
+ScriptEngineManager = Java.type("javax.script.ScriptEngineManager");
+SimpleScriptContext = Java.type("javax.script.SimpleScriptContext");
+ScriptException = Java.type("javax.script.ScriptException");
+
+Integer = Java.type("java.lang.Integer");
 RuntimeException = Java.type("java.lang.RuntimeException");
 System = Java.type("java.lang.System");
+
+HashMap = Java.type("java.util.HashMap");
+
+NoSuchMethodException = Java.type("java.lang.NoSuchMethodException");
+
 
 // Global input variables
 scriptSource = "";
@@ -335,6 +350,40 @@ function deployScript(scriptSource, language) {
                 log_error("Error saving script configuration history." + JSON.stringify(error));
             }
 
+            var ctx = new HashMap();
+            if (scriptConfig.onDeploy) {
+
+                var manager = new ScriptEngineManager();
+                var engine = manager.getEngineByName(language ? language : "nashorn");
+
+                var bindings = engine.createBindings();
+
+                if (!bindings.put) {
+                    var ctx = new HashMap();
+                    ctx.put("service", service);
+                    ctx.put("onDeploy", true);
+                    bindings = new ScriptBinding(ctx);
+                } else {
+                    bindings.put("service", service);
+                    bindings.put("onDeploy", true);
+                }
+
+                engine.getContext().setBindings(bindings, ScriptContext.GLOBAL_SCOPE);
+
+                engine.eval(scriptSource);
+
+                try {
+                    engine.invokeFunction(scriptConfig.onDeploy);
+                } catch (error) {
+                    if (error instanceof NoSuchMethodException) {
+                        throw new ScriptError("ondeploy_function_notfound", "The onDeploy function \"" + scriptConfig.onDeploy + "\" was not found.");
+                    } else if (error instanceof ScriptException) {
+                        throw new ScriptError("error_ondeploy", "Error calling onDeploy function \"" + scriptConfig.onDeploy + "\" :" + error.message);
+                    }
+                    System.out.println(error);
+                }
+            }
+
         } finally {
             close(autoScriptSet);
         }
@@ -394,7 +443,13 @@ function isInAdminGroup() {
 
 function getConfigFromScript(scriptSource, language) {
     if (scriptSource) {
-        var ast = language === 'python' ? service.invokeScript("SHARPTREE.AUTOSCRIPT.FILBERT").parse(scriptSource) : parse(scriptSource);
+        var ast;
+        try {
+            ast = language === 'python' ? service.invokeScript("SHARPTREE.AUTOSCRIPT.FILBERT").parse(scriptSource) : parse(scriptSource);
+        } catch (error) {
+            log_error(JSON.stringify(error))
+            throw new ScriptError("parsing_error", "Error parsing script, please see log for details.");
+        }
         if (ast.type === "Program" && ast.body) {
             var result;
             ast.body.forEach(function (element) {
