@@ -3,7 +3,7 @@
 	"displayName": "Maximo Script Deploy",
 	"description": "An extension for deploying Maximo automation scripts from Visual Studio Code.",
 	"publisher": "Sharptree",
-	"version": "1.0.26",
+	"version": "1.1.0",
 	"galleryBanner": {
 		"color": "#372063",
 		"theme": "dark"
@@ -29,7 +29,8 @@
 	},
 	"activationEvents": [
 		"onCommand:maximo-script-deploy.extract",
-		"onCommand:maximo-script-deploy.deploy"
+		"onCommand:maximo-script-deploy.deploy",
+		"onCommand:maximo-script-deploy.compare"
 	],
 	"main": "./dist/extension",
 	"contributes": {
@@ -99,6 +100,10 @@
 			{
 				"command": "maximo-script-deploy.extract",
 				"title": "Extract Automation Scripts"
+			},
+			{
+				"command": "maximo-script-deploy.compare",
+				"title": "Compare Automation Script"
 			}
 		],
 		"keybindings": [

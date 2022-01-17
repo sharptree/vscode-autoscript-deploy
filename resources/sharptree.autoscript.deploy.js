@@ -58,15 +58,44 @@ function main() {
             if (!scriptSource) {
                 throw new ScriptError("no_script_source", "A script source must be the request body.");
             }
+
+            if (action.startsWith("source") && action.split("/").length == 2) {
+                scriptSource = requestBody;
+                if (!scriptSource) {
+                    throw new ScriptError("no_script_source", "A script source must be the request body.");
+                }
+
+                var scriptConfig = getConfigFromScript(scriptSource, action.split("/")[1]);
+
+                var sqlf = new SqlFormat("autoscript = :1");
+                sqlf.setObject(1, "AUTOSCRIPT", "AUTOSCRIPT", scriptConfig.autoscript);
+                var autoScriptSet;
+                try {
+                    autoScriptSet = MXServer.getMXServer().getMboSet("AUTOSCRIPT", userInfo);
+                    autoScriptSet.setWhere(sqlf.format());
+                    if (!autoScriptSet.isEmpty()) {
+                        response = {};
+                        response.source = autoScriptSet.getMbo(0).getString("SOURCE");
+                        responseBody = JSON.stringify(response);
+                        return;
+                    } else {
+                        response = {};
+                        response.source = "";
+                        responseBody = JSON.stringify(response);
+                        return;
+                    }
+                } finally {
+                    close(autoScriptSet);
+                }
+            }
         } else if (httpMethod === 'GET') {
-
             action = getRequestAction();
-
-            if (action.startsWith('version')) {
-                var response = { "version": getScriptVersion('SHARPTREE.AUTOSCRIPT.DEPLOY') };
-                responseBody = JSON.stringify(response);
-
-                return;
+            if (action) {
+                if (action.startsWith('version')) {
+                    var response = { "version": getScriptVersion('SHARPTREE.AUTOSCRIPT.DEPLOY') };
+                    responseBody = JSON.stringify(response);
+                    return;
+                }
             }
         }
 
@@ -388,7 +417,7 @@ function deployScript(scriptSource, language) {
             close(autoScriptSet);
         }
     } else {
-        throw new ScriptError("config_not_found", "Configuration variable scriptConfig was not found in the script, cannot deploy the script without a config.");
+        throw new ScriptError("config_not_found", "Configuration variable scriptConfig was not found in the script.");
     }
 }
 
@@ -451,7 +480,7 @@ function getConfigFromScript(scriptSource, language) {
                 config = config.trim().substring(config.indexOf("{"), config.length - 3);
                 return JSON.parse(config)
             } else {
-                throw new ScriptError("config_not_found", "Configuration variable scriptConfig was not found in the script, cannot deploy the script without a config.");
+                throw new ScriptError("config_not_found", "Configuration variable scriptConfig was not found in the script.");
             }
         } else {
             var ast;
@@ -478,7 +507,7 @@ function getConfigFromScript(scriptSource, language) {
                 if (result) {
                     return result;
                 } else {
-                    throw new ScriptError("config_not_found", "Configuration variable scriptConfig was not found in the script, cannot deploy the script without a config.");
+                    throw new ScriptError("config_not_found", "Configuration variable scriptConfig was not found in the script.");
                 }
             } else {
                 throw new ScriptError("script_wrong_type", "The script must be of type Program and have a body to be deployed.");

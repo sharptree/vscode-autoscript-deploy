@@ -1,8 +1,10 @@
 // @ts-nocheck
-import { window, commands, workspace, ProgressLocation } from 'vscode';
+import { window, commands, workspace, ProgressLocation, Uri, TextDocumentContentProvider } from 'vscode';
 
 import MaximoConfig from './maximo/maximo-config';
 import MaximoClient from './maximo/maximo-client';
+import ServerSourceProvider from './maximo/provider';
+
 import { validateSettings } from './settings';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -17,6 +19,161 @@ var lastContext;
 const supportedVersions = ['7608', '7609', '76010', '76011', '7610', '7611', '7612', '7613'];
 
 export function activate(context) {
+	let fetchedSource = new Map();
+
+	context.subscriptions.push(workspace.registerTextDocumentContentProvider('vscode-autoscript-deploy', new ServerSourceProvider(fetchedSource)));
+
+	let disposableCompare = commands.registerCommand(
+		"maximo-script-deploy.compare",
+		async function () {
+			// make sure we have all the settings.
+			if (!validateSettings()) {
+				return;
+			}
+
+			const settings = workspace.getConfiguration('sharptree');
+
+			const host = settings.get('maximo.host');
+			const userName = settings.get('maximo.user');
+			const useSSL = settings.get('maximo.useSSL');
+			const port = settings.get('maximo.port');
+
+			const allowUntrustedCerts = settings.get('maximo.allowUntrustedCerts');
+			const maximoContext = settings.get('maximo.context');
+			const timeout = settings.get('maximo.timeout');
+			const ca = settings.get("maximo.customCA");
+			const maxauthOnly = settings.get("maximo.maxauthOnly");
+
+			// if the last user doesn't match the current user then request the password.
+			if (lastUser && lastUser !== userName) {
+				password = null;
+			}
+
+			if (lastHost && lastHost !== host) {
+				password = null;
+			}
+
+			if (lastPort && lastPort !== port) {
+				password = null;
+			}
+
+			if (lastContext && lastContext !== maximoContext) {
+				password = null;
+			}
+
+			if (!password) {
+				password = await window.showInputBox({
+					prompt: `Enter ${userName}'s password`,
+					password: true,
+					validateInput: text => {
+						if (!text || text.trim() === '') {
+							return 'A password is required';
+						}
+					}
+				});
+			}
+
+			// if the password has not been set then just return.
+			if (!password || password.trim() === '') {
+				return;
+			}
+
+			const config = new MaximoConfig({
+				username: userName,
+				password: password,
+				useSSL: useSSL,
+				host: host,
+				port: port,
+				context: maximoContext,
+				connectTimeout: timeout * 1000,
+				responseTimeout: timeout * 1000,
+				allowUntrustedCerts: allowUntrustedCerts,
+				ca: ca,
+				maxauthOnly: maxauthOnly
+			});
+
+			let client;
+			try {
+				client = new MaximoClient(config);
+
+				if (await login(client)) {
+					// Get the active text editor
+					const editor = window.activeTextEditor;
+					if (editor) {
+						let document = editor.document;
+
+						if (document) {
+							let fileName = path.basename(document.fileName);
+							if (fileName.endsWith('.js') || fileName.endsWith('.py')) {
+								// Get the document text
+								const script = document.getText();
+								if (script && script.trim().length > 0) {
+									var result = await window.withProgress({ cancellable: false, title: `Script`, location: ProgressLocation.Notification },
+										async (progress) => {
+											progress.report({ message: `Getting script from the server.`, increment: 0 });
+
+											await new Promise(resolve => setTimeout(resolve, 500));
+											let result = await client.getScriptSource(script, progress, fileName);
+
+											if (result) {
+												if (result.status === 'error') {
+													if (result.message) {
+														window.showErrorMessage(result.message, { modal: true });
+													} else if (result.cause) {
+														window.showErrorMessage(`Error: ${JSON.stringify(result.cause)}`, { modal: true });
+													} else {
+														window.showErrorMessage('An unknown error occurred: ' + JSON.stringify(result), { modal: true });
+													}
+												} else {
+													if (result.source) {
+														progress.report({ increment: 100, message: `Successfully got script from the server.` });
+														await new Promise(resolve => setTimeout(resolve, 2000));
+														let localScript = document.uri;
+														let serverScript = Uri.parse('vscode-autoscript-deploy:' + fileName);
+
+														fetchedSource[serverScript.path] = result.source;
+
+														commands.executeCommand('vscode.diff', localScript, serverScript, "↔ server " + fileName);
+													} else {
+														window.showErrorMessage(`The ${fileName} was not found on ${config.host}.\n\nCheck that the scriptConfig.autoscript value matches a script on the server.`, { modal: true });
+													}
+												}
+											} else {
+												window.showErrorMessage('Did not receive a response from Maximo.', { modal: true });
+											}
+											return result;
+										});
+								} else {
+									window.showErrorMessage('The selected Automation Script cannot be empty.', { modal: true });
+								}
+							} else {
+								window.showErrorMessage('The selected Automation Script must have a Javascript (\'.js\') or Python (\'.py\') file extension.', { modal: true });
+							}
+						} else {
+							window.showErrorMessage('An Automation Script must be selected to compare.', { modal: true });
+						}
+					} else {
+						window.showErrorMessage('An Automation Script must be selected to compare.', { modal: true });
+					}
+				}
+			} catch (error) {
+				if (error && typeof error.message !== 'undefined') {
+					window.showErrorMessage(error.message, { modal: true });
+				} else {
+					window.showErrorMessage('An unexpected error occurred: ' + error, { modal: true });
+				}
+
+			} finally {
+				// if the client exists then disconnect it.
+				if (client) {
+					await client.disconnect().catch((error) => {
+						//do nothing with this
+					});
+				}
+			}
+		}
+	);
+
 
 	let disposableDeploy = commands.registerCommand(
 		"maximo-script-deploy.deploy",
@@ -105,7 +262,6 @@ export function activate(context) {
 								// Get the document text
 								const script = document.getText();
 								if (script && script.trim().length > 0) {
-									await new Promise(resolve => setTimeout(resolve, 500));
 									var result = await window.withProgress({ cancellable: false, title: `Script`, location: ProgressLocation.Notification },
 										async (progress) => {
 											progress.report({ message: `Deploying script ${fileName}`, increment: 0 });
@@ -143,7 +299,6 @@ export function activate(context) {
 					} else {
 						window.showErrorMessage('An Automation Script must be selected to deploy.', { modal: true });
 					}
-
 				}
 			} catch (error) {
 				if (error && typeof error.message !== 'undefined') {
@@ -345,7 +500,8 @@ export function activate(context) {
 			}
 		});
 
-	context.subscriptions.push(disposableDeploy, disposableExtract);
+
+	context.subscriptions.push(disposableDeploy, disposableExtract, disposableCompare);
 
 }
 

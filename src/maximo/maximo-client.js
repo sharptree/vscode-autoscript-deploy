@@ -31,8 +31,8 @@ export default class MaximoClient {
         // keep a reference to the config for later use.
         this.config = config;
 
-        this.requiredScriptVersion = '1.9.0';
-        this.currentScriptVersion = '1.9.0';
+        this.requiredScriptVersion = '1.10.0';
+        this.currentScriptVersion = '1.10.0';
 
         if (config.ca) {
             https.globalAgent.options.ca = config.ca;
@@ -300,6 +300,32 @@ export default class MaximoClient {
         }
     }
 
+    async getScriptSource(script, progress, fileName) {
+        if (!this._isConnected) {
+            await this.connect();
+        }
+
+        let isPython = fileName.endsWith('.py');
+        progress.report({ increment: 10, message: `Getting script from the server.` });
+
+        const options = {
+            url: 'script/sharptree.autoscript.deploy/source/' + (isPython ? '/python' : ''),
+            method: MaximoClient.Method.POST,
+            headers: {
+                'Content-Type': 'text/plain',
+                Accept: 'application/json'
+            },
+            data: script
+        }
+
+        progress.report({ increment: 50, message: `Getting script from the server.` });
+        await new Promise(resolve => setTimeout(resolve, 100));
+        const result = await this.client.request(options);
+
+        progress.report({ increment: 90, message: `Getting script from the server.` });
+        return result.data;
+    }
+
     async postScript(script, progress, fileName) {
 
         if (!this._isConnected) {
@@ -314,7 +340,7 @@ export default class MaximoClient {
             url: 'script/sharptree.autoscript.deploy' + (isPython ? '/python' : ''),
             method: MaximoClient.Method.POST,
             headers: {
-                'Content-Type': 'ext/plain',
+                'Content-Type': 'text/plain',
                 Accept: 'application/json'
             },
             data: script

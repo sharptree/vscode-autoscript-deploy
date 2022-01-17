@@ -416,6 +416,8 @@ function extractScriptConfiguration(autoScript) {
             } else if (launchPoint.launchPointType.toUpperCase() === 'ACTION') {
                 if (!scriptLaunchPoint.isNull("ACTIONNAME")) {
                     launchPoint.actionName = scriptLaunchPoint.getString("ACTIONNAME");
+                } else {
+                    launchPoint.actionName = scriptLaunchPoint.getString("LAUNCHPOINTNAME");
                 }
                 if (!scriptLaunchPoint.isNull("OBJECTNAME")) {
                     launchPoint.objectName = scriptLaunchPoint.getString("OBJECTNAME");

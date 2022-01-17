@@ -1,4 +1,8 @@
 # Release Notes
+## 1.1.0
+- Add source comparison with the server.
+- Fix action name missing from extract.
+    
 ## 1.0.26
 - Replace Filbert Python/Jython parsing library with regex to extract the config string.
 

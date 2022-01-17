@@ -163,6 +163,11 @@ To extract the scripts currently deployed to Maximo, bring up the Visual Studio 
 
 ![Extract Automation Script](images/palete_password_extract_example.gif)
 
+## Compare Automation Script
+To compare the current script with the script deployed on the server, bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Compare Automation Script`. The extension will query Maximo for the current script that is in the editor based on the `scriptConfig` variable and open a new window, providing the Visual Studio Code diff editor.
+
+![Compare Script](images/palete_compare_example.gif)
+
 ## Requirements
 
 - Maximo 7.6.0.8 or higher, Maximo Application Suite 8 is supported.
