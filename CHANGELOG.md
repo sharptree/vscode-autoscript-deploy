@@ -1,4 +1,7 @@
 # Release Notes
+## 1.1.1 
+- Fixed missing check for action
+  
 ## 1.1.0
 - Add source comparison with the server.
 - Fix action name missing from extract.

@@ -59,7 +59,7 @@ function main() {
                 throw new ScriptError("no_script_source", "A script source must be the request body.");
             }
 
-            if (action.startsWith("source") && action.split("/").length == 2) {
+            if (action && action.startsWith("source") && action.split("/").length == 2) {
                 scriptSource = requestBody;
                 if (!scriptSource) {
                     throw new ScriptError("no_script_source", "A script source must be the request body.");
