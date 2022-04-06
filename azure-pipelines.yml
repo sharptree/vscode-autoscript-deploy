@@ -10,7 +10,7 @@ pool:
   vmImage: ubuntu-latest
 
 variables:
-  - group: archiva-access
+  - group: vscode-autoscript-deploy
 
 steps:
   - task: NodeTool@0
