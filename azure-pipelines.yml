@@ -10,13 +10,13 @@ pool:
   vmImage: ubuntu-latest
 
 variables:
-  - group: vscode-autoscript-deploy
+  - group: archiva-access
 
 steps:
   - task: NodeTool@0
     inputs:
-      versionSpec: "16.x"
-    displayName: "Install Node.js"
+      versionSpec: '16.x'
+    displayName: 'Install Node.js'
 
   - script: npm install
     displayName: Install NPM
@@ -65,7 +65,7 @@ steps:
 
       vsce publish -p $(marketplace_pat) --packagePath maximo-script-deploy-$PACKAGE_VERSION.vsix
 
-    displayName: "Publish to Marketplace"
+    displayName: 'Publish to Marketplace'
 
   - bash: |
       git config --local user.name "Jason VenHuizen"
@@ -81,4 +81,4 @@ steps:
 
       git push github release/$PACKAGE_VERSION
 
-    displayName: "Publish GitHub"
+    displayName: 'Publish GitHub'
