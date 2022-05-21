@@ -8,18 +8,19 @@ The extension allows developers to describe the automation script through the us
 ## Visual Studio Code Settings
 After installation you must provide connection details for your target instance of Maximo. The connection settings are found in the VS Code Settings (`⌘ + ,` or `ctrl + ,`) under the `Maximo` heading. The table below provides a list of the available settings.
 
-| Property      | Description |
-| :---          | :----       |
-| Allow Untrusted Certs        | When checked, ignores SSL validation rules.|
-| Context | The part of the URL that follows the hostname, by default it is `maximo`.|
-| Custom CA | The full chain for the server CA in PEM format. |
-| Extract Location | Directory where extracted files will be stored.|
-| Host | The Maximo host name *without* the http/s protocol prefix. |
-| Maxauth Only | Both Maxauth and Basic headers are usually sent for login, however on WebLogic if Basic fails the Maxauth header is ignored. When checked, only the Maxauth header is sent. |
-| Port | The Maximo port number, 80 for http, 443 for https or your custom port such as 9080.|
-| Timeout | The time in seconds to wait for Maximo to respond.|
-| User | The user that will be used to connect to Maximo. |
-| Use SSL | When checked, SSL will be used, the provided port must be configured for SSL | 
+| Property                  | Description                                                                                                                                                                   |
+| :-------------------------| :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Allow Untrusted Certs     | When checked, ignores SSL validation rules.                                                                                                                                   |
+| API Key                   | The Maximo API key that will be used to access Maximo. If provided, the user name and password are ignored if configured.                                                     |
+| Context                   | The part of the URL that follows the hostname, by default it is `maximo`.                                                                                                     |
+| Custom CA                 | The full chain for the server CA in PEM format.                                                                                                                               |
+| Extract Location          | Directory where extracted files will be stored.                                                                                                                               |
+| Host                      | The Maximo host name *without* the http/s protocol prefix.                                                                                                                    |
+| Maxauth Only              | Both Maxauth and Basic headers are usually sent for login, however on WebLogic if Basic fails the Maxauth header is ignored. When checked, only the Maxauth header is sent.   |
+| Port                      | The Maximo port number, 80 for http, 443 for https or your custom port such as 9080.                                                                                          |
+| Timeout                   | The time in seconds to wait for Maximo to respond.                                                                                                                            |
+| User                      | The user that will be used to connect to Maximo.                                                                                                                              |
+| Use SSL                   | When checked, SSL will be used, the provided port must be configured for SSL                                                                                                  | 
 
 > The Authentication Type setting has been removed and replaced with automatic detection of authentication type.
 
@@ -43,13 +44,13 @@ The extension is now ready to deploy automation scripts. This process is only fo
 ### Maximo Configuration Details
 As part of the configuration, an integration object named `SHARPTREE_UTILS` is created and the automation scripts listed below are also created.
 
-| Script        | Description |
-| :---          | :----       |
-| SHARPTREE.AUTOSCRIPT.DEPLOY | The primary script used for deploying and managing automation scripts. |
-| SHARPTREE.AUTOSCRIPT.DEPLOY.HISTORY | Created after the first script is deployed. Contains a JSON with a history of all scripts deployed. |
-| SHARPTREE.AUTOSCRIPT.FILBERT | Script for parsing Python scripts to a abstract structure tree (AST) to extract the embedded configuration JSON. |
-| SHARPTREE.AUTOSCRIPT.STORE | Script for managing the storage of the deploy history. |
-| SHARPTREE.AUTOSCRIPT.EXTRACT | Script for extracting scripts from Maximo. |
+| Script                                | Description                                                                                                       |
+| :-------------------------------------| :-----------------------------------------------------------------------------------------------------------------|
+| SHARPTREE.AUTOSCRIPT.DEPLOY           | The primary script used for deploying and managing automation scripts.                                            |
+| SHARPTREE.AUTOSCRIPT.DEPLOY.HISTORY   | Created after the first script is deployed. Contains a JSON with a history of all scripts deployed.               |
+| SHARPTREE.AUTOSCRIPT.FILBERT          | Script for parsing Python scripts to a abstract structure tree (AST) to extract the embedded configuration JSON.  |
+| SHARPTREE.AUTOSCRIPT.STORE            | Script for managing the storage of the deploy history.                                                            |
+| SHARPTREE.AUTOSCRIPT.EXTRACT          | Script for extracting scripts from Maximo.                                                                        |
 
 ## scriptConfig Variable
 Each script must define a variable named `scriptConfig` that is a JSON object describing how to deploy the script. The extension uses these values to populate the corresponding values of the `AUTOSCRIPT` and `SCRIPTLAUNCHPOINT` Maximo Business Obejcts. At a minimum the `autoscript` attribute is required, all other attributes are optional.  All configuration attributes are available and are defined by their label name without spaces, in camel case.  The example below provides the basic structure.

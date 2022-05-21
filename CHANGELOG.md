@@ -1,4 +1,7 @@
 # Release Notes
+## 1.2.0
+- Added support for API Key authentication.
+  
 ## 1.1.1 
 - Fixed missing check for action
   
