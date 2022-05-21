@@ -37,12 +37,14 @@ export function activate(context) {
 			const userName = settings.get('maximo.user');
 			const useSSL = settings.get('maximo.useSSL');
 			const port = settings.get('maximo.port');
+			const apiKey = settings.get("maximo.apiKey");
 
 			const allowUntrustedCerts = settings.get('maximo.allowUntrustedCerts');
 			const maximoContext = settings.get('maximo.context');
 			const timeout = settings.get('maximo.timeout');
 			const ca = settings.get("maximo.customCA");
 			const maxauthOnly = settings.get("maximo.maxauthOnly");
+
 
 			// if the last user doesn't match the current user then request the password.
 			if (lastUser && lastUser !== userName) {
@@ -60,24 +62,24 @@ export function activate(context) {
 			if (lastContext && lastContext !== maximoContext) {
 				password = null;
 			}
-
-			if (!password) {
-				password = await window.showInputBox({
-					prompt: `Enter ${userName}'s password`,
-					password: true,
-					validateInput: text => {
-						if (!text || text.trim() === '') {
-							return 'A password is required';
+			if (!apiKey) {
+				if (!password) {
+					password = await window.showInputBox({
+						prompt: `Enter ${userName}'s password`,
+						password: true,
+						validateInput: text => {
+							if (!text || text.trim() === '') {
+								return 'A password is required';
+							}
 						}
-					}
-				});
-			}
+					});
+				}
 
-			// if the password has not been set then just return.
-			if (!password || password.trim() === '') {
-				return;
+				// if the password has not been set then just return.
+				if (!password || password.trim() === '') {
+					return;
+				}
 			}
-
 			const config = new MaximoConfig({
 				username: userName,
 				password: password,
@@ -89,7 +91,8 @@ export function activate(context) {
 				responseTimeout: timeout * 1000,
 				allowUntrustedCerts: allowUntrustedCerts,
 				ca: ca,
-				maxauthOnly: maxauthOnly
+				maxauthOnly: maxauthOnly,
+				apiKey: apiKey,
 			});
 
 			let client;
@@ -196,6 +199,7 @@ export function activate(context) {
 			const timeout = settings.get('maximo.timeout');
 			const ca = settings.get("maximo.customCA");
 			const maxauthOnly = settings.get("maximo.maxauthOnly");
+			const apiKey = settings.get("maximo.apiKey");
 
 			// if the last user doesn't match the current user then request the password.
 			if (lastUser && lastUser !== userName) {
@@ -214,21 +218,23 @@ export function activate(context) {
 				password = null;
 			}
 
-			if (!password) {
-				password = await window.showInputBox({
-					prompt: `Enter ${userName}'s password`,
-					password: true,
-					validateInput: text => {
-						if (!text || text.trim() === '') {
-							return 'A password is required';
+			if (!apiKey) {
+				if (!password) {
+					password = await window.showInputBox({
+						prompt: `Enter ${userName}'s password`,
+						password: true,
+						validateInput: text => {
+							if (!text || text.trim() === '') {
+								return 'A password is required';
+							}
 						}
-					}
-				});
-			}
+					});
+				}
 
-			// if the password has not been set then just return.
-			if (!password || password.trim() === '') {
-				return;
+				// if the password has not been set then just return.
+				if (!password || password.trim() === '') {
+					return;
+				}
 			}
 
 			const config = new MaximoConfig({
@@ -242,7 +248,8 @@ export function activate(context) {
 				responseTimeout: timeout * 1000,
 				allowUntrustedCerts: allowUntrustedCerts,
 				ca: ca,
-				maxauthOnly: maxauthOnly
+				maxauthOnly: maxauthOnly,
+				apiKey: apiKey,
 			});
 
 			let client;
@@ -339,6 +346,7 @@ export function activate(context) {
 			const extractLocation = settings.get('maximo.extractLocation');
 			const ca = settings.get("maximo.customCA");
 			const maxauthOnly = settings.get("maximo.maxauthOnly");
+			const apiKey = settings.get("maximo.apiKey");
 
 			// if the last user doesn't match the current user then request the password.
 			if (lastUser && lastUser !== userName) {
@@ -356,22 +364,23 @@ export function activate(context) {
 			if (lastContext && lastContext !== maximoContext) {
 				password = null;
 			}
-
-			if (!password) {
-				password = await window.showInputBox({
-					prompt: `Enter ${userName}'s password`,
-					password: true,
-					validateInput: text => {
-						if (!text || text.trim() === '') {
-							return 'A password is required';
+			if (!apiKey) {
+				if (!password) {
+					password = await window.showInputBox({
+						prompt: `Enter ${userName}'s password`,
+						password: true,
+						validateInput: text => {
+							if (!text || text.trim() === '') {
+								return 'A password is required';
+							}
 						}
-					}
-				});
-			}
+					});
+				}
 
-			// if the password has not been set then just return.
-			if (!password || password.trim() === '') {
-				return;
+				// if the password has not been set then just return.
+				if (!password || password.trim() === '') {
+					return;
+				}
 			}
 
 			const config = new MaximoConfig({
@@ -385,7 +394,8 @@ export function activate(context) {
 				responseTimeout: timeout * 1000,
 				allowUntrustedCerts: allowUntrustedCerts,
 				ca: ca,
-				maxauthOnly: maxauthOnly
+				maxauthOnly: maxauthOnly,
+				apiKey: apiKey,
 			});
 
 			let client;

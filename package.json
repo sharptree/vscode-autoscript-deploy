@@ -89,6 +89,11 @@
 					"type": "boolean",
 					"default": false,
 					"description": "Do not send Basic authentication header."
+				},
+				"sharptree.maximo.apiKey": {
+					"type": "string",
+					"default": "",
+					"description": "The Maximo API Key."
 				}
 			}
 		},
