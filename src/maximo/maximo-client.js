@@ -57,10 +57,18 @@ export default class MaximoClient {
         });
 
         this.client.interceptors.request.use(function (request) {
-            // If the requested URL is the login endpoint, the inject the auth headers.            
+            // If the requested URL is the login endpoint, the inject the auth headers.              
             if (request.url === "login") {
 
                 this._addAuthHeaders(request);
+
+                if (this.config.apiKey) {
+                    if (request.params) {
+                        request.params.set("apikey", config.apiKey);
+                    } else {
+                        request.params = { "apikey": config.apiKey };
+                    }
+                }
 
                 request.maxRedirects = 0;
                 request.validateStatus = function (status) {
@@ -68,13 +76,19 @@ export default class MaximoClient {
                 }
             } else {
                 // // Add the x-public-uri header to ensure Maximo response URI's are properly addressed for external access.
-                // // https://www.ibm.com/docs/en/memas?topic=imam-downloading-work-orders-by-using-maximo-mxapiwodetail-api
+                // // https://www.ibm.com/docs/en/mema"s?topic=imam-downloading-work-orders-by-using-maximo-mxapiwodetail-api
                 request.headers['x-public-uri'] = this.config.baseURL;
+
+
+                if (this.config.apiKey) {
+                    request.params = { "lean": (this.config.lean ? "true" : "false"), "apikey": this.config.apiKey };
+                } else {
+                    request.params = { "lean": (this.config.lean ? "true" : "false") };
+                }
             }
 
-            request.params = { "lean": (this.config.lean ? "true" : "false") };
-
-            this.jar.getCookies((request.url && request.url.startsWith("http")) ? request.url : request.baseURL, function (err, cookies) {
+            var test = this.jar.getCookiesSync("http//localhost")
+            this.jar.getCookiesSync((request.url && request.url.startsWith("http")) ? request.url : request.baseURL, function (err, cookies) {
                 request.headers['cookie'] = cookies.join('; ');
             });
 
@@ -82,7 +96,9 @@ export default class MaximoClient {
         }.bind(this));
 
         this.client.interceptors.response.use(function (response) {
+
             const cookies = response.headers['set-cookie'];
+
             if (cookies) {
                 let parsedCookies;
 
@@ -93,7 +109,7 @@ export default class MaximoClient {
                 }
 
                 parsedCookies.forEach((cookie) => {
-                    this.jar.setCookieSync(cookie, cookie.url ? cookie.url : response.request.protocol + "//" + response.request.host);
+                    this.jar.setCookieSync(cookie, response.request.protocol + "//" + response.request.host);
                 });
             }
 
@@ -111,8 +127,12 @@ export default class MaximoClient {
     }
 
     async connect() {
-        var response = await this.client.post("login");
-
+        var response
+        if (this.config.apiKey) {
+            response = await this.client.get("whoami");
+        } else {
+            response = await this.client.post("login");
+        }
         var maxRedirects = 5;
 
         if (response.status == 302 && this._isOIDCAuthRedirectResponse(response)) {
@@ -201,6 +221,7 @@ export default class MaximoClient {
         }
 
         request.withCredentials = true;
+
     }
 
     _isLTPAFormRedirect(response) {

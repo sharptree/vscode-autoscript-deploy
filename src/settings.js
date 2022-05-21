@@ -10,6 +10,7 @@ export function validateSettings() {
     const userName = settings.get("maximo.user");
     const useSSL = settings.get("maximo.useSSL");
     const port = settings.get("maximo.port");
+    const apiKey = settings.get("maximo.apiKey");
 
     if (!host) {
         window.showInformationMessage('The Maximo host is missing, set it now?', { modal: true }, ...['Yes']).then((response) => {
@@ -38,8 +39,8 @@ export function validateSettings() {
         return false;
     }
 
-    if (!userName) {
-        window.showInformationMessage('The Maximo user name is missing, set it now?', { modal: true }, ...['Yes']).then((response) => {
+    if (!userName && !apiKey) {
+        window.showInformationMessage('The Maximo user name is missing and an API Key was not provided, set it now?', { modal: true }, ...['Yes']).then((response) => {
             if (response === 'Yes') {
                 commands.executeCommand('workbench.action.openSettings', 'maximo');
             }

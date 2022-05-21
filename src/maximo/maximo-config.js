@@ -14,6 +14,7 @@ export default class MaximoConfig {
         lean = true,
         ca,
         maxauthOnly = false,
+        apiKey,
     }
     ) {
         this.username = username;
@@ -28,6 +29,7 @@ export default class MaximoConfig {
         this.lean = lean;
         this.ca = ca;
         this.maxauthOnly = maxauthOnly;
+        this.apiKey = apiKey;
     }
 
     get maxauth() {
