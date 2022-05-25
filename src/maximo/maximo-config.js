@@ -42,7 +42,7 @@ export default class MaximoConfig {
             this.host +
             (((this.port === 443 && this.useSSL) || (this.port === 80 && !this.useSSL)) ? "" : ":" + this.port) +
             "/" +
-            this.context + "/oslc";
+            this.context + (this.apiKey ? "/api" : "/oslc");
     }
 
     get formLoginURL() {

@@ -107,11 +107,22 @@ function _validateHttpRequestAndGetConfigName() {
         resourceReq = "/" + resourceReq;
     }
 
-    if (!resourceReq.startsWith('/oslc/script/' + service.scriptName)) {
-        throw new ConfigError('invalid_script_invocation', 'The configuration automation script must be invoked as an Http OSLC script request in the form of /oslc/script/' + scriptName + ' .');
+    if (!resourceReq.startsWith('/oslc/script/' + service.scriptName) && !resourceReq.startsWith('/api/script/' + service.scriptName)) {
+        throw new ConfigError('invalid_script_invocation', 'The configuration automation script must be invoked as an Http OSLC script request in the form of /oslc/script/' + scriptName + ' or /api/script/' + scriptName + ' .');
     }
 
-    var baseReqPath = '/oslc/script/' + service.scriptName;
+    var isOSLC = true;
+
+    if (!resourceReq.toLowerCase().startsWith('/oslc/script/' + service.scriptName.toLowerCase())) {
+        if (!resourceReq.toLowerCase().startsWith('/api/script/' + service.scriptName.toLowerCase())) {
+            return null;
+        } else {
+            osOSLC = false;
+        }
+    }
+
+    var baseReqPath = isOSLC ? '/oslc/script/' + service.scriptName : '/api/script/' + service.scriptName;
+
 
     var name = resourceReq.substring(baseReqPath.length);
     if (name.startsWith("/")) {

@@ -31,8 +31,8 @@ export default class MaximoClient {
         // keep a reference to the config for later use.
         this.config = config;
 
-        this.requiredScriptVersion = '1.11.0';
-        this.currentScriptVersion = '1.11.0';
+        this.requiredScriptVersion = '1.12.0';
+        this.currentScriptVersion = '1.12.0';
 
         if (config.ca) {
             https.globalAgent.options.ca = config.ca;
@@ -87,7 +87,6 @@ export default class MaximoClient {
                 }
             }
 
-            var test = this.jar.getCookiesSync("http//localhost")
             this.jar.getCookiesSync((request.url && request.url.startsWith("http")) ? request.url : request.baseURL, function (err, cookies) {
                 request.headers['cookie'] = cookies.join('; ');
             });
@@ -127,12 +126,8 @@ export default class MaximoClient {
     }
 
     async connect() {
-        var response
-        if (this.config.apiKey) {
-            response = await this.client.get("whoami");
-        } else {
-            response = await this.client.post("login");
-        }
+        var response = await this.client.post("login");
+
         var maxRedirects = 5;
 
         if (response.status == 302 && this._isOIDCAuthRedirectResponse(response)) {
