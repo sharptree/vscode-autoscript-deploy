@@ -486,11 +486,17 @@ function getRequestScriptName() {
         resourceReq = "/" + resourceReq;
     }
 
+    var isOSLC = true;
+
     if (!resourceReq.toLowerCase().startsWith('/oslc/script/' + service.scriptName.toLowerCase())) {
-        return null;
+        if (!resourceReq.toLowerCase().startsWith('/api/script/' + service.scriptName.toLowerCase())) {
+            return null;
+        } else {
+            osOSLC = false;
+        }
     }
 
-    var baseReqPath = '/oslc/script/' + service.scriptName;
+    var baseReqPath = isOSLC ? '/oslc/script/' + service.scriptName : '/api/script/' + service.scriptName;
 
     var action = resourceReq.substring(baseReqPath.length);
 
