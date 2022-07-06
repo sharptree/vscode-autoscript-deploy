@@ -17,12 +17,22 @@ import {
     ResourceNotFoundError
 } from './errors';
 
+// @ts-ignore
+import {
+    workspace,
+    window,
+    Uri
+} from 'vscode';
+
 import * as fs from 'fs';
 import * as path from 'path'
 
 import MaximoConfig from './maximo-config';
 
 export default class MaximoClient {
+
+
+
     constructor(config) {
         if (!(config instanceof MaximoConfig)) {
             throw "config parameter must be an instance of MaximoConfig";
@@ -87,6 +97,7 @@ export default class MaximoClient {
                 }
             }
 
+            // @ts-ignore
             this.jar.getCookiesSync((request.url && request.url.startsWith("http")) ? request.url : request.baseURL, function (err, cookies) {
                 request.headers['cookie'] = cookies.join('; ');
             });
@@ -102,6 +113,7 @@ export default class MaximoClient {
                 let parsedCookies;
 
                 if (cookies instanceof Array) {
+                    // @ts-ignore
                     parsedCookies = cookies.map(Cookie.parse);
                 } else {
                     parsedCookies = [Cookie.parse(cookies)];
@@ -119,6 +131,9 @@ export default class MaximoClient {
 
         // When the first created the state of the client is disconnected.
         this._isConnected = false;
+
+        this._currentLogFile = undefined;
+        this._isLogging = false;
     }
 
     get connected() {
@@ -232,6 +247,7 @@ export default class MaximoClient {
         if (cookies) {
             var parsedCookies;
             if (cookies instanceof Array) {
+                // @ts-ignore
                 parsedCookies = cookies.map(Cookie.parse);
             } else {
                 parsedCookies = [Cookie.parse(cookies)];
@@ -265,6 +281,7 @@ export default class MaximoClient {
         if (cookies) {
             var parsedCookies;
             if (cookies instanceof Array) {
+                // @ts-ignore
                 parsedCookies = cookies.map(Cookie.parse);
             } else {
                 parsedCookies = [Cookie.parse(cookies)];
@@ -312,7 +329,11 @@ export default class MaximoClient {
     async disconnect() {
         // we don't care about the response status because if it fails there is nothing we can do about it.
         if (this._isConnected) {
-            await this.client.post("logout", { withCredentials: true });
+            try {
+                await this.client.post("logout", { withCredentials: true });
+            } catch (error) {
+                console.error("Warning disconnecting: " + JSON.stringify(error));
+            }
         }
     }
 
@@ -336,6 +357,7 @@ export default class MaximoClient {
 
         progress.report({ increment: 50, message: `Getting script from the server.` });
         await new Promise(resolve => setTimeout(resolve, 100));
+        // @ts-ignore
         const result = await this.client.request(options);
 
         progress.report({ increment: 90, message: `Getting script from the server.` });
@@ -364,6 +386,7 @@ export default class MaximoClient {
 
         progress.report({ increment: 50, message: `Deploying script ${fileName}` });
         await new Promise(resolve => setTimeout(resolve, 100));
+        // @ts-ignore
         const result = await this.client.request(options);
 
         progress.report({ increment: 90, message: `Deploying script ${fileName}` });
@@ -407,6 +430,7 @@ export default class MaximoClient {
             headers: { common: headers },
         }
         try {
+            // @ts-ignore
             const response = await this.client.request(options);
             if (typeof response.data.version !== 'undefined') {
                 return semver.lt(response.data.version, this.requiredScriptVersion);
@@ -414,7 +438,7 @@ export default class MaximoClient {
                 return true;
             }
         } catch (error) {
-            return true;
+            console.error(error);
         }
 
     }
@@ -452,6 +476,7 @@ export default class MaximoClient {
                 }
             });
 
+            // @ts-ignore
             if (response === 'no-permission') {
                 return response;
             }
@@ -523,6 +548,61 @@ export default class MaximoClient {
 
     }
 
+    // @ts-ignore
+    async startLogging(filePath) {
+        console.log("starting log");
+
+        this._isLogging = true;
+
+        const headers = new Map();
+        headers['Content-Type'] = 'application/json';
+
+        let options = {
+            url: `script/sharptree.autoscript.logging`,
+            method: MaximoClient.Method.GET,
+            responseType: 'stream',
+            headers: { common: headers }
+        }
+
+        try {
+
+            while (this._isLogging) {
+                // @ts-ignore
+                let response = await this.client.request(options);
+
+                await new Promise((resolve, reject) => {
+                    response.data.on('data', (data) => {
+                        if (!this._isLogging) {
+                            resolve();
+                        } else {
+                            fs.appendFileSync(filePath, data);
+
+                        }
+                    });
+
+                    response.data.on('end', () => {
+                        resolve()
+                    })
+
+                    response.data.on('error', () => {
+                        this.stopLogging();
+                        reject()
+                    })
+                });
+            }
+        } catch (error) {
+            console.error(error);
+            // do error handling.
+        }
+    }
+
+    async stopLogging() {
+        this._isLogging = false;
+        this.disconnect();
+        console.log("stopping log");
+    }
+
+
     async getAllScriptNames() {
         const headers = new Map();
         headers['Content-Type'] = 'application/json';
@@ -537,6 +617,7 @@ export default class MaximoClient {
         let hasMorePages = true;
 
         while (hasMorePages) {
+            // @ts-ignore
             let response = await this.client.request(options);
             if (response.data.member.length !== 0) {
                 response.data.member.forEach(member => {
@@ -556,10 +637,12 @@ export default class MaximoClient {
         return scriptNames;
     }
 
+    // @ts-ignore
     async getPageData(url) {
 
     }
 
+    // @ts-ignore
     async extractScript(script) {
 
     }
@@ -575,6 +658,7 @@ export default class MaximoClient {
             headers: { common: headers },
         }
 
+        // @ts-ignore
         let response = await this.client.request(options);
 
         if (response.data.status === 'success') {
@@ -609,6 +693,7 @@ export default class MaximoClient {
                 data: deployScript
             }
 
+            // @ts-ignore
             await this.client.request(options);
 
             progress.report({ increment: increment, message: `Updated ${script}.` });
@@ -631,6 +716,7 @@ export default class MaximoClient {
                 data: deployScript
             }
 
+            // @ts-ignore
             await this.client.request(options);
             progress.report({ increment: increment, message: `Installed ${script}.` });
             await new Promise(resolve => setTimeout(resolve, 500));
@@ -647,6 +733,7 @@ export default class MaximoClient {
             headers: { common: headers },
         }
 
+        // @ts-ignore
         let response = await this.client.request(options);
         if (response.data.member.length !== 0) {
             return response.data.member[0].href;
@@ -730,6 +817,7 @@ export default class MaximoClient {
                 headers: { common: headers },
             }
 
+            // @ts-ignore
             var result = await this.client.request(options);
             return result.data;
 
@@ -740,6 +828,7 @@ export default class MaximoClient {
                     method: MaximoClient.Method.DELETE,
                 }
 
+                // @ts-ignore
                 await this.client.request(options);
             }
         }
@@ -756,7 +845,7 @@ export default class MaximoClient {
                 let reasonCode = data.Error.reasonCode;
                 let statusCode = data.Error.statusCode;
 
-                if (statusCode == 401 && reasonCode === 'BMXAA7901E') {
+                if (statusCode == 401 && (reasonCode === 'BMXAA7901E' || reasonCode === 'BMXAA0021E')) {
                     // BMXAA7901E - You cannot log in at this time. Contact the system administrator.
                     return Promise.reject(new LoginFailedError(message, reasonCode, statusCode));
                 } else if (reasonCode === 'BMXAA2283E') {

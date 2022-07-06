@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { window, commands, workspace, ProgressLocation, Uri, TextDocumentContentProvider } from 'vscode';
+import { window, commands, workspace, ProgressLocation, Uri, StatusBarAlignment } from 'vscode';
 
 import MaximoConfig from './maximo/maximo-config';
 import MaximoClient from './maximo/maximo-client';
@@ -10,15 +10,41 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as crypto from 'crypto';
 
+import * as temp from 'temp'
+
+temp.track();
+
+
 var password;
 var lastUser;
 var lastHost;
 var lastPort;
 var lastContext;
+var logState = false;
+var currentLogPath;
+var textDocumentMonitor;
+
+var logClient;
 
 const supportedVersions = ['7608', '7609', '76010', '76011', '7610', '7611', '7612', '7613'];
 
+var statusBar;
+
+
+
 export function activate(context) {
+
+	const logCommandId = 'maximo-script-deploy.log';
+	context.subscriptions.push(commands.registerCommand(logCommandId, toggleLog));
+
+	// create a new status bar item that we can now manage
+	statusBar = window.createStatusBarItem(StatusBarAlignment.Right, 100);
+	statusBar.command = logCommandId;
+	statusBar.text = `$(book) Maximo Log`;
+	statusBar.show();
+
+	context.subscriptions.push(statusBar);
+
 	let fetchedSource = new Map();
 
 	context.subscriptions.push(workspace.registerTextDocumentContentProvider('vscode-autoscript-deploy', new ServerSourceProvider(fetchedSource)));
@@ -26,74 +52,8 @@ export function activate(context) {
 	let disposableCompare = commands.registerCommand(
 		"maximo-script-deploy.compare",
 		async function () {
-			// make sure we have all the settings.
-			if (!validateSettings()) {
-				return;
-			}
 
-			const settings = workspace.getConfiguration('sharptree');
-
-			const host = settings.get('maximo.host');
-			const userName = settings.get('maximo.user');
-			const useSSL = settings.get('maximo.useSSL');
-			const port = settings.get('maximo.port');
-			const apiKey = settings.get("maximo.apiKey");
-
-			const allowUntrustedCerts = settings.get('maximo.allowUntrustedCerts');
-			const maximoContext = settings.get('maximo.context');
-			const timeout = settings.get('maximo.timeout');
-			const ca = settings.get("maximo.customCA");
-			const maxauthOnly = settings.get("maximo.maxauthOnly");
-
-
-			// if the last user doesn't match the current user then request the password.
-			if (lastUser && lastUser !== userName) {
-				password = null;
-			}
-
-			if (lastHost && lastHost !== host) {
-				password = null;
-			}
-
-			if (lastPort && lastPort !== port) {
-				password = null;
-			}
-
-			if (lastContext && lastContext !== maximoContext) {
-				password = null;
-			}
-			if (!apiKey) {
-				if (!password) {
-					password = await window.showInputBox({
-						prompt: `Enter ${userName}'s password`,
-						password: true,
-						validateInput: text => {
-							if (!text || text.trim() === '') {
-								return 'A password is required';
-							}
-						}
-					});
-				}
-
-				// if the password has not been set then just return.
-				if (!password || password.trim() === '') {
-					return;
-				}
-			}
-			const config = new MaximoConfig({
-				username: userName,
-				password: password,
-				useSSL: useSSL,
-				host: host,
-				port: port,
-				context: maximoContext,
-				connectTimeout: timeout * 1000,
-				responseTimeout: timeout * 1000,
-				allowUntrustedCerts: allowUntrustedCerts,
-				ca: ca,
-				maxauthOnly: maxauthOnly,
-				apiKey: apiKey,
-			});
+			const config = await getMaximoConfig();
 
 			let client;
 			try {
@@ -182,75 +142,7 @@ export function activate(context) {
 		"maximo-script-deploy.deploy",
 		async function () {
 
-			// make sure we have all the settings.
-			if (!validateSettings()) {
-				return;
-			}
-
-			const settings = workspace.getConfiguration('sharptree');
-
-			const host = settings.get('maximo.host');
-			const userName = settings.get('maximo.user');
-			const useSSL = settings.get('maximo.useSSL');
-			const port = settings.get('maximo.port');
-
-			const allowUntrustedCerts = settings.get('maximo.allowUntrustedCerts');
-			const maximoContext = settings.get('maximo.context');
-			const timeout = settings.get('maximo.timeout');
-			const ca = settings.get("maximo.customCA");
-			const maxauthOnly = settings.get("maximo.maxauthOnly");
-			const apiKey = settings.get("maximo.apiKey");
-
-			// if the last user doesn't match the current user then request the password.
-			if (lastUser && lastUser !== userName) {
-				password = null;
-			}
-
-			if (lastHost && lastHost !== host) {
-				password = null;
-			}
-
-			if (lastPort && lastPort !== port) {
-				password = null;
-			}
-
-			if (lastContext && lastContext !== maximoContext) {
-				password = null;
-			}
-
-			if (!apiKey) {
-				if (!password) {
-					password = await window.showInputBox({
-						prompt: `Enter ${userName}'s password`,
-						password: true,
-						validateInput: text => {
-							if (!text || text.trim() === '') {
-								return 'A password is required';
-							}
-						}
-					});
-				}
-
-				// if the password has not been set then just return.
-				if (!password || password.trim() === '') {
-					return;
-				}
-			}
-
-			const config = new MaximoConfig({
-				username: userName,
-				password: password,
-				useSSL: useSSL,
-				host: host,
-				port: port,
-				context: maximoContext,
-				connectTimeout: timeout * 1000,
-				responseTimeout: timeout * 1000,
-				allowUntrustedCerts: allowUntrustedCerts,
-				ca: ca,
-				maxauthOnly: maxauthOnly,
-				apiKey: apiKey,
-			});
+			const config = await getMaximoConfig();
 
 			let client;
 
@@ -329,74 +221,7 @@ export function activate(context) {
 		"maximo-script-deploy.extract",
 		async function () {
 
-			// make sure we have all the settings.
-			if (!validateSettings()) {
-				return;
-			}
-
-			const settings = workspace.getConfiguration('sharptree');
-
-			const host = settings.get('maximo.host');
-			const userName = settings.get('maximo.user');
-			const useSSL = settings.get('maximo.useSSL');
-			const port = settings.get('maximo.port');
-			const allowUntrustedCerts = settings.get('maximo.allowUntrustedCerts');
-			const maximoContext = settings.get('maximo.context');
-			const timeout = settings.get('maximo.timeout');
-			const extractLocation = settings.get('maximo.extractLocation');
-			const ca = settings.get("maximo.customCA");
-			const maxauthOnly = settings.get("maximo.maxauthOnly");
-			const apiKey = settings.get("maximo.apiKey");
-
-			// if the last user doesn't match the current user then request the password.
-			if (lastUser && lastUser !== userName) {
-				password = null;
-			}
-
-			if (lastHost && lastHost !== host) {
-				password = null;
-			}
-
-			if (lastPort && lastPort !== port) {
-				password = null;
-			}
-
-			if (lastContext && lastContext !== maximoContext) {
-				password = null;
-			}
-			if (!apiKey) {
-				if (!password) {
-					password = await window.showInputBox({
-						prompt: `Enter ${userName}'s password`,
-						password: true,
-						validateInput: text => {
-							if (!text || text.trim() === '') {
-								return 'A password is required';
-							}
-						}
-					});
-				}
-
-				// if the password has not been set then just return.
-				if (!password || password.trim() === '') {
-					return;
-				}
-			}
-
-			const config = new MaximoConfig({
-				username: userName,
-				password: password,
-				useSSL: useSSL,
-				host: host,
-				port: port,
-				context: maximoContext,
-				connectTimeout: timeout * 1000,
-				responseTimeout: timeout * 1000,
-				allowUntrustedCerts: allowUntrustedCerts,
-				ca: ca,
-				maxauthOnly: maxauthOnly,
-				apiKey: apiKey,
-			});
+			const config = await getMaximoConfig();
 
 			let client;
 
@@ -515,6 +340,177 @@ export function activate(context) {
 
 }
 
+async function toggleLog() {
+	console.log("doing the toggle");
+	// if currently logging then stop.
+	if (logState) {
+		if (logClient) {
+			logClient.stopLogging();
+			logClient = undefined;
+		}
+		logState = !logState;
+	} else {
+
+		const config = await getMaximoConfig();
+
+		if (logClient) {
+			await logClient.disconnect();
+			logClient = new MaximoClient(config);
+		} else {
+			logClient = new MaximoClient(config);
+		}
+
+		try {
+			if (await login(logClient)) {
+				let config = getLoggingConfig();
+
+				let logFilePath = config.outputFile;
+
+				if (!logFilePath) {
+					logFilePath = temp.path({ suffix: '.log', defaultPrefix: 'maximo' });
+				}
+
+				const logFile = path.resolve(__dirname, logFilePath);
+
+				if (config.clearOnStart) {
+					if (fs.existsSync(logFile)) {
+						fs.unlinkSync(logFile);
+					}
+				}
+
+				if (config.openOnStart) {
+					// Touch the log file making sure it is there then open it.
+					const time = new Date();
+
+					try {
+						fs.utimesSync(logFile, time, time);
+					} catch (err) {
+						fs.closeSync(fs.openSync(logFile, 'w'));
+					}
+
+					workspace.openTextDocument(logFile).then(doc => {
+						window.showTextDocument(doc, { preview: true });
+					});
+
+				}
+
+				currentLogPath = logFile;
+				logClient.startLogging(logFile);
+				logState = !logState;
+			}
+		} catch (error) {
+			if (error && typeof error.reasonCode !== 'undefined' && error.reasonCode === 'BMXAA0021E') {
+				password = undefined;
+				window.showErrorMessage(error.message, { modal: true });
+			} else if (error && typeof error.message !== 'undefined') {
+				window.showErrorMessage(error.message, { modal: true });
+			} else {
+				window.showErrorMessage('An unexpected error occurred: ' + error, { modal: true });
+			}
+
+			if (logClient) {
+				logClient.disconnect();
+				logClient = undefined;
+			}
+
+		}
+	}
+
+	if (logState) {
+		statusBar.text = `$(sync~spin) Maximo Log`;
+	} else {
+		statusBar.text = `$(book) Maximo Log`;
+	}
+}
+
+
+async function getMaximoConfig() {
+	// make sure we have all the settings.
+	if (!validateSettings()) {
+		return;
+	}
+
+	let settings = workspace.getConfiguration('sharptree');
+
+	let host = settings.get('maximo.host');
+	let userName = settings.get('maximo.user');
+	let useSSL = settings.get('maximo.useSSL');
+	let port = settings.get('maximo.port');
+	let apiKey = settings.get("maximo.apiKey");
+
+	let allowUntrustedCerts = settings.get('maximo.allowUntrustedCerts');
+	let maximoContext = settings.get('maximo.context');
+	let timeout = settings.get('maximo.timeout');
+	let ca = settings.get("maximo.customCA");
+	let maxauthOnly = settings.get("maximo.maxauthOnly");
+
+
+	// if the last user doesn't match the current user then request the password.
+	if (lastUser && lastUser !== userName) {
+		password = null;
+	}
+
+	if (lastHost && lastHost !== host) {
+		password = null;
+	}
+
+	if (lastPort && lastPort !== port) {
+		password = null;
+	}
+
+	if (lastContext && lastContext !== maximoContext) {
+		password = null;
+	}
+	if (!apiKey) {
+		if (!password) {
+			password = await window.showInputBox({
+				prompt: `Enter ${userName}'s password`,
+				password: true,
+				validateInput: text => {
+					if (!text || text.trim() === '') {
+						return 'A password is required';
+					}
+				}
+			});
+		}
+
+		// if the password has not been set then just return.
+		if (!password || password.trim() === '') {
+			return;
+		}
+	}
+
+	return new MaximoConfig({
+		username: userName,
+		password: password,
+		useSSL: useSSL,
+		host: host,
+		port: port,
+		context: maximoContext,
+		connectTimeout: timeout * 1000,
+		responseTimeout: timeout * 1000,
+		allowUntrustedCerts: allowUntrustedCerts,
+		ca: ca,
+		maxauthOnly: maxauthOnly,
+		apiKey: apiKey,
+	});
+}
+
+function getLoggingConfig() {
+	let settings = workspace.getConfiguration('sharptree');
+	let outputFile = settings.get('maximo.logging.outputFile');
+	let openEditorOnStart = settings.get('maximo.logging.openEditorOnStart');
+	let clearOnStart = settings.get('maximo.logging.clearOnStart');
+
+	return {
+		"outputFile": outputFile,
+		"openOnStart": openEditorOnStart,
+		"clearOnStart": clearOnStart
+	}
+
+}
+
+
 async function login(client) {
 	let logInSuccessful = await client.connect().then((success) => {
 		lastUser = client.config.userName;
@@ -524,13 +520,15 @@ async function login(client) {
 		return true;
 	}, (error) => {
 		// clear the password on error
-		password = null;
-		lastUser = null;
+		password = undefined;
+		lastUser = undefined;
 		// show the error message to the user.
 		if (error.message.includes('ENOTFOUND')) {
 			window.showErrorMessage('The host name "' + client.config.host + '" cannot be found.', { modal: true });
 		} else if (error.message.includes('ECONNREFUSED')) {
 			window.showErrorMessage('Connection refused to host ' + client.config.host + ' on port ' + client.config.port, { modal: true });
+		} else if (error.isAxiosError && error.response.status == 401) {
+			window.showErrorMessage('User name and password combination are not valid. Try again.', { modal: true });
 		} else {
 			window.showErrorMessage(error.message, { modal: true });
 		}
@@ -645,7 +643,8 @@ async function asyncForEach(array, callback) {
 	}
 }
 // this method is called when your extension is deactivated
-function deactivate() { }
+function deactivate() {
+}
 
 export default {
 	activate,

@@ -30,7 +30,8 @@
 	"activationEvents": [
 		"onCommand:maximo-script-deploy.extract",
 		"onCommand:maximo-script-deploy.deploy",
-		"onCommand:maximo-script-deploy.compare"
+		"onCommand:maximo-script-deploy.compare",
+		"*"
 	],
 	"main": "./dist/extension",
 	"contributes": {
@@ -94,6 +95,21 @@
 					"type": "string",
 					"default": "",
 					"description": "The Maximo API Key."
+				},
+				"sharptree.maximo.logging.outputFile": {
+					"type": "string",
+					"default": "",
+					"description": "The relative or absolute output file path."
+				},
+				"sharptree.maximo.logging.openEditorOnStart": {
+					"type": "boolean",
+					"default": true,
+					"description": "Open a new editor to display the log."
+				},
+				"sharptree.maximo.logging.clearOnStart": {
+					"type": "boolean",
+					"default": true,
+					"description": "Clear log before streaming the Maximo log."
 				}
 			}
 		},
@@ -150,6 +166,7 @@
 		"axios-token-interceptor": "^0.2.0",
 		"is-valid-hostname": "^1.0.2",
 		"semver": "^7.3.5",
+		"temp": "^0.9.4",
 		"tough-cookie": "^4.0.0"
 	}
 }
