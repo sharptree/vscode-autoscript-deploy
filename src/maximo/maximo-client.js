@@ -528,19 +528,18 @@ export default class MaximoClient {
         }
 
         let source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.deploy.js')).toString();
-        await this._installOrUpdateScript('sharptree.autoscript.deploy', 'Sharptree Automation Script Deploy Script', source, progress, 40);
+        await this._installOrUpdateScript('sharptree.autoscript.deploy', 'Sharptree Automation Script Deploy Script', source, progress, 20);
 
         source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.store.js')).toString();
-        await this._installOrUpdateScript('sharptree.autoscript.store', 'Sharptree Automation Script Storage Script', source, progress, 80);
+        await this._installOrUpdateScript('sharptree.autoscript.store', 'Sharptree Automation Script Storage Script', source, progress, 20);
 
         source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.extract.js')).toString();
-        await this._installOrUpdateScript('sharptree.autoscript.extract', 'Sharptree Automation Script Extract Script', source, progress, 90);
+        await this._installOrUpdateScript('sharptree.autoscript.extract', 'Sharptree Automation Script Extract Script', source, progress, 20);
 
         source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.logging.js')).toString();
-        await this._installOrUpdateScript('sharptree.autoscript.extract', 'Sharptree Automation Script Log Streaming', source, progress, 90);
+        await this._installOrUpdateScript('sharptree.autoscript.logging', 'Sharptree Automation Script Log Streaming', source, progress, 20);
 
-
-        progress.report({ increment: 100 });
+        progress.report({ increment: 20 });
 
     }
 
@@ -629,10 +628,10 @@ export default class MaximoClient {
                                         internalLKP = sData.substring(8);
                                     } else if (sData.indexOf("WARNING: Cannot set status. Response already committed.") > 0) {
                                         // do nothing.
-                                    } else if (sData.trim() === '') {
+                                    } else if (sData === '') {
                                         // do nothing on a blank line
                                     } else {
-                                        fs.appendFileSync(filePath, sData + "\r\n");
+                                        fs.appendFileSync(filePath, sData);
                                     }
                                 }
                             }

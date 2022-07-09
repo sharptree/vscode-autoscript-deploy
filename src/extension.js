@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { window, commands, workspace, ProgressLocation, Uri, StatusBarAlignment } from 'vscode';
+import { window, commands, workspace, ProgressLocation, Uri, StatusBarAlignment, TextEditorRevealType, Range } from 'vscode';
 
 import MaximoConfig from './maximo/maximo-config';
 import MaximoClient from './maximo/maximo-client';
@@ -8,6 +8,8 @@ import ServerSourceProvider from './maximo/provider';
 import { validateSettings } from './settings';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as readline from 'readline';
+
 import * as crypto from 'crypto';
 
 import * as temp from 'temp'
@@ -23,23 +25,22 @@ var lastPort;
 var lastContext;
 var logState = false;
 var currentLogPath;
-var textDocumentMonitor;
-
+var currentWindow;
+var currentFollow;
 var logClient;
 
 const supportedVersions = ['7608', '7609', '76010', '76011', '7610', '7611', '7612', '7613'];
 
 var statusBar;
 
-
-
 export function activate(context) {
-
+	context.subscriptions.push(workspace.onDidChangeConfiguration(_onConfigurationChange.bind(workspace)));
+	currentWindow = window;
 	const logCommandId = 'maximo-script-deploy.log';
 	context.subscriptions.push(commands.registerCommand(logCommandId, toggleLog));
 
 	// create a new status bar item that we can now manage
-	statusBar = window.createStatusBarItem(StatusBarAlignment.Right, 100);
+	statusBar = window.createStatusBarItem(StatusBarAlignment.Left, 0);
 	statusBar.command = logCommandId;
 	statusBar.text = `$(book) Maximo Log`;
 	statusBar.show();
@@ -360,7 +361,7 @@ export function activate(context) {
 }
 
 async function toggleLog() {
-	console.log("doing the toggle");
+
 	// if currently logging then stop.
 	if (logState) {
 		if (logClient) {
@@ -413,6 +414,8 @@ async function toggleLog() {
 
 				const logFile = isAbsolute ? path.resolve(logFilePath) : path.resolve(__dirname, logFilePath);
 
+				currentLogPath = logFile;
+
 				if (!logConfig.append) {
 					if (fs.existsSync(logFile)) {
 						fs.unlinkSync(logFile);
@@ -430,9 +433,33 @@ async function toggleLog() {
 					}
 
 					workspace.openTextDocument(logFile).then(doc => {
-						window.showTextDocument(doc, { preview: true });
+						window.showTextDocument(doc, { preview: true }).then(function (editor) {
+							if (this.follow) {
+								let lineCount = editor.document.lineCount;
+								editor.revealRange(new Range(lineCount, 0, lineCount, 0), TextEditorRevealType.Default);
+							}
+						}.bind(logConfig));
 					});
 
+					if (logConfig.follow) {
+						currentFollow = workspace.onDidChangeTextDocument((e) => {
+							let document = e.document;
+
+							// if the file changing is the current log file then scroll
+							if (currentWindow && document.fileName == currentLogPath) {
+								const editor = currentWindow.visibleTextEditors.find(
+									(editor) => editor.document === document
+								);
+								if (editor) {
+									editor.revealRange(new Range(document.lineCount, 0, document.lineCount, 0), TextEditorRevealType.Default);
+								}
+							}
+						});
+					} else {
+						if (currentFollow) {
+							currentFollow.dispose();
+						}
+					}
 				}
 
 				currentLogPath = logFile;
@@ -492,6 +519,32 @@ async function toggleLog() {
 	}
 }
 
+function _onConfigurationChange(e) {
+	if (this) {
+		if (e.affectsConfiguration("sharptree.maximo.logging.follow")) {
+			if (currentFollow) {
+				currentFollow.dispose();
+			}
+
+			if (this.getConfiguration("sharptree").get("maximo.logging.follow")) {
+				currentFollow = this.onDidChangeTextDocument((e) => {
+					let document = e.document;
+
+					// if the file changing is the current log file then scroll
+					if (currentWindow && document.fileName == currentLogPath) {
+						const editor = currentWindow.visibleTextEditors.find(
+							(editor) => editor.document === document
+						);
+						if (editor) {
+							editor.revealRange(new Range(document.lineCount, 0, document.lineCount, 0), TextEditorRevealType.Default);
+						}
+					}
+				});
+			}
+		}
+	}
+
+}
 
 async function getMaximoConfig() {
 	// make sure we have all the settings.
@@ -574,12 +627,14 @@ function getLoggingConfig() {
 	let openEditorOnStart = settings.get('maximo.logging.openEditorOnStart');
 	let append = settings.get('maximo.logging.append');
 	let timeout = settings.get("maximo.logging.timeout");
+	let follow = settings.get("maximo.logging.follow");
 
 	return {
 		"outputFile": outputFile,
 		"openOnStart": openEditorOnStart,
 		"append": append,
-		"timeout": timeout
+		"timeout": timeout,
+		"follow": follow,
 	}
 }
 
@@ -597,6 +652,8 @@ async function login(client) {
 		// show the error message to the user.
 		if (error.message.includes('ENOTFOUND')) {
 			window.showErrorMessage('The host name "' + client.config.host + '" cannot be found.', { modal: true });
+		} else if (typeof error.code !== 'undefined' && error.code == 'ECONNRESET') {
+			window.showErrorMessage(error.message, { modal: true });
 		} else if (error.message.includes('ECONNREFUSED')) {
 			window.showErrorMessage('Connection refused to host ' + client.config.host + ' on port ' + client.config.port, { modal: true });
 		} else if (error.isAxiosError && error.response.status == 401) {
@@ -716,6 +773,9 @@ async function asyncForEach(array, callback) {
 }
 // this method is called when your extension is deactivated
 function deactivate() {
+	currentWindow = undefined;
+	currentLogPath = undefined;
+
 }
 
 export default {

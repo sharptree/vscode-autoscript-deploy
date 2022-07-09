@@ -111,6 +111,11 @@
 					"default": false,
 					"description": "Append to the current log."
 				},
+				"sharptree.maximo.logging.follow": {
+					"type": "boolean",
+					"default": true,
+					"description": "Follow the log file while open in an editor."
+				},
 				"sharptree.maximo.logging.timeout": {
 					"type": "number",
 					"default": 30,
@@ -170,6 +175,7 @@
 		"axios-oauth-client": "^1.4.4",
 		"axios-token-interceptor": "^0.2.0",
 		"is-valid-hostname": "^1.0.2",
+		"readline": "^1.3.0",
 		"semver": "^7.3.5",
 		"temp": "^0.9.4",
 		"tough-cookie": "^4.0.0"
