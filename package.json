@@ -98,18 +98,23 @@
 				},
 				"sharptree.maximo.logging.outputFile": {
 					"type": "string",
-					"default": "",
+					"default": "maximo.log",
 					"description": "The relative or absolute output file path."
 				},
 				"sharptree.maximo.logging.openEditorOnStart": {
 					"type": "boolean",
 					"default": true,
-					"description": "Open a new editor to display the log."
+					"description": "Open an editor to display the log."
 				},
-				"sharptree.maximo.logging.clearOnStart": {
+				"sharptree.maximo.logging.append": {
 					"type": "boolean",
-					"default": true,
-					"description": "Clear log before streaming the Maximo log."
+					"default": false,
+					"description": "Append to the current log."
+				},
+				"sharptree.maximo.logging.timeout": {
+					"type": "number",
+					"default": 30,
+					"description": "Number of seconds between logging requests. The value should be no more than 30 seconds, to avoid server side timeouts."
 				}
 			}
 		},

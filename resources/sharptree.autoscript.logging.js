@@ -5,18 +5,36 @@ Thread = Java.type("java.lang.Thread");
 
 Date = Java.type("java.util.Date");
 
+System = Java.type("java.lang.System");
+
+File = Java.type("java.io.File");
+RandomAccessFile = Java.type("java.io.RandomAccessFile");
+
+BufferedReader = Java.type("java.io.BufferedReader");
+OutputStreamWriter = Java.type("java.io.OutputStreamWriter");
+InputStreamReader = Java.type("java.io.InputStreamReader");
+
 Logger = Java.type("org.apache.log4j.Logger");
 LogManager = Java.type("org.apache.log4j.LogManager");
 WriterAppender = Java.type("org.apache.log4j.WriterAppender");
 
+FixedLoggers = Java.type("psdi.util.logging.FixedLoggers");
 SqlFormat = Java.type("psdi.mbo.SqlFormat");
 MXServer = Java.type("psdi.server.MXServer");
+Version = Java.type("psdi.util.Version");
 
 var APPENDER_NAME = "logstream";
 var PARENT_APPENDER = "Console";
 
 var SECURITY_APP = "LOGGING";
 var SECURITY_OPTION = "LOGSTREAM";
+
+var SESSION_LKP = 0;
+
+// The maximum number of seconds that the request will remain open.
+var MAX_TIMEOUT = 30;
+
+var SLEEP_INTERVAL = 100;
 
 main();
 
@@ -25,56 +43,139 @@ function main() {
     if (typeof request !== 'undefined' || !request) {
         if (request.getQueryParam("initialize")) {
             initSecurity();
-            result = { "status": "sucess" };
+            result = { "status": "success" };
             responseBody = JSON.stringify(result);
             return;
         } else {
-            var root = LogManager.getLogger("maximo");
-            if (root) {
-                var console = root.getAppender(PARENT_APPENDER);
+            // try {
+            var timeout = request.getQueryParam("timeout");
 
-                if (console) {
-                    if (hasAppOption(SECURITY_APP, SECURITY_OPTION) || isAdmin()) {
+            //TODO check that timeout is a number
+            if (typeof timeout === 'undefined' || timeout === null || isNaN(timeout) || timeout > MAX_TIMEOUT) {
+                timeout = MAX_TIMEOUT;
+            }
 
-                        var response = request.getHttpServletResponse();
-                        response.setBufferSize(0);
-                        response.setContentType("text/event-stream");
-                        response.flushBuffer();
+            timeout = timeout * 1000;
 
-                        var output = response.getOutputStream();
-                        var writer = new WriterAppender(console.getLayout(), output);
-                        writer.setName(APPENDER_NAME);
-                        try {
-                            root.addAppender(writer);
-                            var i = 0;
-                            while (i < 300) {
-                                Thread.sleep(100);
-                                output.flush();
-                                response.flushBuffer();
-                                i++;
-                            }
-                        } finally {
-                            if (root) {
-                                root.removeAppender(APPENDER_NAME);
-                            }
-                            output.flush();
-                            response.flushBuffer();
-                            output.close();
-
-                        }
-                    } else {
-                        var result = { "status": "error", "message": "The user " + userInfo.getUserName() + " does not have permission to stream the Maximo log. The security option " + SECURITY_OPTION + " on the " + SECURITY_APP + " application is required." };
-                        responseBody = JSON.stringify(result);
-                    }
-                } else {
-                    var result = { "status": "error", "message": "The standard Console log appender is not configured for the root maximo logger." };
-                    responseBody = JSON.stringify(result);
-                }
+            if (Version.majorVersion == "8") {
+                _handleV8(timeout)
+            } else if (Version.majorVersion == "7") {
+                _handleV7(timeout);
             } else {
-                var result = { "status": "error", "message": "Cannot get the root maximo logger." };
-                responseBody = JSON.stringify(result);
+                responseBody = JSON.stringify({ "status": "error", "message": "The major Maximo version " + Version.majorVersion + " is not supported." });
             }
         }
+    }
+}
+
+function _handleV8(timeout) {
+
+    var logFolder = System.getenv("LOG_DIR");
+
+    if (!logFolder) {
+        logFolder = System.getProperty("com.ibm.ws.logging.log.directory");
+    }
+
+    if (!logFolder) {
+        logFolder = "/logs";
+    }
+
+    if (!logFolder.trim().endsWith(File.separator)) {
+        logFolder = logFolder + File.separator;
+    }
+
+    if (logFolder) {
+        logFile = new File(logFolder + "messages.log");
+        if (logFile.exists()) {
+            // Last known position, starting with the length of the file.
+            var lkp = logFile.length();
+
+            var response = request.getHttpServletResponse();
+            var output = response.getOutputStream();
+            response.setBufferSize(0);
+            response.setContentType("text/event-stream");
+            response.flushBuffer();
+
+            lkpHeader = request.getHeader("log-lkp");
+
+            if (lkpHeader && !isNaN(lkpHeader) && lkpHeader < lkp) {
+                lkp = lkpHeader;
+            }
+
+            var line = undefined;
+
+            var start = System.currentTimeMillis();
+            var end = start + timeout;
+
+            while (System.currentTimeMillis() < end) {
+                // Read file access
+                rfa = new RandomAccessFile(logFile, "r");
+                rfa.seek(lkp);
+
+                while ((line = rfa.readLine()) && System.currentTimeMillis() < end) {
+                    output.println(line);
+                }
+
+                lkp = rfa.getFilePointer();
+                rfa.close();
+
+
+
+                Thread.sleep(SLEEP_INTERVAL);
+            }
+            output.println("log-lkp=" + lkp);
+
+
+        } else {
+            responseBody = JSON.stringify({ "status": "error", "message": "The log file " + logFile.getPath() + " could not be opened." });
+            return;
+        }
+    } else {
+        responseBody = JSON.stringify({ "status": "error", "message": "Could not determine the log folder." });
+        return;
+    }
+
+}
+
+function _handleV7(timeout) {
+    var root = LogManager.getLogger("maximo");
+
+    if (root) {
+
+        var console = root.getAppender(PARENT_APPENDER);
+
+        if (console) {
+            if (hasAppOption(SECURITY_APP, SECURITY_OPTION) || isAdmin()) {
+
+                var response = request.getHttpServletResponse();
+                var output = response.getOutputStream();
+                var writer = new WriterAppender(console.getLayout(), output);
+                var appenderName = APPENDER_NAME + userInfo.getUserName();
+                writer.setName(appenderName);
+
+                response.setBufferSize(0);
+                response.setContentType("text/event-stream");
+                response.flushBuffer();
+
+                try {
+                    root.addAppender(writer);
+
+                    var start = System.currentTimeMillis();
+                    var end = start + timeout;
+                    while (System.currentTimeMillis() < end) {
+                        Thread.sleep(SLEEP_INTERVAL);
+                    }
+                } finally {
+                    root.removeAppender(appenderName);
+                }
+            } else {
+                responseBody = JSON.stringify({ "status": "error", "message": "The user " + userInfo.getUserName() + " does not have permission to stream the Maximo log. The security option " + SECURITY_OPTION + " on the " + SECURITY_APP + " application is required." });
+            }
+        } else {
+            responseBody = JSON.stringify({ "status": "error", "message": "The standard Console log appender is not configured for the root maximo logger." });
+        }
+    } else {
+        responseBody = JSON.stringify({ "status": "error", "message": "Cannot get the root maximo logger." });
     }
 }
 
@@ -94,7 +195,6 @@ function initSecurity() {
             sigoption.setValue("APP", SECURITY_APP);
             sigoption.setValue("OPTIONNAME", SECURITY_OPTION);
             sigoption.setValue("DESCRIPTION", "Allow streaming the log with an automation script.");
-            // sigoption.setValue("LANGCODE", "EN");
             sigoption.setValue("ESIGENABLED", false)
             sigOptionSet.save();
 

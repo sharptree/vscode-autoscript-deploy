@@ -17,21 +17,13 @@ import {
     ResourceNotFoundError
 } from './errors';
 
-// @ts-ignore
-import {
-    workspace,
-    window,
-    Uri
-} from 'vscode';
-
 import * as fs from 'fs';
 import * as path from 'path'
 
 import MaximoConfig from './maximo-config';
+import { TextDecoder } from 'util';
 
 export default class MaximoClient {
-
-
 
     constructor(config) {
         if (!(config instanceof MaximoConfig)) {
@@ -41,8 +33,8 @@ export default class MaximoClient {
         // keep a reference to the config for later use.
         this.config = config;
 
-        this.requiredScriptVersion = '1.12.0';
-        this.currentScriptVersion = '1.12.0';
+        this.requiredScriptVersion = '1.13.0';
+        this.currentScriptVersion = '1.13.0';
 
         if (config.ca) {
             https.globalAgent.options.ca = config.ca;
@@ -544,13 +536,21 @@ export default class MaximoClient {
         source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.extract.js')).toString();
         await this._installOrUpdateScript('sharptree.autoscript.extract', 'Sharptree Automation Script Extract Script', source, progress, 90);
 
+        source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.logging.js')).toString();
+        await this._installOrUpdateScript('sharptree.autoscript.extract', 'Sharptree Automation Script Log Streaming', source, progress, 90);
+
+
         progress.report({ increment: 100 });
 
     }
 
     // @ts-ignore
-    async startLogging(filePath) {
+    async startLogging(filePath, timeout) {
         console.log("starting log");
+
+        if (typeof timeout === 'undefined') {
+            timeout = 30;
+        }
 
         this._isLogging = true;
 
@@ -558,41 +558,139 @@ export default class MaximoClient {
         headers['Content-Type'] = 'application/json';
 
         let options = {
-            url: `script/sharptree.autoscript.logging`,
+            url: `script/sharptree.autoscript.logging?timeout=${timeout}`,
             method: MaximoClient.Method.GET,
             responseType: 'stream',
             headers: { common: headers }
         }
 
+        let lkp = undefined;
         try {
-
             while (this._isLogging) {
                 // @ts-ignore
+                if (typeof lkp !== 'undefined') {
+                    options.headers['log-lkp'] = lkp;
+                }
                 let response = await this.client.request(options);
 
-                await new Promise((resolve, reject) => {
-                    response.data.on('data', (data) => {
-                        if (!this._isLogging) {
-                            resolve();
+                let contentType = response.headers['content-type'];
+
+                if (contentType === "application/json") {
+                    if (typeof response.data !== 'undefined') {
+                        var internalError = await new Promise((resolve, reject) => {
+                            let completeData = '';
+                            response.data.on('data', (data) => {
+                                if (!this._isLogging) {
+                                    resolve();
+                                } else {
+                                    completeData += data;
+                                    fs.appendFileSync(filePath, data);
+                                }
+                            });
+
+                            response.data.on('end', () => {
+                                console.log(completeData);
+                                if (completeData) {
+                                    try {
+                                        resolve(JSON.parse(completeData));
+                                    } catch (error) { resolve() };
+                                } else {
+                                    resolve();
+                                }
+
+                            })
+
+                            response.data.on('error', () => {
+                                this.stopLogging();
+                                reject()
+                            })
+                        });
+                        if (internalError) {
+                            throw new MaximoError(internalError.message);
                         } else {
-                            fs.appendFileSync(filePath, data);
-
+                            throw new MaximoError("An unexpected JSON response was returned by the server.");
                         }
+
+                    } else {
+                        throw new MaximoError("An unexpected JSON response was returned by the server.");
+                    }
+                } else if (contentType === "text/event-stream") {
+
+                    lkp = await new Promise((resolve, reject) => {
+                        let internalLKP = undefined;
+                        response.data.on('data', (data) => {
+                            if (!this._isLogging) {
+                                resolve();
+                            } else {
+                                if (data && data instanceof Uint8Array) {
+                                    let decoder = new TextDecoder("utf-8");
+                                    let sData = decoder.decode(data);
+                                    if (sData.startsWith("log-lkp=")) {
+                                        internalLKP = sData.substring(8);
+                                    } else if (sData.indexOf("WARNING: Cannot set status. Response already committed.") > 0) {
+                                        // do nothing.
+                                    } else if (sData.trim() === '') {
+                                        // do nothing on a blank line
+                                    } else {
+                                        fs.appendFileSync(filePath, sData + "\r\n");
+                                    }
+                                }
+                            }
+                        });
+
+                        response.data.on('end', () => {
+                            resolve(internalLKP)
+                        })
+
+                        response.data.on('error', () => {
+                            this.stopLogging();
+                            reject()
+                        })
                     });
-
-                    response.data.on('end', () => {
-                        resolve()
-                    })
-
-                    response.data.on('error', () => {
-                        this.stopLogging();
-                        reject()
-                    })
-                });
+                } else {
+                    throw new Error(`Unexpected Content-Type ${contentType} was returned by the server.`);
+                }
             }
+
         } catch (error) {
-            console.error(error);
-            // do error handling.
+            if (error instanceof MaximoError) {
+                throw error.message;
+            }
+
+            var internalError = await new Promise((resolve, reject) => {
+                let completeData = '';
+                error.response.data.on('data', (data) => {
+                    if (!this._isLogging) {
+                        resolve();
+                    } else {
+                        completeData += data;
+                        fs.appendFileSync(filePath, data);
+                    }
+                });
+
+                error.response.data.on('end', () => {
+                    console.log(completeData);
+                    if (completeData) {
+                        try {
+                            resolve(JSON.parse(completeData));
+                        } catch (error) { resolve() };
+                    } else {
+                        resolve();
+                    }
+
+                })
+
+                error.response.data.on('error', () => {
+                    this.stopLogging();
+                    reject()
+                })
+            });
+
+            if (internalError) {
+                throw internalError;
+            } else {
+                throw error;
+            }
         }
     }
 

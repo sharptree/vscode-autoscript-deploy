@@ -12,6 +12,7 @@ import * as crypto from 'crypto';
 
 import * as temp from 'temp'
 
+
 temp.track();
 
 
@@ -54,6 +55,10 @@ export function activate(context) {
 		async function () {
 
 			const config = await getMaximoConfig();
+
+			if (!config) {
+				return;
+			}
 
 			let client;
 			try {
@@ -144,6 +149,10 @@ export function activate(context) {
 
 			const config = await getMaximoConfig();
 
+			if (!config) {
+				return;
+			}
+
 			let client;
 
 			try {
@@ -223,15 +232,19 @@ export function activate(context) {
 
 			const config = await getMaximoConfig();
 
+			if (!config) {
+				return;
+			}
+
 			let client;
 
 			try {
 				client = new MaximoClient(config);
 
 				if (await login(client)) {
-					let extractLoc = extractLocation;
+					let extractLoc = config.extractLocation;
 					// if the extract location has not been specified use the workspace folder.
-					if (typeof extractLocation === 'undefined' || !extractLocation) {
+					if (typeof extractLoc === 'undefined' || !extractLoc) {
 						if (workspace.workspaceFolders !== undefined) {
 							extractLoc = workspace.workspaceFolders[0].uri.fsPath;
 						} else {
@@ -239,6 +252,12 @@ export function activate(context) {
 							return;
 						}
 					}
+
+					if (!fs.existsSync(extractLoc)) {
+						window.showErrorMessage(`The script extract folder ${extractLoc} does not exist.`, { modal: true });
+						return;
+					}
+
 					let scriptNames = await window.withProgress({ title: 'Getting script names', location: ProgressLocation.Notification }, async (progress) => {
 						return await client.getAllScriptNames(progress);
 					})
@@ -353,6 +372,10 @@ async function toggleLog() {
 
 		const config = await getMaximoConfig();
 
+		if (!config) {
+			return;
+		}
+
 		if (logClient) {
 			await logClient.disconnect();
 			logClient = new MaximoClient(config);
@@ -362,23 +385,41 @@ async function toggleLog() {
 
 		try {
 			if (await login(logClient)) {
-				let config = getLoggingConfig();
+				let logConfig = getLoggingConfig();
 
-				let logFilePath = config.outputFile;
+				let logFilePath = logConfig.outputFile;
+				let isAbsolute = false;
+				if (logFilePath) {
 
-				if (!logFilePath) {
+					isAbsolute = path.isAbsolute(logFilePath);
+
+					if (!isAbsolute) {
+						if (workspace.workspaceFolders !== undefined) {
+							logFilePath = workspace.workspaceFolders[0].uri.fsPath + path.sep + logFilePath;
+						} else {
+							window.showErrorMessage('A working folder must be selected or an absolute log file path configured before retrieving the Maximo logs. ', { modal: true });
+							return;
+						}
+					} else {
+						let logFolder = path.dirname(logFilePath)
+						if (!fs.existsSync(logFolder)) {
+							window.showErrorMessage(`The log file folder ${logFolder} does not exist.`, { modal: true });
+							return;
+						}
+					}
+				} else {
 					logFilePath = temp.path({ suffix: '.log', defaultPrefix: 'maximo' });
 				}
 
-				const logFile = path.resolve(__dirname, logFilePath);
+				const logFile = isAbsolute ? path.resolve(logFilePath) : path.resolve(__dirname, logFilePath);
 
-				if (config.clearOnStart) {
+				if (!logConfig.append) {
 					if (fs.existsSync(logFile)) {
 						fs.unlinkSync(logFile);
 					}
 				}
 
-				if (config.openOnStart) {
+				if (logConfig.openOnStart) {
 					// Touch the log file making sure it is there then open it.
 					const time = new Date();
 
@@ -395,10 +436,38 @@ async function toggleLog() {
 				}
 
 				currentLogPath = logFile;
-				logClient.startLogging(logFile);
+
+				let timeout = logConfig.timeout;
+				let responseTimeout = config.responseTimeout;
+				if (timeout && responseTimeout && (timeout * 1000) > responseTimeout) {
+					timeout = (responseTimeout / 1000);
+				}
+
+				logClient.startLogging(logFile, timeout).catch((error) => {
+					if (typeof error !== 'undefined' && typeof error.toJSON === 'function') {
+						let jsonError = error.toJSON();
+						if (typeof jsonError.message !== 'undefined') {
+							window.showErrorMessage(jsonError.message, { modal: true });
+						} else {
+							window.showErrorMessage(JSON.stringify(jsonError), { modal: true });
+						}
+					} else if (typeof error !== 'undefined' && typeof error.Error !== 'undefined' && typeof error.Error.message !== 'undefined') {
+						window.showErrorMessage(error.Error.message, { modal: true });
+					} else if (error instanceof Error) {
+						window.showErrorMessage(error.message, { modal: true });
+					} else {
+						window.showErrorMessage(error, { modal: true });
+					}
+
+					if (logState) { toggleLog(); }
+				});
 				logState = !logState;
 			}
 		} catch (error) {
+			if (logState) {
+				toggleLog();
+			}
+
 			if (error && typeof error.reasonCode !== 'undefined' && error.reasonCode === 'BMXAA0021E') {
 				password = undefined;
 				window.showErrorMessage(error.message, { modal: true });
@@ -443,6 +512,7 @@ async function getMaximoConfig() {
 	let timeout = settings.get('maximo.timeout');
 	let ca = settings.get("maximo.customCA");
 	let maxauthOnly = settings.get("maximo.maxauthOnly");
+	let extractLocation = settings.get("maximo.extractLocation");
 
 
 	// if the last user doesn't match the current user then request the password.
@@ -476,7 +546,8 @@ async function getMaximoConfig() {
 
 		// if the password has not been set then just return.
 		if (!password || password.trim() === '') {
-			return;
+			console.log("Returning nothing");
+			return undefined;
 		}
 	}
 
@@ -493,6 +564,7 @@ async function getMaximoConfig() {
 		ca: ca,
 		maxauthOnly: maxauthOnly,
 		apiKey: apiKey,
+		extractLocation: extractLocation,
 	});
 }
 
@@ -500,16 +572,16 @@ function getLoggingConfig() {
 	let settings = workspace.getConfiguration('sharptree');
 	let outputFile = settings.get('maximo.logging.outputFile');
 	let openEditorOnStart = settings.get('maximo.logging.openEditorOnStart');
-	let clearOnStart = settings.get('maximo.logging.clearOnStart');
+	let append = settings.get('maximo.logging.append');
+	let timeout = settings.get("maximo.logging.timeout");
 
 	return {
 		"outputFile": outputFile,
 		"openOnStart": openEditorOnStart,
-		"clearOnStart": clearOnStart
+		"append": append,
+		"timeout": timeout
 	}
-
 }
-
 
 async function login(client) {
 	let logInSuccessful = await client.connect().then((success) => {

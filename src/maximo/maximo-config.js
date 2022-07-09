@@ -15,6 +15,7 @@ export default class MaximoConfig {
         ca,
         maxauthOnly = false,
         apiKey,
+        extractLocation,
     }
     ) {
         this.username = username;
@@ -30,6 +31,7 @@ export default class MaximoConfig {
         this.ca = ca;
         this.maxauthOnly = maxauthOnly;
         this.apiKey = apiKey;
+        this.extractLocation = extractLocation;
     }
 
     get maxauth() {
