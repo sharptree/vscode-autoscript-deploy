@@ -13,17 +13,17 @@ The following are settings available under the `Sharptree > Maximo` group.
 
 | Setting                   | Default               | Description                                                                                                                                                                   |
 | :-------------------------| :---------------------| :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Allow Untrusted Certs     | `false`               | When checked, ignores SSL validation rules.                                                                                                                                   |
+| Allow Untrusted Certs     | false                 | When checked, ignores SSL validation rules.                                                                                                                                   |
 | API Key                   |                       | The Maximo API key that will be used to access Maximo. If provided, the user name and password are ignored if configured.                                                     |
-| Context                   | `maximo`              | The part of the URL that follows the hostname, by default it is `maximo`.                                                                                                     |
+| Context                   | maximo                | The part of the URL that follows the hostname, by default it is `maximo`.                                                                                                     |
 | Custom CA                 |                       | The full chain for the server CA in PEM format.                                                                                                                               |
 | Extract Location          | Current open folder   | Directory where extracted files will be stored.                                                                                                                               |
 | Host                      |                       | The Maximo host name *without* the http/s protocol prefix.                                                                                                                    |
-| Maxauth Only              | `false`               | Both Maxauth and Basic headers are usually sent for login, however on WebLogic if Basic fails the Maxauth header is ignored. When checked, only the Maxauth header is sent.   |
-| Port                      | `443`                 | The Maximo port number, 80 for http, 443 for https or your custom port such as 9080.                                                                                          |
+| Maxauth Only              | false                 | Both Maxauth and Basic headers are usually sent for login, however on WebLogic if Basic fails the Maxauth header is ignored. When checked, only the Maxauth header is sent.   |
+| Port                      | 443                   | The Maximo port number, 80 for http, 443 for https or your custom port such as 9080.                                                                                          |
 | Timeout                   | 30                    | The time in seconds to wait for Maximo to respond.                                                                                                                            |
 | User                      |                       | The user that will be used to connect to Maximo.                                                                                                                              |
-| Use SSL                   | `true`                | When checked, SSL will be used, the provided port must be configured for SSL                                                                                                  | 
+| Use SSL                   | true                  | When checked, SSL will be used, the provided port must be configured for SSL                                                                                                  | 
 
 > The Authentication Type setting has been removed and replaced with automatic detection of authentication type.
 
@@ -32,9 +32,9 @@ The following are settings available under the `Sharptree > Maximo > Logging` gr
 
 | Setting                   | Default               | Description                                                                                                                                                                   |
 | :-------------------------| :---------------------| :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Append                    | `true`                | When checked, appends to the current log file.                                                                                                                                |
-| Follow                    | `true`                | When checked, if the current log is displayed in the editor the cursor will remain at the end of the file.                                                                    |
-| Open Editor On Start      | `true`                | When checked, opens the log file editor when logging is started.                                                                                                              |
+| Append                    | true                  | When checked, appends to the current log file.                                                                                                                                |
+| Follow                    | true                  | When checked, if the current log is displayed in the editor the cursor will remain at the end of the file.                                                                    |
+| Open Editor On Start      | true                  | When checked, opens the log file editor when logging is started.                                                                                                              |
 | Output File               |                       | The absolute or relative path to the log file.  If using a relative path, it will be relative to the current open folder.                                                     |
 | Timeout                   | 30                    | The number of seconds between requests for the log file, this should be less than the connection timeout.                                                                     |
 
@@ -67,10 +67,10 @@ As part of the configuration, an integration object named `SHARPTREE_UTILS` is c
 | Script                                | Description                                                                                                       |
 | :-------------------------------------| :-----------------------------------------------------------------------------------------------------------------|
 | SHARPTREE.AUTOSCRIPT.DEPLOY           | The primary script used for deploying and managing automation scripts.                                            |
-| SHARPTREE.AUTOSCRIPT.DEPLOY.HISTORY   | Created after the first script is deployed. Contains a JSON with a history of all scripts deployed.               |****
+| SHARPTREE.AUTOSCRIPT.DEPLOY.HISTORY   | Created after the first script is deployed. Contains a JSON with a history of all scripts deployed.               |
 | SHARPTREE.AUTOSCRIPT.STORE            | Script for managing the storage of the deploy history.                                                            |
 | SHARPTREE.AUTOSCRIPT.EXTRACT          | Script for extracting scripts from Maximo.                                                                        |
-| SHARPTREE.AUTOSCRIPT.LOGGING          | Script for streaming the Maximo log.                                                                       |
+| SHARPTREE.AUTOSCRIPT.LOGGING          | Script for streaming the Maximo log.                                                                              |
 
 ## scriptConfig Variable
 Each script must define a variable named `scriptConfig` that is a JSON object describing how to deploy the script. The extension uses these values to populate the corresponding values of the `AUTOSCRIPT` and `SCRIPTLAUNCHPOINT` Maximo Business Obejcts. At a minimum the `autoscript` attribute is required, all other attributes are optional.  All configuration attributes are available and are defined by their label name without spaces, in camel case.  The example below provides the basic structure.
