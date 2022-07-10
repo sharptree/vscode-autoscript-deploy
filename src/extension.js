@@ -1,5 +1,6 @@
+/* eslint-disable indent */
 // @ts-nocheck
-import { window, commands, workspace, ProgressLocation, Uri, TextDocumentContentProvider } from 'vscode';
+import { window, commands, workspace, ProgressLocation, Uri, StatusBarAlignment, TextEditorRevealType, Range } from 'vscode';
 
 import MaximoConfig from './maximo/maximo-config';
 import MaximoClient from './maximo/maximo-client';
@@ -8,92 +9,59 @@ import ServerSourceProvider from './maximo/provider';
 import { validateSettings } from './settings';
 import * as path from 'path';
 import * as fs from 'fs';
+
 import * as crypto from 'crypto';
+
+import * as temp from 'temp';
+
+
+temp.track();
 
 var password;
 var lastUser;
 var lastHost;
 var lastPort;
 var lastContext;
+var logState = false;
+var currentLogPath;
+var currentWindow;
+var currentFollow;
+var logClient;
 
 const supportedVersions = ['7608', '7609', '76010', '76011', '7610', '7611', '7612', '7613'];
 
+var statusBar;
+
 export function activate(context) {
+	context.subscriptions.push(workspace.onDidChangeConfiguration(_onConfigurationChange.bind(workspace)));
+	currentWindow = window;
+	const logCommandId = 'maximo-script-deploy.log';
+	context.subscriptions.push(commands.registerCommand(logCommandId, toggleLog));
+
+	// create a new status bar item that we can now manage
+	statusBar = window.createStatusBarItem(StatusBarAlignment.Left, 0);
+	statusBar.command = logCommandId;
+	// eslint-disable-next-line quotes
+	statusBar.text = `$(book) Maximo Log`;
+	// eslint-disable-next-line quotes
+	statusBar.tooltip = `Toggle Maximo log streaming`;
+	statusBar.show();
+
+	context.subscriptions.push(statusBar);
+
 	let fetchedSource = new Map();
 
 	context.subscriptions.push(workspace.registerTextDocumentContentProvider('vscode-autoscript-deploy', new ServerSourceProvider(fetchedSource)));
 
 	let disposableCompare = commands.registerCommand(
-		"maximo-script-deploy.compare",
+		'maximo-script-deploy.compare',
 		async function () {
-			// make sure we have all the settings.
-			if (!validateSettings()) {
+
+			const config = await getMaximoConfig();
+
+			if (!config) {
 				return;
 			}
-
-			const settings = workspace.getConfiguration('sharptree');
-
-			const host = settings.get('maximo.host');
-			const userName = settings.get('maximo.user');
-			const useSSL = settings.get('maximo.useSSL');
-			const port = settings.get('maximo.port');
-			const apiKey = settings.get("maximo.apiKey");
-
-			const allowUntrustedCerts = settings.get('maximo.allowUntrustedCerts');
-			const maximoContext = settings.get('maximo.context');
-			const timeout = settings.get('maximo.timeout');
-			const ca = settings.get("maximo.customCA");
-			const maxauthOnly = settings.get("maximo.maxauthOnly");
-
-
-			// if the last user doesn't match the current user then request the password.
-			if (lastUser && lastUser !== userName) {
-				password = null;
-			}
-
-			if (lastHost && lastHost !== host) {
-				password = null;
-			}
-
-			if (lastPort && lastPort !== port) {
-				password = null;
-			}
-
-			if (lastContext && lastContext !== maximoContext) {
-				password = null;
-			}
-			if (!apiKey) {
-				if (!password) {
-					password = await window.showInputBox({
-						prompt: `Enter ${userName}'s password`,
-						password: true,
-						validateInput: text => {
-							if (!text || text.trim() === '') {
-								return 'A password is required';
-							}
-						}
-					});
-				}
-
-				// if the password has not been set then just return.
-				if (!password || password.trim() === '') {
-					return;
-				}
-			}
-			const config = new MaximoConfig({
-				username: userName,
-				password: password,
-				useSSL: useSSL,
-				host: host,
-				port: port,
-				context: maximoContext,
-				connectTimeout: timeout * 1000,
-				responseTimeout: timeout * 1000,
-				allowUntrustedCerts: allowUntrustedCerts,
-				ca: ca,
-				maxauthOnly: maxauthOnly,
-				apiKey: apiKey,
-			});
 
 			let client;
 			try {
@@ -111,9 +79,9 @@ export function activate(context) {
 								// Get the document text
 								const script = document.getText();
 								if (script && script.trim().length > 0) {
-									var result = await window.withProgress({ cancellable: false, title: `Script`, location: ProgressLocation.Notification },
+									await window.withProgress({ cancellable: false, title: 'Script', location: ProgressLocation.Notification },
 										async (progress) => {
-											progress.report({ message: `Getting script from the server.`, increment: 0 });
+											progress.report({ message: 'Getting script from the server.', increment: 0 });
 
 											await new Promise(resolve => setTimeout(resolve, 500));
 											let result = await client.getScriptSource(script, progress, fileName);
@@ -129,14 +97,14 @@ export function activate(context) {
 													}
 												} else {
 													if (result.source) {
-														progress.report({ increment: 100, message: `Successfully got script from the server.` });
+														progress.report({ increment: 100, message: 'Successfully got script from the server.' });
 														await new Promise(resolve => setTimeout(resolve, 2000));
 														let localScript = document.uri;
 														let serverScript = Uri.parse('vscode-autoscript-deploy:' + fileName);
 
 														fetchedSource[serverScript.path] = result.source;
 
-														commands.executeCommand('vscode.diff', localScript, serverScript, "↔ server " + fileName);
+														commands.executeCommand('vscode.diff', localScript, serverScript, '↔ server ' + fileName);
 													} else {
 														window.showErrorMessage(`The ${fileName} was not found on ${config.host}.\n\nCheck that the scriptConfig.autoscript value matches a script on the server.`, { modal: true });
 													}
@@ -169,7 +137,7 @@ export function activate(context) {
 			} finally {
 				// if the client exists then disconnect it.
 				if (client) {
-					await client.disconnect().catch((error) => {
+					await client.disconnect().catch(() => {
 						//do nothing with this
 					});
 				}
@@ -179,78 +147,14 @@ export function activate(context) {
 
 
 	let disposableDeploy = commands.registerCommand(
-		"maximo-script-deploy.deploy",
+		'maximo-script-deploy.deploy',
 		async function () {
 
-			// make sure we have all the settings.
-			if (!validateSettings()) {
+			const config = await getMaximoConfig();
+
+			if (!config) {
 				return;
 			}
-
-			const settings = workspace.getConfiguration('sharptree');
-
-			const host = settings.get('maximo.host');
-			const userName = settings.get('maximo.user');
-			const useSSL = settings.get('maximo.useSSL');
-			const port = settings.get('maximo.port');
-
-			const allowUntrustedCerts = settings.get('maximo.allowUntrustedCerts');
-			const maximoContext = settings.get('maximo.context');
-			const timeout = settings.get('maximo.timeout');
-			const ca = settings.get("maximo.customCA");
-			const maxauthOnly = settings.get("maximo.maxauthOnly");
-			const apiKey = settings.get("maximo.apiKey");
-
-			// if the last user doesn't match the current user then request the password.
-			if (lastUser && lastUser !== userName) {
-				password = null;
-			}
-
-			if (lastHost && lastHost !== host) {
-				password = null;
-			}
-
-			if (lastPort && lastPort !== port) {
-				password = null;
-			}
-
-			if (lastContext && lastContext !== maximoContext) {
-				password = null;
-			}
-
-			if (!apiKey) {
-				if (!password) {
-					password = await window.showInputBox({
-						prompt: `Enter ${userName}'s password`,
-						password: true,
-						validateInput: text => {
-							if (!text || text.trim() === '') {
-								return 'A password is required';
-							}
-						}
-					});
-				}
-
-				// if the password has not been set then just return.
-				if (!password || password.trim() === '') {
-					return;
-				}
-			}
-
-			const config = new MaximoConfig({
-				username: userName,
-				password: password,
-				useSSL: useSSL,
-				host: host,
-				port: port,
-				context: maximoContext,
-				connectTimeout: timeout * 1000,
-				responseTimeout: timeout * 1000,
-				allowUntrustedCerts: allowUntrustedCerts,
-				ca: ca,
-				maxauthOnly: maxauthOnly,
-				apiKey: apiKey,
-			});
 
 			let client;
 
@@ -269,7 +173,7 @@ export function activate(context) {
 								// Get the document text
 								const script = document.getText();
 								if (script && script.trim().length > 0) {
-									var result = await window.withProgress({ cancellable: false, title: `Script`, location: ProgressLocation.Notification },
+									await window.withProgress({ cancellable: false, title: 'Script', location: ProgressLocation.Notification },
 										async (progress) => {
 											progress.report({ message: `Deploying script ${fileName}`, increment: 0 });
 
@@ -317,7 +221,7 @@ export function activate(context) {
 			} finally {
 				// if the client exists then disconnect it.
 				if (client) {
-					await client.disconnect().catch((error) => {
+					await client.disconnect().catch(() => {
 						//do nothing with this
 					});
 				}
@@ -326,77 +230,14 @@ export function activate(context) {
 	);
 
 	let disposableExtract = commands.registerCommand(
-		"maximo-script-deploy.extract",
+		'maximo-script-deploy.extract',
 		async function () {
 
-			// make sure we have all the settings.
-			if (!validateSettings()) {
+			const config = await getMaximoConfig();
+
+			if (!config) {
 				return;
 			}
-
-			const settings = workspace.getConfiguration('sharptree');
-
-			const host = settings.get('maximo.host');
-			const userName = settings.get('maximo.user');
-			const useSSL = settings.get('maximo.useSSL');
-			const port = settings.get('maximo.port');
-			const allowUntrustedCerts = settings.get('maximo.allowUntrustedCerts');
-			const maximoContext = settings.get('maximo.context');
-			const timeout = settings.get('maximo.timeout');
-			const extractLocation = settings.get('maximo.extractLocation');
-			const ca = settings.get("maximo.customCA");
-			const maxauthOnly = settings.get("maximo.maxauthOnly");
-			const apiKey = settings.get("maximo.apiKey");
-
-			// if the last user doesn't match the current user then request the password.
-			if (lastUser && lastUser !== userName) {
-				password = null;
-			}
-
-			if (lastHost && lastHost !== host) {
-				password = null;
-			}
-
-			if (lastPort && lastPort !== port) {
-				password = null;
-			}
-
-			if (lastContext && lastContext !== maximoContext) {
-				password = null;
-			}
-			if (!apiKey) {
-				if (!password) {
-					password = await window.showInputBox({
-						prompt: `Enter ${userName}'s password`,
-						password: true,
-						validateInput: text => {
-							if (!text || text.trim() === '') {
-								return 'A password is required';
-							}
-						}
-					});
-				}
-
-				// if the password has not been set then just return.
-				if (!password || password.trim() === '') {
-					return;
-				}
-			}
-
-			const config = new MaximoConfig({
-				username: userName,
-				password: password,
-				useSSL: useSSL,
-				host: host,
-				port: port,
-				context: maximoContext,
-				connectTimeout: timeout * 1000,
-				responseTimeout: timeout * 1000,
-				allowUntrustedCerts: allowUntrustedCerts,
-				ca: ca,
-				maxauthOnly: maxauthOnly,
-				apiKey: apiKey,
-			});
 
 			let client;
 
@@ -404,9 +245,9 @@ export function activate(context) {
 				client = new MaximoClient(config);
 
 				if (await login(client)) {
-					let extractLoc = extractLocation;
+					let extractLoc = config.extractLocation;
 					// if the extract location has not been specified use the workspace folder.
-					if (typeof extractLocation === 'undefined' || !extractLocation) {
+					if (typeof extractLoc === 'undefined' || !extractLoc) {
 						if (workspace.workspaceFolders !== undefined) {
 							extractLoc = workspace.workspaceFolders[0].uri.fsPath;
 						} else {
@@ -414,9 +255,15 @@ export function activate(context) {
 							return;
 						}
 					}
+
+					if (!fs.existsSync(extractLoc)) {
+						window.showErrorMessage(`The script extract folder ${extractLoc} does not exist.`, { modal: true });
+						return;
+					}
+
 					let scriptNames = await window.withProgress({ title: 'Getting script names', location: ProgressLocation.Notification }, async (progress) => {
 						return await client.getAllScriptNames(progress);
-					})
+					});
 
 					if (typeof scriptNames !== 'undefined' && scriptNames.length > 0) {
 
@@ -432,22 +279,22 @@ export function activate(context) {
 									let overwriteAll = false;
 									let overwrite = false;
 
-									await asyncForEach(scriptNames, async (scriptName, index) => {
+									await asyncForEach(scriptNames, async (scriptName) => {
 										if (!cancelToken.isCancellationRequested) {
 											progress.report({ increment: percent, message: `Extracting ${scriptName}` });
 											let scriptInfo = await client.getScript(scriptName);
 
 											let fileExtension = getExtension(scriptInfo.scriptLanguage);
 
-											let outputFile = extractLoc + "/" + scriptName.toLowerCase() + fileExtension;
+											let outputFile = extractLoc + '/' + scriptName.toLowerCase() + fileExtension;
 
 											// if the file doesn't exist then just write it out.
 											if (!fs.existsSync(outputFile)) {
 												fs.writeFileSync(outputFile, scriptInfo.script);
 											} else {
 
-												let incomingHash = crypto.createHash("sha256").update(scriptInfo.script).digest("hex")
-												let fileHash = crypto.createHash("sha256").update(fs.readFileSync(outputFile)).digest("hex")
+												let incomingHash = crypto.createHash('sha256').update(scriptInfo.script).digest('hex');
+												let fileHash = crypto.createHash('sha256').update(fs.readFileSync(outputFile)).digest('hex');
 
 												if (fileHash !== incomingHash) {
 													if (!overwriteAll) {
@@ -486,7 +333,7 @@ export function activate(context) {
 						});
 
 					} else {
-						window.showErrorMessage("No scripts were found to extract.", { modal: true });
+						window.showErrorMessage('No scripts were found to extract.', { modal: true });
 					}
 
 				}
@@ -503,7 +350,7 @@ export function activate(context) {
 			} finally {
 				// if the client exists then disconnect it.
 				if (client) {
-					await client.disconnect().catch((error) => {
+					await client.disconnect().catch(() => {
 						//do nothing with this
 					});
 				}
@@ -515,8 +362,287 @@ export function activate(context) {
 
 }
 
+async function toggleLog() {
+
+	// if currently logging then stop.
+	if (logState) {
+		if (logClient) {
+			logClient.stopLogging();
+			logClient = undefined;
+		}
+		logState = !logState;
+	} else {
+
+		const config = await getMaximoConfig();
+
+		if (!config) {
+			return;
+		}
+
+		if (logClient) {
+			await logClient.disconnect();
+			logClient = new MaximoClient(config);
+		} else {
+			logClient = new MaximoClient(config);
+		}
+
+		try {
+			if (await login(logClient)) {
+				let logConfig = getLoggingConfig();
+
+				let logFilePath = logConfig.outputFile;
+				let isAbsolute = false;
+				if (logFilePath) {
+
+					isAbsolute = path.isAbsolute(logFilePath);
+
+					if (!isAbsolute) {
+						if (workspace.workspaceFolders !== undefined) {
+							logFilePath = workspace.workspaceFolders[0].uri.fsPath + path.sep + logFilePath;
+						} else {
+							window.showErrorMessage('A working folder must be selected or an absolute log file path configured before retrieving the Maximo logs. ', { modal: true });
+							return;
+						}
+					} else {
+						let logFolder = path.dirname(logFilePath);
+						if (!fs.existsSync(logFolder)) {
+							window.showErrorMessage(`The log file folder ${logFolder} does not exist.`, { modal: true });
+							return;
+						}
+					}
+				} else {
+					logFilePath = temp.path({ suffix: '.log', defaultPrefix: 'maximo' });
+				}
+
+				// eslint-disable-next-line no-undef
+				const logFile = isAbsolute ? path.resolve(logFilePath) : path.resolve(__dirname, logFilePath);
+
+				currentLogPath = logFile;
+
+				if (!logConfig.append) {
+					if (fs.existsSync(logFile)) {
+						fs.unlinkSync(logFile);
+					}
+				}
+
+				if (logConfig.openOnStart) {
+					// Touch the log file making sure it is there then open it.
+					const time = new Date();
+
+					try {
+						fs.utimesSync(logFile, time, time);
+					} catch (err) {
+						fs.closeSync(fs.openSync(logFile, 'w'));
+					}
+
+					workspace.openTextDocument(logFile).then(doc => {
+						window.showTextDocument(doc, { preview: true }).then(function (editor) {
+							if (this.follow) {
+								let lineCount = editor.document.lineCount;
+								editor.revealRange(new Range(lineCount, 0, lineCount, 0), TextEditorRevealType.Default);
+							}
+						}.bind(logConfig));
+					});
+
+					if (logConfig.follow) {
+						currentFollow = workspace.onDidChangeTextDocument((e) => {
+							let document = e.document;
+
+							// if the file changing is the current log file then scroll
+							if (currentWindow && document.fileName == currentLogPath) {
+								const editor = currentWindow.visibleTextEditors.find(
+									(editor) => editor.document === document
+								);
+								if (editor) {
+									editor.revealRange(new Range(document.lineCount, 0, document.lineCount, 0), TextEditorRevealType.Default);
+								}
+							}
+						});
+					} else {
+						if (currentFollow) {
+							currentFollow.dispose();
+						}
+					}
+				}
+
+				currentLogPath = logFile;
+
+				let timeout = logConfig.timeout;
+				let responseTimeout = config.responseTimeout;
+				if (timeout && responseTimeout && (timeout * 1000) > responseTimeout) {
+					timeout = (responseTimeout / 1000);
+				}
+
+				logClient.startLogging(logFile, timeout).catch((error) => {
+					if (typeof error !== 'undefined' && typeof error.toJSON === 'function') {
+						let jsonError = error.toJSON();
+						if (typeof jsonError.message !== 'undefined') {
+							window.showErrorMessage(jsonError.message, { modal: true });
+						} else {
+							window.showErrorMessage(JSON.stringify(jsonError), { modal: true });
+						}
+					} else if (typeof error !== 'undefined' && typeof error.Error !== 'undefined' && typeof error.Error.message !== 'undefined') {
+						window.showErrorMessage(error.Error.message, { modal: true });
+					} else if (error instanceof Error) {
+						window.showErrorMessage(error.message, { modal: true });
+					} else {
+						window.showErrorMessage(error, { modal: true });
+					}
+
+					if (logState) { toggleLog(); }
+				});
+				logState = !logState;
+			}
+		} catch (error) {
+			if (logState) {
+				toggleLog();
+			}
+
+			if (error && typeof error.reasonCode !== 'undefined' && error.reasonCode === 'BMXAA0021E') {
+				password = undefined;
+				window.showErrorMessage(error.message, { modal: true });
+			} else if (error && typeof error.message !== 'undefined') {
+				window.showErrorMessage(error.message, { modal: true });
+			} else {
+				window.showErrorMessage('An unexpected error occurred: ' + error, { modal: true });
+			}
+
+			if (logClient) {
+				logClient.disconnect();
+				logClient = undefined;
+			}
+
+		}
+	}
+
+	if (logState) {
+		statusBar.text = '$(sync~spin) Maximo Log';
+	} else {
+		statusBar.text = '$(book) Maximo Log';
+	}
+}
+
+function _onConfigurationChange(e) {
+	if (this) {
+		if (e.affectsConfiguration('sharptree.maximo.logging.follow')) {
+			if (currentFollow) {
+				currentFollow.dispose();
+			}
+
+			if (this.getConfiguration('sharptree').get('maximo.logging.follow')) {
+				currentFollow = this.onDidChangeTextDocument((e) => {
+					let document = e.document;
+
+					// if the file changing is the current log file then scroll
+					if (currentWindow && document.fileName == currentLogPath) {
+						const editor = currentWindow.visibleTextEditors.find(
+							(editor) => editor.document === document
+						);
+						if (editor) {
+							editor.revealRange(new Range(document.lineCount, 0, document.lineCount, 0), TextEditorRevealType.Default);
+						}
+					}
+				});
+			}
+		}
+	}
+
+}
+
+async function getMaximoConfig() {
+	// make sure we have all the settings.
+	if (!validateSettings()) {
+		return;
+	}
+
+	let settings = workspace.getConfiguration('sharptree');
+
+	let host = settings.get('maximo.host');
+	let userName = settings.get('maximo.user');
+	let useSSL = settings.get('maximo.useSSL');
+	let port = settings.get('maximo.port');
+	let apiKey = settings.get('maximo.apiKey');
+
+	let allowUntrustedCerts = settings.get('maximo.allowUntrustedCerts');
+	let maximoContext = settings.get('maximo.context');
+	let timeout = settings.get('maximo.timeout');
+	let ca = settings.get('maximo.customCA');
+	let maxauthOnly = settings.get('maximo.maxauthOnly');
+	let extractLocation = settings.get('maximo.extractLocation');
+
+
+	// if the last user doesn't match the current user then request the password.
+	if (lastUser && lastUser !== userName) {
+		password = null;
+	}
+
+	if (lastHost && lastHost !== host) {
+		password = null;
+	}
+
+	if (lastPort && lastPort !== port) {
+		password = null;
+	}
+
+	if (lastContext && lastContext !== maximoContext) {
+		password = null;
+	}
+	if (!apiKey) {
+		if (!password) {
+			password = await window.showInputBox({
+				prompt: `Enter ${userName}'s password`,
+				password: true,
+				validateInput: text => {
+					if (!text || text.trim() === '') {
+						return 'A password is required';
+					}
+				}
+			});
+		}
+
+		// if the password has not been set then just return.
+		if (!password || password.trim() === '') {
+			console.log('Returning nothing');
+			return undefined;
+		}
+	}
+
+	return new MaximoConfig({
+		username: userName,
+		password: password,
+		useSSL: useSSL,
+		host: host,
+		port: port,
+		context: maximoContext,
+		connectTimeout: timeout * 1000,
+		responseTimeout: timeout * 1000,
+		allowUntrustedCerts: allowUntrustedCerts,
+		ca: ca,
+		maxauthOnly: maxauthOnly,
+		apiKey: apiKey,
+		extractLocation: extractLocation,
+	});
+}
+
+function getLoggingConfig() {
+	let settings = workspace.getConfiguration('sharptree');
+	let outputFile = settings.get('maximo.logging.outputFile');
+	let openEditorOnStart = settings.get('maximo.logging.openEditorOnStart');
+	let append = settings.get('maximo.logging.append');
+	let timeout = settings.get('maximo.logging.timeout');
+	let follow = settings.get('maximo.logging.follow');
+
+	return {
+		'outputFile': outputFile,
+		'openOnStart': openEditorOnStart,
+		'append': append,
+		'timeout': timeout,
+		'follow': follow,
+	};
+}
+
 async function login(client) {
-	let logInSuccessful = await client.connect().then((success) => {
+	let logInSuccessful = await client.connect().then(() => {
 		lastUser = client.config.userName;
 		lastHost = client.config.host;
 		lastPort = client.config.port;
@@ -524,13 +650,17 @@ async function login(client) {
 		return true;
 	}, (error) => {
 		// clear the password on error
-		password = null;
-		lastUser = null;
+		password = undefined;
+		lastUser = undefined;
 		// show the error message to the user.
 		if (error.message.includes('ENOTFOUND')) {
 			window.showErrorMessage('The host name "' + client.config.host + '" cannot be found.', { modal: true });
+		} else if (typeof error.code !== 'undefined' && error.code == 'ECONNRESET') {
+			window.showErrorMessage(error.message, { modal: true });
 		} else if (error.message.includes('ECONNREFUSED')) {
 			window.showErrorMessage('Connection refused to host ' + client.config.host + ' on port ' + client.config.port, { modal: true });
+		} else if (error.isAxiosError && error.response.status == 401) {
+			window.showErrorMessage('User name and password combination are not valid. Try again.', { modal: true });
 		} else {
 			window.showErrorMessage(error.message, { modal: true });
 		}
@@ -611,7 +741,7 @@ async function versionSupported(client) {
 	var version = await client.maximoVersion();
 
 	if (!version) {
-		window.showErrorMessage(`Could not determine the Maximo version. Only Maximo 7.6.0.8 and greater are supported`, { modal: true });
+		window.showErrorMessage('Could not determine the Maximo version. Only Maximo 7.6.0.8 and greater are supported', { modal: true });
 		return false;
 	} else {
 		var checkVersion = version.substr(1, version.indexOf('-') - 1);
@@ -645,7 +775,11 @@ async function asyncForEach(array, callback) {
 	}
 }
 // this method is called when your extension is deactivated
-function deactivate() { }
+function deactivate() {
+	currentWindow = undefined;
+	currentLogPath = undefined;
+
+}
 
 export default {
 	activate,

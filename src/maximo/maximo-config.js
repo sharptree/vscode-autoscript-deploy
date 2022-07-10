@@ -7,7 +7,7 @@ export default class MaximoConfig {
         host,
         port = 443,
         useSSL = true,
-        context = "maximo",
+        context = 'maximo',
         allowUntrustedCerts = false,
         connectTimeout = 5000,
         responseTimeout = 30000,
@@ -15,6 +15,7 @@ export default class MaximoConfig {
         ca,
         maxauthOnly = false,
         apiKey,
+        extractLocation,
     }
     ) {
         this.username = username;
@@ -30,28 +31,29 @@ export default class MaximoConfig {
         this.ca = ca;
         this.maxauthOnly = maxauthOnly;
         this.apiKey = apiKey;
+        this.extractLocation = extractLocation;
     }
 
     get maxauth() {
-        return Buffer.from(this.username + ":" + this.password).toString('base64');
+        return Buffer.from(this.username + ':' + this.password).toString('base64');
     }
 
     get baseURL() {
         return (
-            this.useSSL ? "https://" : "http://") +
+            this.useSSL ? 'https://' : 'http://') +
             this.host +
-            (((this.port === 443 && this.useSSL) || (this.port === 80 && !this.useSSL)) ? "" : ":" + this.port) +
-            "/" +
-            this.context + (this.apiKey ? "/api" : "/oslc");
+            (((this.port === 443 && this.useSSL) || (this.port === 80 && !this.useSSL)) ? '' : ':' + this.port) +
+            '/' +
+            this.context + (this.apiKey ? '/api' : '/oslc');
     }
 
     get formLoginURL() {
         return (
-            this.useSSL ? "https://" : "http://") +
+            this.useSSL ? 'https://' : 'http://') +
             this.host +
-            (((this.port === 443 && this.useSSL) || (this.port === 80 && !this.useSSL)) ? "" : ":" + this.port) +
-            "/" +
-            this.context + "/j_security_check";
+            (((this.port === 443 && this.useSSL) || (this.port === 80 && !this.useSSL)) ? '' : ':' + this.port) +
+            '/' +
+            this.context + '/j_security_check';
     }
 }
 

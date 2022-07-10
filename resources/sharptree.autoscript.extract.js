@@ -1,3 +1,7 @@
+/* eslint-disable no-redeclare */
+/* eslint-disable indent */
+/* eslint-disable quotes */
+/* eslint-disable no-undef */
 // @ts-nocheck
 RESTRequest = Java.type("com.ibm.tivoli.oslc.RESTRequest");
 
@@ -353,7 +357,7 @@ function extractScriptConfiguration(autoScript) {
                 launchPoint.objectName = scriptLaunchPoint.getString("OBJECTNAME");
 
                 if (!scriptLaunchPoint.isNull("CONDITION")) {
-                    launchPoint.condition = scriptLaunchPoint.getString("CONDITION")
+                    launchPoint.condition = scriptLaunchPoint.getString("CONDITION");
                 }
 
 
@@ -513,14 +517,17 @@ function getRequestScriptName() {
 
 
 // Logging functions provided for compatibility with older versions where service.log_xxxx is not available.
+// eslint-disable-next-line no-unused-vars
 function log_debug(msg) {
     logger.debug(msg);
 }
 
+// eslint-disable-next-line no-unused-vars
 function log_info(msg) {
     logger.info(msg);
 }
 
+// eslint-disable-next-line no-unused-vars
 function log_warn(msg) {
     logger.warn(msg);
 }

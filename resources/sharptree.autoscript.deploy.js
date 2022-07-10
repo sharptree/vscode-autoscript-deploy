@@ -1,3 +1,7 @@
+/* eslint-disable no-redeclare */
+/* eslint-disable indent */
+/* eslint-disable quotes */
+/* eslint-disable no-undef */
 // @ts-nocheck
 load("nashorn:parser.js");
 
@@ -278,7 +282,7 @@ function deployScript(scriptSource, language) {
                                     throw new ScriptError("missing_save_action", "At least one object save action of either add, update, or delete must be provided.");
                                 }
 
-                                var saveWhenAdded = false
+                                var saveWhenAdded = false;
                                 if (typeof element.beforeSave !== 'undefined' && element.beforeSave) {
                                     scriptLaunchPoint.setValue("EVCONTEXT", "0");
                                     saveWhenAdded = true;
@@ -295,7 +299,7 @@ function deployScript(scriptSource, language) {
                                 }
 
                             } else {
-                                throw new ScriptError("missing_attribute", "One of the following attributes is required when defining an Object launch point: initializeValue, validateApplication, allowObjectCreation, allowObjectDeletion, or save.")
+                                throw new ScriptError("missing_attribute", "One of the following attributes is required when defining an Object launch point: initializeValue, validateApplication, allowObjectCreation, allowObjectDeletion, or save.");
                             }
 
                         } else if (element.launchPointType.toUpperCase() === 'ATTRIBUTE') {
@@ -319,7 +323,7 @@ function deployScript(scriptSource, language) {
                             } else if (typeof element.runAction !== 'undefined' && element.runAction) {
                                 scriptLaunchPoint.setValue("ATTRIBUTEEVENT", "4");
                             } else {
-                                throw new ScriptError("missing_attribute", "One of the following attributes is required when defining an Attribute launch point: initializeAccessRestriction, initializeValue, validate, retrieveList or runAction.")
+                                throw new ScriptError("missing_attribute", "One of the following attributes is required when defining an Attribute launch point: initializeAccessRestriction, initializeValue, validate, retrieveList or runAction.");
                             }
                         } else if (element.launchPointType.toUpperCase() === 'ACTION') {
                             if (typeof element.actionName === 'undefined') {
@@ -434,7 +438,7 @@ function checkPermissions(app, optionName) {
     }
 
     if (!MXServer.getMXServer().lookup("SECURITY").getProfile(userInfo).hasAppOption(app, optionName) && !isInAdminGroup()) {
-        throw new ScriptError("no_permission", "The user " + userInfo.getUserName() + " does not have access to the " + optionName + " option in the " + app + " application.");
+        throw new ScriptError("no_permission", "The user " + userInfo.getUserName() + " does not have access to the " + optionName + " option in the " + app + "  object structure.");
     }
 }
 
@@ -478,7 +482,7 @@ function getConfigFromScript(scriptSource, language) {
             if (found.length == 1) {
                 var config = found[0];
                 config = config.trim().substring(config.indexOf("{"), config.length - 3);
-                return JSON.parse(config)
+                return JSON.parse(config);
             } else {
                 throw new ScriptError("config_not_found", "Configuration variable scriptConfig was not found in the script.");
             }
@@ -487,7 +491,7 @@ function getConfigFromScript(scriptSource, language) {
             try {
                 ast = parse(scriptSource);
             } catch (error) {
-                log_error(JSON.stringify(error))
+                log_error(JSON.stringify(error));
                 throw new ScriptError("parsing_error", "Error parsing script, please see log for details.");
             }
             if (ast.type === "Program" && ast.body) {
@@ -607,14 +611,17 @@ function getScriptVersion(scriptName) {
 }
 
 // Logging functions provided for compatibility with older versions where service.log_xxxx is not available.
+// eslint-disable-next-line no-unused-vars
 function log_debug(msg) {
     logger.debug(msg);
 }
 
+// eslint-disable-next-line no-unused-vars
 function log_info(msg) {
     logger.info(msg);
 }
 
+// eslint-disable-next-line no-unused-vars
 function log_warn(msg) {
     logger.warn(msg);
 }
