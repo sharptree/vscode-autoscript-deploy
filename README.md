@@ -52,9 +52,14 @@ Upon completion a dialog will be displayed confirming the configuration was succ
 
 ![Configuration Complete](images/install_scripts_complete.png)
 
-The extension is now ready to deploy automation scripts. This process is only for the initial configuration. After the initial configuration, any user that is in the Maximo Administrators group or has been granted the `Deploy Automation Script` permission under the `SHARPTREE_UTILS` object structure as shown below.
+The extension is now ready to deploy automation scripts. After the initial configuration, any user that is in the Maximo Administrators group or has been granted the `Deploy Automation Script` permission under the `SHARPTREE_UTILS` object structure as shown below can deploy scripts from Visual Studio Code.
 
 ![Sharptree Utils Deploy Automation Script Permission](./images/sharptree_utils_permission.png)
+
+For log streaming, any user that is in the Maximo Administrators group or has been granted the `Stream Log` permission under the `LOGGING` application as shown below, has access to stream the Maximo log to Visual Studio Code.
+
+![Logging Stream Log Permission](./images/logging_permission.png)
+
 
 ### Maximo Configuration Details
 As part of the configuration, an integration object named `SHARPTREE_UTILS` is created and the automation scripts listed below are also created.
@@ -195,4 +200,4 @@ To stream the Maximo log to a local file click the `Maximo Log` status bar item 
 - Maximo 7.6.0.8 or higher, Maximo Application Suite 8 is supported.
 - Files must have a `.js` or `.py` extension.
 - This extension requires Maximo to support Nashorn scripts, which requires Maximo to be running on Java 8.
-- Initial configuration must be done by a user in the administrative group defined by `ADMINGROUP` `MAXVARS` entry.  Typically this is `MAXADMIN`.##
+- Initial configuration must be done by a user in the administrative group defined by `ADMINGROUP` `MAXVARS` entry.  Typically this is `MAXADMIN`.
