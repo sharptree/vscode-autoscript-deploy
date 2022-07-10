@@ -1,9 +1,14 @@
+/* eslint-disable no-redeclare */
+/* eslint-disable indent */
+/* eslint-disable quotes */
+/* eslint-disable no-undef */
 // @ts-nocheck
 RESTRequest = Java.type("com.ibm.tivoli.oslc.RESTRequest");
 ScriptInfo = Java.type("com.ibm.tivoli.maximo.script.ScriptInfo");
 ScriptCache = Java.type("com.ibm.tivoli.maximo.script.ScriptCache");
 ScriptDriverFactory = Java.type("com.ibm.tivoli.maximo.script.ScriptDriverFactory");
 
+// eslint-disable-next-line no-global-assign
 String = Java.type("java.lang.String");
 System = Java.type("java.lang.System");
 
@@ -77,7 +82,7 @@ function main() {
 
 function _validateHttpRequestAndGetConfigName() {
     if (typeof httpMethod == 'undefined') {
-        throw new ConfigError('missing_http_method', 'The configuration automation script must be invoked from an Http request and the httpMethod must be available.')
+        throw new ConfigError('missing_http_method', 'The configuration automation script must be invoked from an Http request and the httpMethod must be available.');
     }
 
     if (typeof request == 'undefined') {
@@ -188,6 +193,7 @@ function _saveConfigScript(config) {
     }
 }
 
+// eslint-disable-next-line no-unused-vars
 function createOrUpdateScript(scriptName, script, userName) {
     var scriptInfo;
     var toBeCreated = false;
@@ -222,7 +228,7 @@ function createOrUpdateScript(scriptName, script, userName) {
 
 
 function create(name, config) {
-    var serverConfig = invokeScript(configScript).config
+    var serverConfig = invokeScript(configScript).config;
 
     if (serverConfig[name]) {
         throw new ConfigError("config_exists", 'The ' + name + ' configuration already exists and must be unique.');
@@ -246,7 +252,7 @@ function create(name, config) {
 }
 
 function read(name) {
-    var serverConfig = invokeScript(configScript).config
+    var serverConfig = invokeScript(configScript).config;
     var result = serverConfig[name];
 
     if (typeof result === 'undefined') {
@@ -256,7 +262,7 @@ function read(name) {
 }
 
 function update(name, config) {
-    var serverConfig = invokeScript(configScript).config
+    var serverConfig = invokeScript(configScript).config;
     var result = serverConfig[name];
 
     if (typeof result === 'undefined') {
@@ -276,7 +282,7 @@ function update(name, config) {
             // if the error is that a record has been updated by another user then try again if the block we're saving wasn't modified.
             if (error.getErrorGroup() == "system" && error.getErrorKey() == "rowupdateexception") {
 
-                var checkServerConfig = invokeScript(configScript).config
+                var checkServerConfig = invokeScript(configScript).config;
                 var checkResult = checkServerConfig[name];
 
                 if (typeof checkResult === 'undefined') {
@@ -300,7 +306,7 @@ function update(name, config) {
 
 // used remove function name because delete is a reserved word.
 function remove(name) {
-    var serverConfig = invokeScript(configScript).config
+    var serverConfig = invokeScript(configScript).config;
     var result = serverConfig[name];
 
     if (typeof result === 'undefined') {
@@ -324,7 +330,7 @@ function remove(name) {
 
 function _calculateSignature(config) {
     // This is the ES5 version of Object.assign since Nashorn is not ES6 compatible.
-    var evalConfig = JSON.parse(JSON.stringify(config))
+    var evalConfig = JSON.parse(JSON.stringify(config));
 
     // remove an existing signature so it isn't included in the hash
     delete evalConfig.signature;
@@ -332,7 +338,7 @@ function _calculateSignature(config) {
 }
 
 function ConfigError(reason, message) {
-    Error.call(this, message)
+    Error.call(this, message);
     this.reason = reason;
     this.message = message;
 }
@@ -361,6 +367,7 @@ function _close(set) {
 }
 
 // Logging functions provided for compatibility with older versions where service.log_xxxx is not available.
+// eslint-disable-next-line no-unused-vars
 function log_debug(msg) {
     logger.debug(msg);
 }
@@ -369,6 +376,7 @@ function log_info(msg) {
     logger.info(msg);
 }
 
+// eslint-disable-next-line no-unused-vars
 function log_warn(msg) {
     logger.warn(msg);
 }

@@ -1,12 +1,19 @@
+/* eslint-disable no-redeclare */
+/* eslint-disable indent */
+/* eslint-disable quotes */
+/* eslint-disable no-undef */
 // @ts-nocheck
+
 RESTRequest = Java.type("com.ibm.tivoli.oslc.RESTRequest");
 
 Thread = Java.type("java.lang.Thread");
 
+// eslint-disable-next-line no-global-assign
 Date = Java.type("java.util.Date");
 
 System = Java.type("java.lang.System");
 
+// eslint-disable-next-line no-global-assign
 File = Java.type("java.io.File");
 RandomAccessFile = Java.type("java.io.RandomAccessFile");
 
@@ -27,9 +34,7 @@ var APPENDER_NAME = "logstream";
 var PARENT_APPENDER = "Console";
 
 var SECURITY_APP = "LOGGING";
-var SECURITY_OPTION = "LOGSTREAM";
-
-var SESSION_LKP = 0;
+var SECURITY_OPTION = "STREAMLOG";
 
 // The maximum number of seconds that the request will remain open.
 var MAX_TIMEOUT = 30;
@@ -58,7 +63,7 @@ function main() {
             timeout = timeout * 1000;
 
             if (Version.majorVersion == "8") {
-                _handleV8(timeout)
+                _handleV8(timeout);
             } else if (Version.majorVersion == "7") {
                 _handleV7(timeout);
             } else {
@@ -194,8 +199,8 @@ function initSecurity() {
             sigoption = sigOptionSet.add();
             sigoption.setValue("APP", SECURITY_APP);
             sigoption.setValue("OPTIONNAME", SECURITY_OPTION);
-            sigoption.setValue("DESCRIPTION", "Allow streaming the log with an automation script.");
-            sigoption.setValue("ESIGENABLED", false)
+            sigoption.setValue("DESCRIPTION", "Stream Log");
+            sigoption.setValue("ESIGENABLED", false);
             sigOptionSet.save();
 
             var adminGroup = MXServer.getMXServer().lookup("MAXVARS").getString("ADMINGROUP", null);
@@ -254,6 +259,7 @@ function close(set) {
     }
 }
 
+// eslint-disable-next-line no-unused-vars
 var scriptConfig = {
     "autoscript": "SHARPTREE.AUTOSCRIPT.LOGGING",
     "description": "Stream the log file.",
