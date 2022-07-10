@@ -1,7 +1,11 @@
 # Release Notes
-## 1.3.0 
+## 1.4.0 
 - Add log streaming to local file.
 - Bug fixes
+
+## 1.3.0
+- Added api/script context support.  
+  
 ## 1.2.0
 - Added support for API Key authentication.
   

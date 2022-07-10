@@ -1,3 +1,5 @@
+/* eslint-disable indent */
+/* eslint-disable no-redeclare */
 import axios from 'axios';
 import https from 'https';
 import {
@@ -18,7 +20,7 @@ import {
 } from './errors';
 
 import * as fs from 'fs';
-import * as path from 'path'
+import * as path from 'path';
 
 import MaximoConfig from './maximo-config';
 import { TextDecoder } from 'util';
@@ -27,14 +29,14 @@ export default class MaximoClient {
 
     constructor(config) {
         if (!(config instanceof MaximoConfig)) {
-            throw "config parameter must be an instance of MaximoConfig";
+            throw 'config parameter must be an instance of MaximoConfig';
         }
         this.maxVersion = 'undefined';
         // keep a reference to the config for later use.
         this.config = config;
 
-        this.requiredScriptVersion = '1.13.0';
-        this.currentScriptVersion = '1.13.0';
+        this.requiredScriptVersion = '1.14.0';
+        this.currentScriptVersion = '1.14.0';
 
         if (config.ca) {
             https.globalAgent.options.ca = config.ca;
@@ -60,22 +62,22 @@ export default class MaximoClient {
 
         this.client.interceptors.request.use(function (request) {
             // If the requested URL is the login endpoint, the inject the auth headers.              
-            if (request.url === "login") {
+            if (request.url === 'login') {
 
                 this._addAuthHeaders(request);
 
                 if (this.config.apiKey) {
                     if (request.params) {
-                        request.params.set("apikey", config.apiKey);
+                        request.params.set('apikey', config.apiKey);
                     } else {
-                        request.params = { "apikey": config.apiKey };
+                        request.params = { 'apikey': config.apiKey };
                     }
                 }
 
                 request.maxRedirects = 0;
                 request.validateStatus = function (status) {
                     return status == 200 || status == 302;
-                }
+                };
             } else {
                 // // Add the x-public-uri header to ensure Maximo response URI's are properly addressed for external access.
                 // // https://www.ibm.com/docs/en/mema"s?topic=imam-downloading-work-orders-by-using-maximo-mxapiwodetail-api
@@ -83,14 +85,14 @@ export default class MaximoClient {
 
 
                 if (this.config.apiKey) {
-                    request.params = { "lean": (this.config.lean ? "true" : "false"), "apikey": this.config.apiKey };
+                    request.params = { 'lean': (this.config.lean ? 'true' : 'false'), 'apikey': this.config.apiKey };
                 } else {
-                    request.params = { "lean": (this.config.lean ? "true" : "false") };
+                    request.params = { 'lean': (this.config.lean ? 'true' : 'false') };
                 }
             }
 
             // @ts-ignore
-            this.jar.getCookiesSync((request.url && request.url.startsWith("http")) ? request.url : request.baseURL, function (err, cookies) {
+            this.jar.getCookiesSync((request.url && request.url.startsWith('http')) ? request.url : request.baseURL, function (err, cookies) {
                 request.headers['cookie'] = cookies.join('; ');
             });
 
@@ -112,7 +114,7 @@ export default class MaximoClient {
                 }
 
                 parsedCookies.forEach((cookie) => {
-                    this.jar.setCookieSync(cookie, response.request.protocol + "//" + response.request.host);
+                    this.jar.setCookieSync(cookie, response.request.protocol + '//' + response.request.host);
                 });
             }
 
@@ -133,18 +135,17 @@ export default class MaximoClient {
     }
 
     async connect() {
-        var response = await this.client.post("login");
+        var response = await this.client.post('login');
 
         var maxRedirects = 5;
 
+        var redirectUri = response.headers['location'];
         if (response.status == 302 && this._isOIDCAuthRedirectResponse(response)) {
 
-            var redirectUri = response.headers['location'];
             for (var i = 0; i < maxRedirects; i++) {
                 if (redirectUri == null) {
                     break;
                 }
-                // this.jar.getCookiesSync(redirectUri);
 
                 response = await this.client.get(redirectUri, {
                     maxRedirects: 0,
@@ -165,7 +166,6 @@ export default class MaximoClient {
 
         } else if (response.status == 302 && this._isLTPAFormRedirect(response)) {
 
-            var redirectUri = response.headers['location'];
             for (var i = 0; i < maxRedirects; i++) {
                 if (redirectUri == null) {
                     break;
@@ -175,7 +175,7 @@ export default class MaximoClient {
 
                     const headers = {
                         'content-type': 'application/x-www-form-urlencoded',
-                    }
+                    };
                     const data = `j_username=${this.config.username}&j_password=${this.config.password}`;
 
                     response = await this.client.post(this.config.formLoginURL, data, {
@@ -192,7 +192,7 @@ export default class MaximoClient {
                     break;
                 } else if (redirectUri.includes('loginerror.jsp')) {
                     this._isConnected = false;
-                    throw new LoginFailedError("You cannot log in at this time. Contact the system administrator.");
+                    throw new LoginFailedError('You cannot log in at this time. Contact the system administrator.');
                 } else {
 
                     response = await this.client.post(redirectUri, {
@@ -311,7 +311,7 @@ export default class MaximoClient {
                 this._isConnected = true;
             } else if (response.status == 401) {
                 this._isConnected = false;
-                throw new LoginFailedError("You cannot log in at this time. Contact the system administrator.");
+                throw new LoginFailedError('You cannot log in at this time. Contact the system administrator.');
             } else {
                 this._isConnected = false;
             }
@@ -322,9 +322,9 @@ export default class MaximoClient {
         // we don't care about the response status because if it fails there is nothing we can do about it.
         if (this._isConnected) {
             try {
-                await this.client.post("logout", { withCredentials: true });
+                await this.client.post('logout', { withCredentials: true });
             } catch (error) {
-                console.error("Warning disconnecting: " + JSON.stringify(error));
+                console.error('Warning disconnecting: ' + JSON.stringify(error));
             }
         }
     }
@@ -335,7 +335,7 @@ export default class MaximoClient {
         }
 
         let isPython = fileName.endsWith('.py');
-        progress.report({ increment: 10, message: `Getting script from the server.` });
+        progress.report({ increment: 10, message: 'Getting script from the server.' });
 
         const options = {
             url: 'script/sharptree.autoscript.deploy/source/' + (isPython ? '/python' : ''),
@@ -345,14 +345,14 @@ export default class MaximoClient {
                 Accept: 'application/json'
             },
             data: script
-        }
+        };
 
-        progress.report({ increment: 50, message: `Getting script from the server.` });
+        progress.report({ increment: 50, message: 'Getting script from the server.' });
         await new Promise(resolve => setTimeout(resolve, 100));
         // @ts-ignore
         const result = await this.client.request(options);
 
-        progress.report({ increment: 90, message: `Getting script from the server.` });
+        progress.report({ increment: 90, message: 'Getting script from the server.' });
         return result.data;
     }
 
@@ -374,7 +374,7 @@ export default class MaximoClient {
                 Accept: 'application/json'
             },
             data: script
-        }
+        };
 
         progress.report({ increment: 50, message: `Deploying script ${fileName}` });
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -397,13 +397,13 @@ export default class MaximoClient {
             url: 'os/mxscript?oslc.select=autoscript&oslc.where=autoscript="SHARPTREE.AUTOSCRIPT.DEPLOY"',
             method: MaximoClient.Method.GET,
             headers: { common: headers },
-        }
+        };
 
         // @ts-ignore
         const response = await this.client.request(options);
 
         if (!response || response.headers['content-type'] !== 'application/json') {
-            throw new MaximoError("Received an unexpected response from the server. Content-Type header is not application/json.");
+            throw new MaximoError('Received an unexpected response from the server. Content-Type header is not application/json.');
         }
 
         return response.data.member.length !== 0;
@@ -420,18 +420,18 @@ export default class MaximoClient {
             url: 'script/SHARPTREE.AUTOSCRIPT.DEPLOY/version',
             method: MaximoClient.Method.GET,
             headers: { common: headers },
+        };
+
+        // @ts-ignore
+        const response = await this.client.request(options);
+        if (typeof response.data.version !== 'undefined') {
+            return semver.lt(response.data.version, this.requiredScriptVersion);
+        } else if (typeof response.data.status !== 'undefined' && response.data.status === 'error') {
+            throw new MaximoError(response.data.message);
+        } else {
+            return true;
         }
-        try {
-            // @ts-ignore
-            const response = await this.client.request(options);
-            if (typeof response.data.version !== 'undefined') {
-                return semver.lt(response.data.version, this.requiredScriptVersion);
-            } else {
-                return true;
-            }
-        } catch (error) {
-            console.error(error);
-        }
+
 
     }
 
@@ -446,7 +446,7 @@ export default class MaximoClient {
             url: '',
             method: MaximoClient.Method.GET,
             headers: { common: headers },
-        }
+        };
 
         // @ts-ignore
         var response = await this.client.request(options);
@@ -456,7 +456,7 @@ export default class MaximoClient {
                 url: 'members/thisserver/jvm',
                 method: MaximoClient.Method.GET,
                 headers: { common: headers },
-            }
+            };
 
             // @ts-ignore    
             response = await this.client.request(options).catch((error) => {
@@ -497,7 +497,7 @@ export default class MaximoClient {
                 url: '',
                 method: MaximoClient.Method.GET,
                 headers: { common: headers },
-            }
+            };
 
             // @ts-ignore
             const response = await this.client.request(options);
@@ -510,7 +510,7 @@ export default class MaximoClient {
     async installOrUpgrade(progress, bootstrap) {
 
         if (!this._isConnected) {
-            throw new MaximoError("Maximo client is not connected.");
+            throw new MaximoError('Maximo client is not connected.');
         }
 
         progress.report({ increment: 0 });
@@ -527,25 +527,34 @@ export default class MaximoClient {
             await new Promise(resolve => setTimeout(resolve, 500));
         }
 
-        let source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.deploy.js')).toString();
-        await this._installOrUpdateScript('sharptree.autoscript.deploy', 'Sharptree Automation Script Deploy Script', source, progress, 20);
-
-        source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.store.js')).toString();
+        // eslint-disable-next-line no-undef
+        let source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.store.js')).toString();
         await this._installOrUpdateScript('sharptree.autoscript.store', 'Sharptree Automation Script Storage Script', source, progress, 20);
 
+        // eslint-disable-next-line no-undef
         source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.extract.js')).toString();
         await this._installOrUpdateScript('sharptree.autoscript.extract', 'Sharptree Automation Script Extract Script', source, progress, 20);
 
+        // eslint-disable-next-line no-undef
         source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.logging.js')).toString();
         await this._installOrUpdateScript('sharptree.autoscript.logging', 'Sharptree Automation Script Log Streaming', source, progress, 20);
 
-        progress.report({ increment: 20 });
+        // initialize the logging security.
+        result = this._initLogStreamSecurity();
 
+        if (result.status == 'error') {
+            throw new MaximoError(result.message);
+        }
+
+        // eslint-disable-next-line no-undef
+        source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.deploy.js')).toString();
+        await this._installOrUpdateScript('sharptree.autoscript.deploy', 'Sharptree Automation Script Deploy Script', source, progress, 20);
+
+        progress.report({ increment: 20 });
     }
 
     // @ts-ignore
     async startLogging(filePath, timeout) {
-        console.log("starting log");
 
         if (typeof timeout === 'undefined') {
             timeout = 30;
@@ -561,7 +570,7 @@ export default class MaximoClient {
             method: MaximoClient.Method.GET,
             responseType: 'stream',
             headers: { common: headers }
-        }
+        };
 
         let lkp = undefined;
         try {
@@ -570,11 +579,13 @@ export default class MaximoClient {
                 if (typeof lkp !== 'undefined') {
                     options.headers['log-lkp'] = lkp;
                 }
+
+                // @ts-ignore
                 let response = await this.client.request(options);
 
                 let contentType = response.headers['content-type'];
 
-                if (contentType === "application/json") {
+                if (contentType === 'application/json') {
                     if (typeof response.data !== 'undefined') {
                         var internalError = await new Promise((resolve, reject) => {
                             let completeData = '';
@@ -583,7 +594,6 @@ export default class MaximoClient {
                                     resolve();
                                 } else {
                                     completeData += data;
-                                    fs.appendFileSync(filePath, data);
                                 }
                             });
 
@@ -592,28 +602,28 @@ export default class MaximoClient {
                                 if (completeData) {
                                     try {
                                         resolve(JSON.parse(completeData));
-                                    } catch (error) { resolve() };
+                                    } catch (error) { resolve(); }
                                 } else {
                                     resolve();
                                 }
 
-                            })
+                            });
 
                             response.data.on('error', () => {
                                 this.stopLogging();
-                                reject()
-                            })
+                                reject();
+                            });
                         });
                         if (internalError) {
                             throw new MaximoError(internalError.message);
                         } else {
-                            throw new MaximoError("An unexpected JSON response was returned by the server.");
+                            throw new MaximoError('An unexpected JSON response was returned by the server.');
                         }
 
                     } else {
-                        throw new MaximoError("An unexpected JSON response was returned by the server.");
+                        throw new MaximoError('An unexpected JSON response was returned by the server.');
                     }
-                } else if (contentType === "text/event-stream") {
+                } else if (contentType === 'text/event-stream') {
 
                     lkp = await new Promise((resolve, reject) => {
                         let internalLKP = undefined;
@@ -622,11 +632,11 @@ export default class MaximoClient {
                                 resolve();
                             } else {
                                 if (data && data instanceof Uint8Array) {
-                                    let decoder = new TextDecoder("utf-8");
+                                    let decoder = new TextDecoder('utf-8');
                                     let sData = decoder.decode(data);
-                                    if (sData.startsWith("log-lkp=")) {
+                                    if (sData.startsWith('log-lkp=')) {
                                         internalLKP = sData.substring(8);
-                                    } else if (sData.indexOf("WARNING: Cannot set status. Response already committed.") > 0) {
+                                    } else if (sData.indexOf('WARNING: Cannot set status. Response already committed.') > 0) {
                                         // do nothing.
                                     } else if (sData === '') {
                                         // do nothing on a blank line
@@ -638,13 +648,13 @@ export default class MaximoClient {
                         });
 
                         response.data.on('end', () => {
-                            resolve(internalLKP)
-                        })
+                            resolve(internalLKP);
+                        });
 
                         response.data.on('error', () => {
                             this.stopLogging();
-                            reject()
-                        })
+                            reject();
+                        });
                     });
                 } else {
                     throw new Error(`Unexpected Content-Type ${contentType} was returned by the server.`);
@@ -663,7 +673,6 @@ export default class MaximoClient {
                         resolve();
                     } else {
                         completeData += data;
-                        fs.appendFileSync(filePath, data);
                     }
                 });
 
@@ -672,17 +681,16 @@ export default class MaximoClient {
                     if (completeData) {
                         try {
                             resolve(JSON.parse(completeData));
-                        } catch (error) { resolve() };
+                        } catch (error) { resolve(); }
                     } else {
                         resolve();
                     }
-
-                })
+                });
 
                 error.response.data.on('error', () => {
                     this.stopLogging();
-                    reject()
-                })
+                    reject();
+                });
             });
 
             if (internalError) {
@@ -696,7 +704,6 @@ export default class MaximoClient {
     async stopLogging() {
         this._isLogging = false;
         this.disconnect();
-        console.log("stopping log");
     }
 
 
@@ -705,10 +712,10 @@ export default class MaximoClient {
         headers['Content-Type'] = 'application/json';
 
         let options = {
-            url: `os/mxscript?oslc.select=autoscript&oslc.pageSize=10`,
+            url: 'os/mxscript?oslc.select=autoscript&oslc.pageSize=10',
             method: MaximoClient.Method.GET,
             headers: { common: headers },
-        }
+        };
 
         var scriptNames = [];
         let hasMorePages = true;
@@ -718,12 +725,12 @@ export default class MaximoClient {
             let response = await this.client.request(options);
             if (response.data.member.length !== 0) {
                 response.data.member.forEach(member => {
-                    if (!member.autoscript.startsWith("SHARPTREE.AUTOSCRIPT")) {
+                    if (!member.autoscript.startsWith('SHARPTREE.AUTOSCRIPT')) {
                         scriptNames.push(member.autoscript.toLowerCase());
                     }
                 });
             }
-            hasMorePages = typeof response.data.responseInfo.nextPage !== 'undefined'
+            hasMorePages = typeof response.data.responseInfo.nextPage !== 'undefined';
 
             if (hasMorePages) {
                 let pageNumber = response.data.responseInfo.pagenum + 1;
@@ -734,12 +741,14 @@ export default class MaximoClient {
         return scriptNames;
     }
 
-    // @ts-ignore
+    // @ts-ignore    
+    // eslint-disable-next-line no-unused-vars
     async getPageData(url) {
 
     }
 
     // @ts-ignore
+    // eslint-disable-next-line no-unused-vars
     async extractScript(script) {
 
     }
@@ -753,7 +762,7 @@ export default class MaximoClient {
             url: `script/sharptree.autoscript.extract/${scriptName}`,
             method: MaximoClient.Method.GET,
             headers: { common: headers },
-        }
+        };
 
         // @ts-ignore
         let response = await this.client.request(options);
@@ -766,6 +775,21 @@ export default class MaximoClient {
     }
 
 
+    async _initLogStreamSecurity() {
+        let headers = new Map();
+        headers['Content-Type'] = 'application/json';
+
+        let options = {
+            url: 'script/sharptree.autoscript.logging?initialize=true',
+            method: MaximoClient.Method.GET,
+            headers: { common: headers }
+        };
+
+        // @ts-ignore
+        let response = await this.client.request(options);
+        return response.data.status == true;
+    }
+
     async _installOrUpdateScript(script, description, source, progress, increment) {
         let scriptURI = await this._getScriptURI(script);
 
@@ -775,11 +799,11 @@ export default class MaximoClient {
         // update if a script uri was found.
         if (scriptURI) {
             let deployScript = {
-                "description": description,
-                "status": "Active",
-                "version": this.currentScriptVersion,
-                "source": source
-            }
+                'description': description,
+                'status': 'Active',
+                'version': this.currentScriptVersion,
+                'source': source
+            };
 
             headers['x-method-override'] = 'PATCH';
 
@@ -788,7 +812,7 @@ export default class MaximoClient {
                 method: MaximoClient.Method.POST,
                 headers: { common: headers },
                 data: deployScript
-            }
+            };
 
             // @ts-ignore
             await this.client.request(options);
@@ -798,20 +822,20 @@ export default class MaximoClient {
 
         } else {
             const deployScript = {
-                "autoscript": script,
-                "description": description,
-                "status": "Active",
-                "version": this.currentScriptVersion,
-                "scriptlanguage": "nashorn",
-                "source": source
-            }
+                'autoscript': script,
+                'description': description,
+                'status': 'Active',
+                'version': this.currentScriptVersion,
+                'scriptlanguage': 'nashorn',
+                'source': source
+            };
 
             const options = {
                 url: 'os/mxscript',
                 method: MaximoClient.Method.POST,
                 headers: { common: headers },
                 data: deployScript
-            }
+            };
 
             // @ts-ignore
             await this.client.request(options);
@@ -828,7 +852,7 @@ export default class MaximoClient {
             url: `os/mxscript?oslc.select=autoscript&oslc.where=autoscript="${script}"`,
             method: MaximoClient.Method.GET,
             headers: { common: headers },
-        }
+        };
 
         // @ts-ignore
         let response = await this.client.request(options);
@@ -841,7 +865,7 @@ export default class MaximoClient {
 
     async _bootstrap(progress) {
         if (!this._isConnected) {
-            throw new MaximoError("Maximo client is not connected.");
+            throw new MaximoError('Maximo client is not connected.');
         }
 
         let refUri;
@@ -849,13 +873,14 @@ export default class MaximoClient {
             const headers = new Map();
             headers['Content-Type'] = 'application/json';
 
+            // eslint-disable-next-line no-undef
             let source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.install.js')).toString();
 
             let options = {
                 url: 'os/mxscript?oslc.select=autoscript&oslc.where=autoscript="SHARPTREE.AUTOSCRIPT.INSTALL"',
                 method: MaximoClient.Method.GET,
                 headers: { common: headers },
-            }
+            };
 
             // @ts-ignore
             let response = await this.client.request(options);
@@ -868,34 +893,34 @@ export default class MaximoClient {
 
             if (href) {
                 let deployScript = {
-                    "description": "Sharptree AutoScript Deploy Bootstrap",
-                    "status": "Active",
-                    "version": this.currentScriptVersion,
-                    "scriptlanguage": "nashorn",
-                    "source": source
-                }
-                headers["x-method-override"] = "PATCH";
+                    'description': 'Sharptree AutoScript Deploy Bootstrap',
+                    'status': 'Active',
+                    'version': this.currentScriptVersion,
+                    'scriptlanguage': 'nashorn',
+                    'source': source
+                };
+                headers['x-method-override'] = 'PATCH';
                 options = {
                     url: href,
                     method: MaximoClient.Method.POST,
                     headers: { common: headers },
                     data: deployScript
-                }
+                };
             } else {
                 let deployScript = {
-                    "autoscript": "sharptree.autoscript.install",
-                    "description": "Sharptree AutoScript Deploy Bootstrap",
-                    "status": "Active",
-                    "version": "1.0.0",
-                    "scriptlanguage": "nashorn",
-                    "source": source
-                }
+                    'autoscript': 'sharptree.autoscript.install',
+                    'description': 'Sharptree AutoScript Deploy Bootstrap',
+                    'status': 'Active',
+                    'version': '1.0.0',
+                    'scriptlanguage': 'nashorn',
+                    'source': source
+                };
                 options = {
                     url: 'os/mxscript',
                     method: MaximoClient.Method.POST,
                     headers: { common: headers },
                     data: deployScript
-                }
+                };
             }
 
             // @ts-ignore
@@ -912,7 +937,7 @@ export default class MaximoClient {
                 url: 'script/sharptree.autoscript.install',
                 method: MaximoClient.Method.POST,
                 headers: { common: headers },
-            }
+            };
 
             // @ts-ignore
             var result = await this.client.request(options);
@@ -923,7 +948,7 @@ export default class MaximoClient {
                 let options = {
                     url: refUri,
                     method: MaximoClient.Method.DELETE,
-                }
+                };
 
                 // @ts-ignore
                 await this.client.request(options);
@@ -985,10 +1010,10 @@ export default class MaximoClient {
 
     static get Method() {
         return {
-            GET: "GET",
-            POST: "POST",
-            DELETE: "DELETE",
-            PUT: "PUT",
+            GET: 'GET',
+            POST: 'POST',
+            DELETE: 'DELETE',
+            PUT: 'PUT',
         };
     }
 }

@@ -52,9 +52,14 @@ Upon completion a dialog will be displayed confirming the configuration was succ
 
 ![Configuration Complete](images/install_scripts_complete.png)
 
-The extension is now ready to deploy automation scripts. This process is only for the initial configuration. After the initial configuration, any user that is in the Maximo Administrators group or has been granted the `Deploy Automation Script` permission under the `SHARPTREE_UTILS` object structure as shown below.
+The extension is now ready to deploy automation scripts. After the initial configuration, any user that is in the Maximo Administrators group or has been granted the `Deploy Automation Script` permission under the `SHARPTREE_UTILS` object structure as shown below can deploy scripts from Visual Studio Code.
 
 ![Sharptree Utils Deploy Automation Script Permission](./images/sharptree_utils_permission.png)
+
+For log streaming, any user that is in the Maximo Administrators group or has been granted the `Stream Log` permission under the `LOGGING` application as shown below, has access to stream the Maximo log to Visual Studio Code.
+
+![Logging Stream Log Permission](./images/logging_permission.png)
+
 
 ### Maximo Configuration Details
 As part of the configuration, an integration object named `SHARPTREE_UTILS` is created and the automation scripts listed below are also created.
@@ -169,7 +174,7 @@ scriptConfig = """{
 ## Deploy Automation Script
 To deploy a script, open script in Visual Studio Code, then bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Deploy Automation Script`. If this is the first time deploying a script after starting Visual Studio Code you will be prompted for your Maximo password as this extension does not store passwords. The script is then deployed as can be seen below.
 
-![Deploy Automation Script](./images/palete_password_deploy_example.gif)
+![Deploy Automation Script](./images/palette_password_deploy_example.gif)
 
 After the script has been deployed you can view the script in Maximo. Each deployment replaces the script launch point configuration with the configuration defined in the `scriptConfig` JSON.
 
@@ -178,12 +183,12 @@ After the script has been deployed you can view the script in Maximo. Each deplo
 ## Extract Automation Scripts
 To extract the scripts currently deployed to Maximo, bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Extract Automation Scripts`. The extension will query Maximo for the available scripts and then prompt for confirmation to extract the scripts as shown below. Scripts are saved to the directory specified in the `Extract Location` setting. If the setting has not been configured, the scripts are extracted to the current workspace folder.
 
-![Extract Automation Script](images/palete_password_extract_example.gif)
+![Extract Automation Script](images/palette_password_extract_example.gif)
 
 ## Compare Automation Script
 To compare the current script with the script deployed on the server, bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Compare Automation Script`. The extension will query Maximo for the current script that is in the editor based on the `scriptConfig` variable and open a new window, providing the Visual Studio Code diff editor.
 
-![Compare Script](images/palete_compare_example.gif)
+![Compare Script](images/palette_compare_example.gif)
 
 ## Log Streaming
 To stream the Maximo log to a local file click the `Maximo Log` status bar item to toggle streaming.  The rotating status icon indicates that the log is currently streaming.
@@ -195,4 +200,4 @@ To stream the Maximo log to a local file click the `Maximo Log` status bar item 
 - Maximo 7.6.0.8 or higher, Maximo Application Suite 8 is supported.
 - Files must have a `.js` or `.py` extension.
 - This extension requires Maximo to support Nashorn scripts, which requires Maximo to be running on Java 8.
-- Initial configuration must be done by a user in the administrative group defined by `ADMINGROUP` `MAXVARS` entry.  Typically this is `MAXADMIN`.##
+- Initial configuration must be done by a user in the administrative group defined by `ADMINGROUP` `MAXVARS` entry.  Typically this is `MAXADMIN`.

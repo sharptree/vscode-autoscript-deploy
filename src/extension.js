@@ -1,3 +1,4 @@
+/* eslint-disable indent */
 // @ts-nocheck
 import { window, commands, workspace, ProgressLocation, Uri, StatusBarAlignment, TextEditorRevealType, Range } from 'vscode';
 
@@ -8,15 +9,13 @@ import ServerSourceProvider from './maximo/provider';
 import { validateSettings } from './settings';
 import * as path from 'path';
 import * as fs from 'fs';
-import * as readline from 'readline';
 
 import * as crypto from 'crypto';
 
-import * as temp from 'temp'
+import * as temp from 'temp';
 
 
 temp.track();
-
 
 var password;
 var lastUser;
@@ -42,7 +41,10 @@ export function activate(context) {
 	// create a new status bar item that we can now manage
 	statusBar = window.createStatusBarItem(StatusBarAlignment.Left, 0);
 	statusBar.command = logCommandId;
+	// eslint-disable-next-line quotes
 	statusBar.text = `$(book) Maximo Log`;
+	// eslint-disable-next-line quotes
+	statusBar.tooltip = `Toggle Maximo log streaming`;
 	statusBar.show();
 
 	context.subscriptions.push(statusBar);
@@ -52,7 +54,7 @@ export function activate(context) {
 	context.subscriptions.push(workspace.registerTextDocumentContentProvider('vscode-autoscript-deploy', new ServerSourceProvider(fetchedSource)));
 
 	let disposableCompare = commands.registerCommand(
-		"maximo-script-deploy.compare",
+		'maximo-script-deploy.compare',
 		async function () {
 
 			const config = await getMaximoConfig();
@@ -77,9 +79,9 @@ export function activate(context) {
 								// Get the document text
 								const script = document.getText();
 								if (script && script.trim().length > 0) {
-									var result = await window.withProgress({ cancellable: false, title: `Script`, location: ProgressLocation.Notification },
+									await window.withProgress({ cancellable: false, title: 'Script', location: ProgressLocation.Notification },
 										async (progress) => {
-											progress.report({ message: `Getting script from the server.`, increment: 0 });
+											progress.report({ message: 'Getting script from the server.', increment: 0 });
 
 											await new Promise(resolve => setTimeout(resolve, 500));
 											let result = await client.getScriptSource(script, progress, fileName);
@@ -95,14 +97,14 @@ export function activate(context) {
 													}
 												} else {
 													if (result.source) {
-														progress.report({ increment: 100, message: `Successfully got script from the server.` });
+														progress.report({ increment: 100, message: 'Successfully got script from the server.' });
 														await new Promise(resolve => setTimeout(resolve, 2000));
 														let localScript = document.uri;
 														let serverScript = Uri.parse('vscode-autoscript-deploy:' + fileName);
 
 														fetchedSource[serverScript.path] = result.source;
 
-														commands.executeCommand('vscode.diff', localScript, serverScript, "↔ server " + fileName);
+														commands.executeCommand('vscode.diff', localScript, serverScript, '↔ server ' + fileName);
 													} else {
 														window.showErrorMessage(`The ${fileName} was not found on ${config.host}.\n\nCheck that the scriptConfig.autoscript value matches a script on the server.`, { modal: true });
 													}
@@ -135,7 +137,7 @@ export function activate(context) {
 			} finally {
 				// if the client exists then disconnect it.
 				if (client) {
-					await client.disconnect().catch((error) => {
+					await client.disconnect().catch(() => {
 						//do nothing with this
 					});
 				}
@@ -145,7 +147,7 @@ export function activate(context) {
 
 
 	let disposableDeploy = commands.registerCommand(
-		"maximo-script-deploy.deploy",
+		'maximo-script-deploy.deploy',
 		async function () {
 
 			const config = await getMaximoConfig();
@@ -171,7 +173,7 @@ export function activate(context) {
 								// Get the document text
 								const script = document.getText();
 								if (script && script.trim().length > 0) {
-									var result = await window.withProgress({ cancellable: false, title: `Script`, location: ProgressLocation.Notification },
+									await window.withProgress({ cancellable: false, title: 'Script', location: ProgressLocation.Notification },
 										async (progress) => {
 											progress.report({ message: `Deploying script ${fileName}`, increment: 0 });
 
@@ -219,7 +221,7 @@ export function activate(context) {
 			} finally {
 				// if the client exists then disconnect it.
 				if (client) {
-					await client.disconnect().catch((error) => {
+					await client.disconnect().catch(() => {
 						//do nothing with this
 					});
 				}
@@ -228,7 +230,7 @@ export function activate(context) {
 	);
 
 	let disposableExtract = commands.registerCommand(
-		"maximo-script-deploy.extract",
+		'maximo-script-deploy.extract',
 		async function () {
 
 			const config = await getMaximoConfig();
@@ -261,7 +263,7 @@ export function activate(context) {
 
 					let scriptNames = await window.withProgress({ title: 'Getting script names', location: ProgressLocation.Notification }, async (progress) => {
 						return await client.getAllScriptNames(progress);
-					})
+					});
 
 					if (typeof scriptNames !== 'undefined' && scriptNames.length > 0) {
 
@@ -277,22 +279,22 @@ export function activate(context) {
 									let overwriteAll = false;
 									let overwrite = false;
 
-									await asyncForEach(scriptNames, async (scriptName, index) => {
+									await asyncForEach(scriptNames, async (scriptName) => {
 										if (!cancelToken.isCancellationRequested) {
 											progress.report({ increment: percent, message: `Extracting ${scriptName}` });
 											let scriptInfo = await client.getScript(scriptName);
 
 											let fileExtension = getExtension(scriptInfo.scriptLanguage);
 
-											let outputFile = extractLoc + "/" + scriptName.toLowerCase() + fileExtension;
+											let outputFile = extractLoc + '/' + scriptName.toLowerCase() + fileExtension;
 
 											// if the file doesn't exist then just write it out.
 											if (!fs.existsSync(outputFile)) {
 												fs.writeFileSync(outputFile, scriptInfo.script);
 											} else {
 
-												let incomingHash = crypto.createHash("sha256").update(scriptInfo.script).digest("hex")
-												let fileHash = crypto.createHash("sha256").update(fs.readFileSync(outputFile)).digest("hex")
+												let incomingHash = crypto.createHash('sha256').update(scriptInfo.script).digest('hex');
+												let fileHash = crypto.createHash('sha256').update(fs.readFileSync(outputFile)).digest('hex');
 
 												if (fileHash !== incomingHash) {
 													if (!overwriteAll) {
@@ -331,7 +333,7 @@ export function activate(context) {
 						});
 
 					} else {
-						window.showErrorMessage("No scripts were found to extract.", { modal: true });
+						window.showErrorMessage('No scripts were found to extract.', { modal: true });
 					}
 
 				}
@@ -348,7 +350,7 @@ export function activate(context) {
 			} finally {
 				// if the client exists then disconnect it.
 				if (client) {
-					await client.disconnect().catch((error) => {
+					await client.disconnect().catch(() => {
 						//do nothing with this
 					});
 				}
@@ -402,7 +404,7 @@ async function toggleLog() {
 							return;
 						}
 					} else {
-						let logFolder = path.dirname(logFilePath)
+						let logFolder = path.dirname(logFilePath);
 						if (!fs.existsSync(logFolder)) {
 							window.showErrorMessage(`The log file folder ${logFolder} does not exist.`, { modal: true });
 							return;
@@ -412,6 +414,7 @@ async function toggleLog() {
 					logFilePath = temp.path({ suffix: '.log', defaultPrefix: 'maximo' });
 				}
 
+				// eslint-disable-next-line no-undef
 				const logFile = isAbsolute ? path.resolve(logFilePath) : path.resolve(__dirname, logFilePath);
 
 				currentLogPath = logFile;
@@ -513,20 +516,20 @@ async function toggleLog() {
 	}
 
 	if (logState) {
-		statusBar.text = `$(sync~spin) Maximo Log`;
+		statusBar.text = '$(sync~spin) Maximo Log';
 	} else {
-		statusBar.text = `$(book) Maximo Log`;
+		statusBar.text = '$(book) Maximo Log';
 	}
 }
 
 function _onConfigurationChange(e) {
 	if (this) {
-		if (e.affectsConfiguration("sharptree.maximo.logging.follow")) {
+		if (e.affectsConfiguration('sharptree.maximo.logging.follow')) {
 			if (currentFollow) {
 				currentFollow.dispose();
 			}
 
-			if (this.getConfiguration("sharptree").get("maximo.logging.follow")) {
+			if (this.getConfiguration('sharptree').get('maximo.logging.follow')) {
 				currentFollow = this.onDidChangeTextDocument((e) => {
 					let document = e.document;
 
@@ -558,14 +561,14 @@ async function getMaximoConfig() {
 	let userName = settings.get('maximo.user');
 	let useSSL = settings.get('maximo.useSSL');
 	let port = settings.get('maximo.port');
-	let apiKey = settings.get("maximo.apiKey");
+	let apiKey = settings.get('maximo.apiKey');
 
 	let allowUntrustedCerts = settings.get('maximo.allowUntrustedCerts');
 	let maximoContext = settings.get('maximo.context');
 	let timeout = settings.get('maximo.timeout');
-	let ca = settings.get("maximo.customCA");
-	let maxauthOnly = settings.get("maximo.maxauthOnly");
-	let extractLocation = settings.get("maximo.extractLocation");
+	let ca = settings.get('maximo.customCA');
+	let maxauthOnly = settings.get('maximo.maxauthOnly');
+	let extractLocation = settings.get('maximo.extractLocation');
 
 
 	// if the last user doesn't match the current user then request the password.
@@ -599,7 +602,7 @@ async function getMaximoConfig() {
 
 		// if the password has not been set then just return.
 		if (!password || password.trim() === '') {
-			console.log("Returning nothing");
+			console.log('Returning nothing');
 			return undefined;
 		}
 	}
@@ -626,20 +629,20 @@ function getLoggingConfig() {
 	let outputFile = settings.get('maximo.logging.outputFile');
 	let openEditorOnStart = settings.get('maximo.logging.openEditorOnStart');
 	let append = settings.get('maximo.logging.append');
-	let timeout = settings.get("maximo.logging.timeout");
-	let follow = settings.get("maximo.logging.follow");
+	let timeout = settings.get('maximo.logging.timeout');
+	let follow = settings.get('maximo.logging.follow');
 
 	return {
-		"outputFile": outputFile,
-		"openOnStart": openEditorOnStart,
-		"append": append,
-		"timeout": timeout,
-		"follow": follow,
-	}
+		'outputFile': outputFile,
+		'openOnStart': openEditorOnStart,
+		'append': append,
+		'timeout': timeout,
+		'follow': follow,
+	};
 }
 
 async function login(client) {
-	let logInSuccessful = await client.connect().then((success) => {
+	let logInSuccessful = await client.connect().then(() => {
 		lastUser = client.config.userName;
 		lastHost = client.config.host;
 		lastPort = client.config.port;
@@ -738,7 +741,7 @@ async function versionSupported(client) {
 	var version = await client.maximoVersion();
 
 	if (!version) {
-		window.showErrorMessage(`Could not determine the Maximo version. Only Maximo 7.6.0.8 and greater are supported`, { modal: true });
+		window.showErrorMessage('Could not determine the Maximo version. Only Maximo 7.6.0.8 and greater are supported', { modal: true });
 		return false;
 	} else {
 		var checkVersion = version.substr(1, version.indexOf('-') - 1);
