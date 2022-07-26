@@ -1,6 +1,11 @@
 # Release Notes
+## 1.5.0
+- Added support for screen extract and deploy.
+- Added tag Id generation shortcut.
+- Updated documentation and screen shots.
+  
 ## 1.4.0 
-- Add log streaming to local file.
+- Added log streaming to local file.
 - Bug fixes
 
 ## 1.3.0

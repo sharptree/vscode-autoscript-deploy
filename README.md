@@ -1,6 +1,6 @@
-# VS Code Automation Script Deployment Utility
+# VS Code Maximo Development Tools
 
-Deploy [Maximo Automation Scripts](https://www.ibm.com/docs/SSLLAM_7.6.0/com.ibm.mbs.doc/autoscript/c_automation_scripts.html) directly to Maximo from Visual Studio Code.
+Deploy [Maximo Automation Scripts](https://www.ibm.com/docs/SSLLAM_7.6.0/com.ibm.mbs.doc/autoscript/c_automation_scripts.html) and Maximo screen definitions directly from Visual Studio Code.
 
 The extension allows developers to describe the automation script through the use of a `scriptConfig` variable and then deploy the script directly to Maximo from Visual Studio Code. The provided `SHARPTREE.AUTOSCRIPT.DEPLOY` automation script provides support for build pipelines and automated deployment of automation scripts from a Git repository. 
 
@@ -194,16 +194,16 @@ To extract the scripts currently deployed to Maximo, bring up the Visual Studio 
 ## Extract Screen Definitions
 To extract the screens from Maximo, bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Extract Screen Definitions`. The extension will query Maximo for the available screens and then prompt for confirmation to extract the screens as shown below. Screens are saved to the directory specified in the `Extract Screen Location` setting. If the setting has not been configured, the screen definitions are extracted to the current workspace folder.
 
-![Extract Screen Definition](images/palette_password_extract_example.gif)
+![Extract Screen Definition](images/palette_screen_extract_example.gif)
 
 > The screen definition XML is consistently formatted when extracted to assist with comparison.  To ensure the formatting remains consisted, when using the standard XML formatter ensure that the `Space Before Empty Close Tag` is unchecked.
-> ![Empty Close Tag Setting](./image/../images/empty_close_tag_setting.png)
+> ![Empty Close Tag Setting](./images/empty_close_tag_setting.png)
 
 ## Compare with Maximo
 To compare the current script or screen definition with the script or screen on the server, bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Compare with Maximo`. The extension will query Maximo for the current script or screen that is in the editor based on the `scriptConfig` variable or `<presentation id=""` attribute and open a new window, providing the Visual Studio Code diff editor.
 
 ### Compare Script
-![Compare Script](images/pallette_compare_example.gif)
+![Compare Script](images/palette_compare_example.gif)
 
 ### Compare Screen
 ![Compare Screen](images/pallette_compare_screen_example.gif)
