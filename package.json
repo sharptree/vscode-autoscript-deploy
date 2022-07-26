@@ -28,8 +28,9 @@
 		"vscode": "^1.46.0"
 	},
 	"activationEvents": [
-		"onCommand:maximo-script-deploy.extract",
+		"onCommand:maximo-script-deploy.extracts",
 		"onCommand:maximo-script-deploy.deploy",
+		"onCommand:maximo-script-deploy.screens",
 		"onCommand:maximo-script-deploy.compare",
 		"*"
 	],
@@ -64,6 +65,11 @@
 					"default": "",
 					"description": "The Maximo script extraction location."
 				},
+				"sharptree.maximo.extractScreenLocation": {
+					"type": "string",
+					"default": "",
+					"description": "The Maximo screens extraction location."
+				},
 				"sharptree.maximo.port": {
 					"type": "number",
 					"default": 443,
@@ -86,7 +92,7 @@
 					"default": false,
 					"description": "Allow untrusted SSL certificates."
 				},
-				"sharptree.maximo.maxauthOnly": {
+				"sharptree.maximo.`maxauthOnly`": {
 					"type": "boolean",
 					"default": false,
 					"description": "Do not send Basic authentication header."
@@ -126,7 +132,7 @@
 		"commands": [
 			{
 				"command": "maximo-script-deploy.deploy",
-				"title": "Deploy Automation Script"
+				"title": "Deploy to Maximo"
 			},
 			{
 				"command": "maximo-script-deploy.extract",
@@ -134,7 +140,15 @@
 			},
 			{
 				"command": "maximo-script-deploy.compare",
-				"title": "Compare Automation Script"
+				"title": "Compare with Maximo"
+			},
+			{
+				"command": "maximo-script-deploy.screens",
+				"title": "Extract Screen Definitions"
+			},
+			{
+				"command": "maximo-script-deploy.id",
+				"title": "Insert Unique Id for Maximo Presentation Tag"
 			}
 		],
 		"keybindings": [
@@ -142,6 +156,12 @@
 				"command": "maximo-script-deploy.deploy",
 				"key": "ctrl+alt+m",
 				"mac": "ctrl+cmd+m",
+				"when": "editorFocus"
+			},
+			{
+				"command": "maximo-script-deploy.id",
+				"key": "ctrl+alt+i",
+				"mac": "ctrl+cmd+i",
 				"when": "editorFocus"
 			}
 		]
@@ -178,6 +198,9 @@
 		"readline": "^1.3.0",
 		"semver": "^7.3.5",
 		"temp": "^0.9.4",
-		"tough-cookie": "^4.0.0"
+		"text-encoding": "^0.7.0",
+		"tough-cookie": "^4.0.0",
+		"xml-formatter": "^2.6.1",
+		"xml2js": "^0.4.23"
 	}
 }

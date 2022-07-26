@@ -1,10 +1,11 @@
 /* eslint-disable indent */
 // @ts-nocheck
-import { window, commands, workspace, ProgressLocation, Uri, StatusBarAlignment, TextEditorRevealType, Range } from 'vscode';
-
+import { window, commands, workspace, ProgressLocation, Uri, StatusBarAlignment, TextEditorRevealType, Range, Position } from 'vscode';
+import { parseString } from 'xml2js';
 import MaximoConfig from './maximo/maximo-config';
 import MaximoClient from './maximo/maximo-client';
 import ServerSourceProvider from './maximo/provider';
+import * as format from 'xml-formatter';
 
 import { validateSettings } from './settings';
 import * as path from 'path';
@@ -13,6 +14,7 @@ import * as fs from 'fs';
 import * as crypto from 'crypto';
 
 import * as temp from 'temp';
+import { TextDecoder, TextEncoder } from 'text-encoding';
 
 
 temp.track();
@@ -33,6 +35,8 @@ const supportedVersions = ['7608', '7609', '76010', '76011', '7610', '7611', '76
 var statusBar;
 
 export function activate(context) {
+
+
 	context.subscriptions.push(workspace.onDidChangeConfiguration(_onConfigurationChange.bind(workspace)));
 	currentWindow = window;
 	const logCommandId = 'maximo-script-deploy.log';
@@ -51,7 +55,78 @@ export function activate(context) {
 
 	let fetchedSource = new Map();
 
+	let globalSettings = context.globalStoragePath + path.sep + 'userprefs.json';
+
+
+
 	context.subscriptions.push(workspace.registerTextDocumentContentProvider('vscode-autoscript-deploy', new ServerSourceProvider(fetchedSource)));
+
+	let disposableInsert = commands.registerTextEditorCommand('maximo-script-deploy.id', (editor, edit) => {
+		let fileName = path.basename(editor.document.fileName);
+
+		// if we are not dealing with an XML file do nothing.
+		if (!fileName.endsWith('.xml')) {
+			return;
+		}
+
+		var currentSelection = editor.selection;
+		var regex = /<[^>]+(>)/g;
+		let start = editor.document.offsetAt(new Position(currentSelection.start.line, currentSelection.start.character));
+
+		let match;
+
+		let found = false;
+		while ((match = regex.exec(editor.document.getText()))) {
+			if (start > match.index && start < regex.lastIndex) {
+				let tag = match[0];
+				let idMatch = /id= *".+?"/.exec(tag);
+
+				if (idMatch) {
+					let startId = match.index + idMatch.index;
+					let endId = startId + idMatch[0].length;
+					edit.replace(new Range(editor.document.positionAt(startId), editor.document.positionAt(endId)), `id="${Date.now()}"`);
+					found = true;
+				} else {
+					let tagMatch = /<.* /.exec(tag);
+					if (tagMatch) {
+						let startId = match.index + tagMatch.index + tagMatch[0].length;
+						edit.insert(editor.document.positionAt(startId), `id="${Date.now()}" `);
+						found = true;
+					}
+				}
+
+				break;
+			}
+		}
+
+		if (!found) {
+			if (fs.existsSync(globalSettings)) {
+				workspace.fs.readFile(Uri.file(globalSettings)).then((data) => {
+					if (data) {
+						let settings = JSON.parse(new TextDecoder().decode(data));
+						if (settings && !settings.suppressXMLIdMessage) {
+							window.showWarningMessage('Select an XML tag to insert an Id.', 'Don\'t Show Again').then(selection => {
+								if (selection == 'Don\'t Show Again') {
+									settings.suppressXMLIdMessage = true;
+									workspace.fs.writeFile(Uri.file(globalSettings), JSON.stringify(settings, null, 4));
+								}
+							});
+						}
+					}
+				});
+			} else {
+				window.showWarningMessage('Select an XML tag to insert an Id.', 'Don\'t Show Again').then(selection => {
+					if (selection == 'Don\'t Show Again') {
+						let settings = { suppressXMLIdMessage: true };
+						workspace.fs.writeFile(Uri.file(globalSettings), new TextEncoder().encode(JSON.stringify(settings, null, 4))).catch(error => console.log(error));
+
+					}
+				});
+			}
+
+
+		}
+	});
 
 	let disposableCompare = commands.registerCommand(
 		'maximo-script-deploy.compare',
@@ -117,14 +192,73 @@ export function activate(context) {
 								} else {
 									window.showErrorMessage('The selected Automation Script cannot be empty.', { modal: true });
 								}
+							} else if (fileName.endsWith('.xml')) {
+								// Get the document text
+								const screen = document.getText();
+								let screenName;
+								if (screen && screen.trim().length > 0) {
+
+									parseString(screen, function (error, result) {
+										if (error) {
+											window.showErrorMessage(error.message, { modal: true });
+											return;
+										} else {
+											screenName = result.presentation.$.id;
+										}
+									});
+
+									if (!screenName) {
+										window.showErrorMessage('Unable to find presentation id from current document. Cannot fetch screen from server to compare.', { modal: true });
+										return;
+									}
+
+
+									await window.withProgress({ cancellable: false, title: 'Screen', location: ProgressLocation.Notification },
+										async (progress) => {
+											progress.report({ message: 'Getting screen from the server.', increment: 0 });
+
+											await new Promise(resolve => setTimeout(resolve, 500));
+											let result = await client.getScreen(screenName, progress, fileName);
+
+											if (result) {
+												if (result.status === 'error') {
+													if (result.message) {
+														window.showErrorMessage(result.message, { modal: true });
+													} else if (result.cause) {
+														window.showErrorMessage(`Error: ${JSON.stringify(result.cause)}`, { modal: true });
+													} else {
+														window.showErrorMessage('An unknown error occurred: ' + JSON.stringify(result), { modal: true });
+													}
+												} else {
+													if (result.presentation) {
+														progress.report({ increment: 100, message: 'Successfully got screen from the server.' });
+														await new Promise(resolve => setTimeout(resolve, 2000));
+														let localScreen = document.uri;
+														let serverScreen = Uri.parse('vscode-autoscript-deploy:' + fileName);
+
+														fetchedSource[serverScreen.path] = format(result.presentation);
+
+														commands.executeCommand('vscode.diff', localScreen, serverScreen, '↔ server ' + fileName);
+													} else {
+														window.showErrorMessage(`The ${fileName} was not found on ${config.host}.\n\nCheck that the presentation id attribute value matches a Screen Definition on the server.`, { modal: true });
+													}
+												}
+											} else {
+												window.showErrorMessage('Did not receive a response from Maximo.', { modal: true });
+											}
+											return result;
+										});
+								} else {
+									window.showErrorMessage('The selected Screen Definition cannot be empty.', { modal: true });
+								}
 							} else {
-								window.showErrorMessage('The selected Automation Script must have a Javascript (\'.js\') or Python (\'.py\') file extension.', { modal: true });
+								window.showErrorMessage('The selected file must have a Javascript (\'.js\') or Python (\'.py\') file extension for an automation script or (\'.xml\') for a Screen Definition.', { modal: true });
 							}
 						} else {
-							window.showErrorMessage('An Automation Script must be selected to compare.', { modal: true });
+							window.showErrorMessage('An Automation Script or Screen Definition must be selected to compare.', { modal: true });
 						}
 					} else {
-						window.showErrorMessage('An Automation Script must be selected to compare.', { modal: true });
+						window.showErrorMessage('An Automation Script or Screen Definition must be selected to compare.', { modal: true });
 					}
 				}
 			} catch (error) {
@@ -201,14 +335,67 @@ export function activate(context) {
 								} else {
 									window.showErrorMessage('The selected Automation Script cannot be empty.', { modal: true });
 								}
+							} else if (fileName.endsWith('.xml')) {
+								const screen = document.getText();
+								if (screen && screen.trim().length > 0) {
+									var screenName;
+									var parseError;
+									parseString(screen, function (error, result) {
+										parseError = error;
+										if (error) {
+											return;
+										} else {
+											console.log(JSON.stringify(result, null, 4));
+											screenName = result.presentation.$.id;
+										}
+									});
+
+									if (parseError) {
+										window.showErrorMessage(`Error parsing ${fileName}: ${parseError.message}`, { modal: true });
+										return;
+									}
+
+									if (!screenName) {
+										window.showErrorMessage('Unable to find presentation id from current document. Cannot fetch screen from server to compare.', { modal: true });
+										return;
+									}
+
+									await window.withProgress({ cancellable: false, title: 'Screen', location: ProgressLocation.Notification },
+										async (progress) => {
+											progress.report({ message: `Deploying screen ${fileName}`, increment: 0 });
+
+											await new Promise(resolve => setTimeout(resolve, 500));
+											let result = await client.postScreen(screen, progress, fileName);
+
+											if (result) {
+												if (result.status === 'error') {
+													if (result.message) {
+														window.showErrorMessage(result.message, { modal: true });
+													} else if (result.cause) {
+														window.showErrorMessage(`Error: ${JSON.stringify(result.cause)}`, { modal: true });
+													} else {
+														window.showErrorMessage('An unknown error occurred: ' + JSON.stringify(result), { modal: true });
+													}
+												} else {
+													progress.report({ increment: 100, message: `Successfully deployed ${fileName}` });
+													await new Promise(resolve => setTimeout(resolve, 2000));
+												}
+											} else {
+												window.showErrorMessage('Did not receive a response from Maximo.', { modal: true });
+											}
+											return result;
+										});
+								} else {
+									window.showErrorMessage('The selected Screen Definition cannot be empty.', { modal: true });
+								}
 							} else {
-								window.showErrorMessage('The selected Automation Script must have a Javascript (\'.js\') or Python (\'.py\') file extension.', { modal: true });
+								window.showErrorMessage('The selected file must have a Javascript (\'.js\') or Python (\'.py\') file extension for an automation script or (\'.xml\') for a Screen Definition.', { modal: true });
 							}
 						} else {
-							window.showErrorMessage('An Automation Script must be selected to deploy.', { modal: true });
+							window.showErrorMessage('An Automation Script or Screen Definition must be selected to deploy.', { modal: true });
 						}
 					} else {
-						window.showErrorMessage('An Automation Script must be selected to deploy.', { modal: true });
+						window.showErrorMessage('An Automation Script or Screen Definition must be selected to deploy.', { modal: true });
 					}
 				}
 			} catch (error) {
@@ -355,10 +542,141 @@ export function activate(context) {
 					});
 				}
 			}
+		}
+	);
+
+
+	let disposableExtractScreens = commands.registerCommand(
+		'maximo-script-deploy.screens',
+		async function () {
+
+			const config = await getMaximoConfig();
+
+			if (!config) {
+				return;
+			}
+
+			let client;
+
+			try {
+				client = new MaximoClient(config);
+
+				if (await login(client)) {
+					let extractLoc = config.extractLocationScreens;
+					// if the extract location has not been specified use the workspace folder.
+					if (typeof extractLoc === 'undefined' || !extractLoc) {
+						if (workspace.workspaceFolders !== undefined) {
+							extractLoc = workspace.workspaceFolders[0].uri.fsPath;
+						} else {
+							window.showErrorMessage('A working folder must be selected or an export folder configured before exporting screen definitions.', { modal: true });
+							return;
+						}
+					}
+
+					if (!fs.existsSync(extractLoc)) {
+						window.showErrorMessage(`The screen extract folder ${extractLoc} does not exist.`, { modal: true });
+						return;
+					}
+
+					let screenNames = await window.withProgress({ title: 'Getting screen names', location: ProgressLocation.Notification }, async () => {
+						return await client.getAllScreenNames();
+					});
+
+					if (typeof screenNames !== 'undefined' && screenNames.length > 0) {
+
+						await window.showInformationMessage('Do you want to extract ' + (screenNames.length > 1 ? 'the ' + screenNames.length + ' screen definitions?' : ' the one screen definition?'), { modal: true }, ...['Yes']).then(async (response) => {
+							if (response === 'Yes') {
+								await window.withProgress({
+									title: 'Extracting Screen Definitions',
+									location: ProgressLocation.Notification,
+									cancellable: true
+								}, async (progress, cancelToken) => {
+									let percent = Math.round(((1) / screenNames.length) * 100);
+
+									let overwriteAll = false;
+									let overwrite = false;
+
+									await asyncForEach(screenNames, async (screenName) => {
+										if (!cancelToken.isCancellationRequested) {
+											progress.report({ increment: percent, message: `Extracting ${screenName.toLowerCase()}` });
+											let screenInfo = await client.getScreen(screenName);
+
+											let fileExtension = '.xml';
+
+											let outputFile = extractLoc + '/' + screenName.toLowerCase() + fileExtension;
+											let xml = format(screenInfo.presentation);
+											// if the file doesn't exist then just write it out.
+											if (!fs.existsSync(outputFile)) {
+												fs.writeFileSync(outputFile, xml);
+											} else {
+
+												let incomingHash = crypto.createHash('sha256').update(xml).digest('hex');
+												let fileHash = crypto.createHash('sha256').update(fs.readFileSync(outputFile)).digest('hex');
+
+												if (fileHash !== incomingHash) {
+													if (!overwriteAll) {
+														await window.showInformationMessage(`The screen ${screenName.toLowerCase()}${fileExtension} exists. \nReplace?`, { modal: true }, ...['Replace', 'Replace All', 'Skip']).then(async (response) => {
+															if (response === 'Replace') {
+																overwrite = true;
+															} else if (response === 'Replace All') {
+																overwriteAll = true;
+															} else if (response === 'Skip') {
+																// do nothing
+																overwrite = false;
+															} else {
+																cancelToken.cancel();
+															}
+														});
+													}
+													if (overwriteAll || overwrite) {
+														console.log(xml);
+														fs.writeFileSync(outputFile, xml);
+														overwrite = false;
+													}
+												}
+											}
+
+											if (cancelToken.isCancellationRequested) {
+												return;
+											}
+										}
+									});
+
+									if (!cancelToken.isCancellationRequested) {
+										window.showInformationMessage('Screen definitions extracted.', { modal: true });
+									}
+								}
+								);
+							}
+						});
+
+					} else {
+						window.showErrorMessage('No screen definitions were found to extract.', { modal: true });
+					}
+
+				}
+			} catch (error) {
+				if (error && typeof error.reasonCode !== 'undefined' && error.reasonCode === 'BMXAA0021E') {
+					password = undefined;
+					window.showErrorMessage(error.message, { modal: true });
+				} else if (error && typeof error.message !== 'undefined') {
+					window.showErrorMessage(error.message, { modal: true });
+				} else {
+					window.showErrorMessage('An unexpected error occurred: ' + error, { modal: true });
+				}
+
+			} finally {
+				// if the client exists then disconnect it.
+				if (client) {
+					await client.disconnect().catch(() => {
+						//do nothing with this
+					});
+				}
+			}
 		});
 
 
-	context.subscriptions.push(disposableDeploy, disposableExtract, disposableCompare);
+	context.subscriptions.push(disposableDeploy, disposableExtract, disposableCompare, disposableExtractScreens, disposableInsert);
 
 }
 
@@ -549,6 +867,29 @@ function _onConfigurationChange(e) {
 
 }
 
+function formatXML(sourceXml) {
+	var xmlDoc = new DOMParser().parseFromString(sourceXml, 'application/xml');
+	var xsltDoc = new DOMParser().parseFromString([
+		// describes how we want to modify the XML - indent everything
+		'<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform">',
+		'  <xsl:strip-space elements="*"/>',
+		'  <xsl:template match="para[content-style][not(text())]">', // change to just text() to strip space in text nodes
+		'    <xsl:value-of select="normalize-space(.)"/>',
+		'  </xsl:template>',
+		'  <xsl:template match="node()|@*">',
+		'    <xsl:copy><xsl:apply-templates select="node()|@*"/></xsl:copy>',
+		'  </xsl:template>',
+		'  <xsl:output indent="yes"/>',
+		'</xsl:stylesheet>',
+	].join('\n'), 'application/xml');
+
+	var xsltProcessor = new XSLTProcessor();
+	xsltProcessor.importStylesheet(xsltDoc);
+	var resultDoc = xsltProcessor.transformToDocument(xmlDoc);
+	var resultXml = new XMLSerializer().serializeToString(resultDoc);
+	return resultXml;
+}
+
 async function getMaximoConfig() {
 	// make sure we have all the settings.
 	if (!validateSettings()) {
@@ -569,6 +910,7 @@ async function getMaximoConfig() {
 	let ca = settings.get('maximo.customCA');
 	let maxauthOnly = settings.get('maximo.maxauthOnly');
 	let extractLocation = settings.get('maximo.extractLocation');
+	let extractLocationScreens = settings.get('maximo.extractScreenLocation');
 
 
 	// if the last user doesn't match the current user then request the password.
@@ -621,6 +963,7 @@ async function getMaximoConfig() {
 		maxauthOnly: maxauthOnly,
 		apiKey: apiKey,
 		extractLocation: extractLocation,
+		extractLocationScreens: extractLocationScreens
 	});
 }
 
