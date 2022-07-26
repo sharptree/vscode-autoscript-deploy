@@ -1,6 +1,6 @@
-# VS Code Automation Script Deployment Utility
+# VS Code Maximo Development Tools
 
-Deploy [Maximo Automation Scripts](https://www.ibm.com/docs/SSLLAM_7.6.0/com.ibm.mbs.doc/autoscript/c_automation_scripts.html) directly to Maximo from Visual Studio Code.
+Deploy [Maximo Automation Scripts](https://www.ibm.com/docs/SSLLAM_7.6.0/com.ibm.mbs.doc/autoscript/c_automation_scripts.html) and Maximo screen definitions directly from Visual Studio Code.
 
 The extension allows developers to describe the automation script through the use of a `scriptConfig` variable and then deploy the script directly to Maximo from Visual Studio Code. The provided `SHARPTREE.AUTOSCRIPT.DEPLOY` automation script provides support for build pipelines and automated deployment of automation scripts from a Git repository. 
 
@@ -17,7 +17,8 @@ The following are settings available under the `Sharptree > Maximo` group.
 | API Key                   |                       | The Maximo API key that will be used to access Maximo. If provided, the user name and password are ignored if configured.                                                     |
 | Context                   | maximo                | The part of the URL that follows the hostname, by default it is `maximo`.                                                                                                     |
 | Custom CA                 |                       | The full chain for the server CA in PEM format.                                                                                                                               |
-| Extract Location          | Current open folder   | Directory where extracted files will be stored.                                                                                                                               |
+| Extract Location          | Current open folder   | Directory where extracted script files will be stored.                                                                                                                               |
+| Extract Screen Location   | Current open folder   | Directory where extracted screen XML files will be stored.                                                                                                                               |
 | Host                      |                       | The Maximo host name *without* the http/s protocol prefix.                                                                                                                    |
 | Maxauth Only              | false                 | Both Maxauth and Basic headers are usually sent for login, however on WebLogic if Basic fails the Maxauth header is ignored. When checked, only the Maxauth header is sent.   |
 | Port                      | 443                   | The Maximo port number, 80 for http, 443 for https or your custom port such as 9080.                                                                                          |
@@ -71,6 +72,7 @@ As part of the configuration, an integration object named `SHARPTREE_UTILS` is c
 | SHARPTREE.AUTOSCRIPT.STORE            | Script for managing the storage of the deploy history.                                                            |
 | SHARPTREE.AUTOSCRIPT.EXTRACT          | Script for extracting scripts from Maximo.                                                                        |
 | SHARPTREE.AUTOSCRIPT.LOGGING          | Script for streaming the Maximo log.                                                                              |
+| SHARPTREE.AUTOSCRIPT.SCREENS          | Script for managing Maximo screen definitions.                                                                    |
 
 ## scriptConfig Variable
 Each script must define a variable named `scriptConfig` that is a JSON object describing how to deploy the script. The extension uses these values to populate the corresponding values of the `AUTOSCRIPT` and `SCRIPTLAUNCHPOINT` Maximo Business Obejcts. At a minimum the `autoscript` attribute is required, all other attributes are optional.  All configuration attributes are available and are defined by their label name without spaces, in camel case.  The example below provides the basic structure.
@@ -171,12 +173,16 @@ scriptConfig = """{
 ```
 
 # Features
-## Deploy Automation Script
-To deploy a script, open script in Visual Studio Code, then bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Deploy Automation Script`. If this is the first time deploying a script after starting Visual Studio Code you will be prompted for your Maximo password as this extension does not store passwords. The script is then deployed as can be seen below.
+## Deploy to Maximo
+To deploy a script or screen definition, open script or screen definition in Visual Studio Code, then bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Deploy to Maximo`. If this is the first time deploying a script or screen definition after starting Visual Studio Code you will be prompted for your Maximo password as this extension does not store passwords. The script or screen definition is then deployed as seen below.
 
-![Deploy Automation Script](./images/palette_password_deploy_example.gif)
+### Deploy Script
+![Deploy Automation Script](./images/palette_script_deploy_example.gif)
 
-After the script has been deployed you can view the script in Maximo. Each deployment replaces the script launch point configuration with the configuration defined in the `scriptConfig` JSON.
+### Deploy Screen
+![Deploy Screen](./images/palette_screen_deploy_example.gif)
+
+If deploying an automation script, after the script has been deployed you can view the script in Maximo. Each deployment replaces the script launch point configuration with the configuration defined in the `scriptConfig` JSON.
 
 ![Maximo Automation Script](images/example_script_maximo.png)
 
@@ -185,16 +191,34 @@ To extract the scripts currently deployed to Maximo, bring up the Visual Studio 
 
 ![Extract Automation Script](images/palette_password_extract_example.gif)
 
-## Compare Automation Script
-To compare the current script with the script deployed on the server, bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Compare Automation Script`. The extension will query Maximo for the current script that is in the editor based on the `scriptConfig` variable and open a new window, providing the Visual Studio Code diff editor.
+## Extract Screen Definitions
+To extract the screens from Maximo, bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Extract Screen Definitions`. The extension will query Maximo for the available screens and then prompt for confirmation to extract the screens as shown below. Screens are saved to the directory specified in the `Extract Screen Location` setting. If the setting has not been configured, the screen definitions are extracted to the current workspace folder.
 
+![Extract Screen Definition](images/palette_screen_extract_example.gif)
+
+> The screen definition XML is consistently formatted when extracted to assist with comparison.  To ensure the formatting remains consisted, when using the standard XML formatter ensure that the `Space Before Empty Close Tag` is unchecked.
+> ![Empty Close Tag Setting](./images/empty_close_tag_setting.png)
+
+## Compare with Maximo
+To compare the current script or screen definition with the script or screen on the server, bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Compare with Maximo`. The extension will query Maximo for the current script or screen that is in the editor based on the `scriptConfig` variable or `<presentation id=""` attribute and open a new window, providing the Visual Studio Code diff editor.
+
+### Compare Script
 ![Compare Script](images/palette_compare_example.gif)
+
+### Compare Screen
+![Compare Screen](images/pallette_compare_screen_example.gif)
 
 ## Log Streaming
 To stream the Maximo log to a local file click the `Maximo Log` status bar item to toggle streaming.  The rotating status icon indicates that the log is currently streaming.
 
 ![Stream the Maximo Log](images/stream_maximo_log.gif)
 
+## Insert Unique Id
+When editing a screen definition XML, ensuring that the `id` attribute is unique can be annoying, especially when copying and pasting sections of the screen. Maximo generates unique `id` attribute values based on the current time since epoch in milliseconds and now you can too.
+
+To insert or update the `id` attribute of a tag to the unique value of the current time in milliseconds since epoch, bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Insert Unique Id for Maximo Presentation Tag` or press `ctrl + ⌘ + i` or `ctrl + alt + i`).
+
+![Update unique Id](images/unique_id_example.gif)
 # Requirements
 
 - Maximo 7.6.0.8 or higher, Maximo Application Suite 8 is supported.

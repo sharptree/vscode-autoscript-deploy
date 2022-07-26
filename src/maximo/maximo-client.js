@@ -35,8 +35,8 @@ export default class MaximoClient {
         // keep a reference to the config for later use.
         this.config = config;
 
-        this.requiredScriptVersion = '1.14.0';
-        this.currentScriptVersion = '1.14.0';
+        this.requiredScriptVersion = '1.15.0';
+        this.currentScriptVersion = '1.15.0';
 
         if (config.ca) {
             https.globalAgent.options.ca = config.ca;
@@ -385,6 +385,33 @@ export default class MaximoClient {
         return result.data;
 
     }
+    async postScreen(screen, progress, fileName) {
+
+        if (!this._isConnected) {
+            await this.connect();
+        }
+
+        progress.report({ increment: 10, message: `Deploying screen ${fileName}` });
+
+        const options = {
+            url: 'script/sharptree.autoscript.screens',
+            method: MaximoClient.Method.POST,
+            headers: {
+                'Content-Type': 'text/plain',
+                Accept: 'application/json'
+            },
+            data: screen
+        };
+
+        progress.report({ increment: 50, message: `Deploying screen ${fileName}` });
+        await new Promise(resolve => setTimeout(resolve, 100));
+        // @ts-ignore
+        const result = await this.client.request(options);
+
+        progress.report({ increment: 90, message: `Deploying screen ${fileName}` });
+        return result.data;
+
+    }
 
     async installed() {
         if (!this._isConnected) {
@@ -529,15 +556,15 @@ export default class MaximoClient {
 
         // eslint-disable-next-line no-undef
         let source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.store.js')).toString();
-        await this._installOrUpdateScript('sharptree.autoscript.store', 'Sharptree Automation Script Storage Script', source, progress, 20);
+        await this._installOrUpdateScript('sharptree.autoscript.store', 'Sharptree Automation Script Storage Script', source, progress, 16);
 
         // eslint-disable-next-line no-undef
         source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.extract.js')).toString();
-        await this._installOrUpdateScript('sharptree.autoscript.extract', 'Sharptree Automation Script Extract Script', source, progress, 20);
+        await this._installOrUpdateScript('sharptree.autoscript.extract', 'Sharptree Automation Script Extract Script', source, progress, 16);
 
         // eslint-disable-next-line no-undef
         source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.logging.js')).toString();
-        await this._installOrUpdateScript('sharptree.autoscript.logging', 'Sharptree Automation Script Log Streaming', source, progress, 20);
+        await this._installOrUpdateScript('sharptree.autoscript.logging', 'Sharptree Automation Script Log Streaming', source, progress, 16);
 
         // initialize the logging security.
         result = this._initLogStreamSecurity();
@@ -548,9 +575,12 @@ export default class MaximoClient {
 
         // eslint-disable-next-line no-undef
         source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.deploy.js')).toString();
-        await this._installOrUpdateScript('sharptree.autoscript.deploy', 'Sharptree Automation Script Deploy Script', source, progress, 20);
+        await this._installOrUpdateScript('sharptree.autoscript.deploy', 'Sharptree Automation Script Deploy Script', source, progress, 16);
 
-        progress.report({ increment: 20 });
+        source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.screens.js')).toString();
+        await this._installOrUpdateScript('sharptree.autoscript.screens', 'Sharptree Screens Script', source, progress, 16);
+
+        progress.report({ increment: 16 });
     }
 
     // @ts-ignore
@@ -741,6 +771,26 @@ export default class MaximoClient {
         return scriptNames;
     }
 
+    async getAllScreenNames() {
+
+        const headers = new Map();
+        headers['Content-Type'] = 'application/json';
+
+        let options = {
+            url: 'script/sharptree.autoscript.screens',
+            method: MaximoClient.Method.GET,
+            headers: { common: headers },
+        };
+        // @ts-ignore
+        let response = await this.client.request(options);
+
+        if (response.data.status === 'success') {
+            return response.data.screenNames;
+        } else {
+            throw new Error(response.data.message);
+        }
+    }
+
     // @ts-ignore    
     // eslint-disable-next-line no-unused-vars
     async getPageData(url) {
@@ -760,6 +810,27 @@ export default class MaximoClient {
 
         let options = {
             url: `script/sharptree.autoscript.extract/${scriptName}`,
+            method: MaximoClient.Method.GET,
+            headers: { common: headers },
+        };
+
+        // @ts-ignore
+        let response = await this.client.request(options);
+
+        if (response.data.status === 'success') {
+            return response.data;
+        } else {
+            throw new Error(response.data.message);
+        }
+    }
+
+    async getScreen(screenName) {
+
+        const headers = new Map();
+        headers['Content-Type'] = 'application/json';
+
+        let options = {
+            url: `script/sharptree.autoscript.screens/${screenName}`,
             method: MaximoClient.Method.GET,
             headers: { common: headers },
         };
