@@ -203,12 +203,19 @@ export function activate(context) {
 											window.showErrorMessage(error.message, { modal: true });
 											return;
 										} else {
-											screenName = result.presentation.$.id;
+											if (result.presentation) {
+												screenName = result.presentation.$.id;
+											} else if (result.systemlib) {
+												screenName = result.systemlib.$.id;
+											} else {
+												window.showErrorMessage('Current XML document does not have an root element of "presentation" or "systemlib".', { modal: true });
+												return;
+											}
 										}
 									});
 
 									if (!screenName) {
-										window.showErrorMessage('Unable to find presentation id from current document. Cannot fetch screen from server to compare.', { modal: true });
+										window.showErrorMessage('Unable to find presentation or systemlib id from current document. Cannot fetch screen from server to compare.', { modal: true });
 										return;
 									}
 
@@ -340,13 +347,19 @@ export function activate(context) {
 								if (screen && screen.trim().length > 0) {
 									var screenName;
 									var parseError;
+
 									parseString(screen, function (error, result) {
 										parseError = error;
 										if (error) {
 											return;
 										} else {
-											console.log(JSON.stringify(result, null, 4));
-											screenName = result.presentation.$.id;
+											if (result.presentation) {
+												screenName = result.presentation.$.id;
+											} else if (result.systemlib) {
+												screenName = result.systemlib.$.id;
+											} else {
+												parseError = { message: 'Current XML document does not have an root element of "presentation" or "systemlib".' };
+											}
 										}
 									});
 
@@ -356,7 +369,7 @@ export function activate(context) {
 									}
 
 									if (!screenName) {
-										window.showErrorMessage('Unable to find presentation id from current document. Cannot fetch screen from server to compare.', { modal: true });
+										window.showErrorMessage('Unable to find presentation or systemlib id from current document. Cannot fetch screen from server to compare.', { modal: true });
 										return;
 									}
 

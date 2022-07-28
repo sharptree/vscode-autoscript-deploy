@@ -1,4 +1,7 @@
 # Release Notes
+## 1.5.1 
+- Added support for systemlib presentation XML.
+  
 ## 1.5.0
 - Added support for screen extract and deploy.
 - Added tag Id generation shortcut.
