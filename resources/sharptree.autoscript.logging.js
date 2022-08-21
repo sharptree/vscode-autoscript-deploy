@@ -21,14 +21,22 @@ BufferedReader = Java.type("java.io.BufferedReader");
 OutputStreamWriter = Java.type("java.io.OutputStreamWriter");
 InputStreamReader = Java.type("java.io.InputStreamReader");
 
-Logger = Java.type("org.apache.log4j.Logger");
-LogManager = Java.type("org.apache.log4j.LogManager");
-WriterAppender = Java.type("org.apache.log4j.WriterAppender");
-
-FixedLoggers = Java.type("psdi.util.logging.FixedLoggers");
 SqlFormat = Java.type("psdi.mbo.SqlFormat");
 MXServer = Java.type("psdi.server.MXServer");
 Version = Java.type("psdi.util.Version");
+
+var log4ShellFix = true;
+try {
+    WriterAppender = Java.type("org.apache.logging.log4j.core.appender.WriterAppender");
+    LogManager = Java.type("org.apache.logging.log4j.LogManager");
+    PatternLayout = Java.type("org.apache.logging.log4j.core.layout.PatternLayout");
+    Level = Java.type("org.apache.logging.log4j.Level");
+} catch (error) {
+    WriterAppender = Java.type("org.apache.log4j.WriterAppender");
+    LogManager = Java.type("org.apache.log4j.LogManager");
+    PatternLayout = Java.type("org.apache.log4j.PatternLayout");
+    log4ShellFix = false;
+}
 
 var APPENDER_NAME = "logstream";
 var PARENT_APPENDER = "Console";
@@ -124,8 +132,6 @@ function _handleV8(timeout) {
                 lkp = rfa.getFilePointer();
                 rfa.close();
 
-
-
                 Thread.sleep(SLEEP_INTERVAL);
             }
             output.println("log-lkp=" + lkp);
@@ -142,20 +148,88 @@ function _handleV8(timeout) {
 
 }
 
+
+
 function _handleV7(timeout) {
-    var root = LogManager.getLogger("maximo");
 
-    if (root) {
+    var appenderName = APPENDER_NAME + "_" + userInfo.getUserName();
 
-        var console = root.getAppender(PARENT_APPENDER);
+    // Check for permissions to do remote log streaming.
+    if (!hasAppOption(SECURITY_APP, SECURITY_OPTION) && !isAdmin()) {
+        responseBody = JSON.stringify({ "status": "error", "message": "The user " + userInfo.getUserName() + " does not have permission to stream the Maximo log. The security option " + SECURITY_OPTION + " on the " + SECURITY_APP + " application is required." });
+        return;
+    }
 
-        if (console) {
-            if (hasAppOption(SECURITY_APP, SECURITY_OPTION) || isAdmin()) {
+    var response = request.getHttpServletResponse();
+    var output = response.getOutputStream();
 
-                var response = request.getHttpServletResponse();
-                var output = response.getOutputStream();
-                var writer = new WriterAppender(console.getLayout(), output);
-                var appenderName = APPENDER_NAME + userInfo.getUserName();
+    if (log4ShellFix) {
+
+        var factory = LogManager.getFactory();
+
+        if (factory instanceof Java.type("org.apache.logging.log4j.core.impl.Log4jContextFactory")) {
+            var context;
+            factory.getSelector().getLoggerContexts().forEach(function (ctx) {
+                if (ctx.hasLogger("maximo")) {
+                    context = ctx;
+                    return;
+                }
+            });
+
+            if (context) {
+                var maxLogAppenderSet;
+
+                try {
+                    maxLogAppenderSet = MXServer.getMXServer().getMboSet("MAXLOGAPPENDER", userInfo);
+
+                    var sqlf = new SqlFormat("appender = :1");
+                    sqlf.setObject(1, "MAXLOGAPPENDER", "APPENDER", "Console");
+                    maxLogAppenderSet.setWhere(sqlf.format());
+
+                    var pattern = "%d{dd MMM yyyy HH:mm:ss:SSS} [%-2p] [%s] [%q] %m%n";
+
+                    if (!maxLogAppenderSet.isEmpty()) {
+                        pattern = maxLogAppenderSet.moveFirst().getString("CONVPATTERN");
+                    }
+
+                    var layout = PatternLayout.newBuilder().withPattern(pattern).build();
+                    var root = context.getLogger("maximo");
+                    var writer = WriterAppender.createAppender(layout, null, new OutputStreamWriter(output), false, appenderName, true);
+                    writer.start();
+
+                    response.setBufferSize(0);
+                    response.setContentType("text/event-stream");
+                    response.flushBuffer();
+
+                    try {
+                        root.addAppender(writer);
+                        var start = System.currentTimeMillis();
+                        var end = start + timeout;
+                        while (System.currentTimeMillis() < end) {
+                            Thread.sleep(SLEEP_INTERVAL);
+                        }
+                    } finally {
+                        root.removeAppender(writer);
+                    }
+                } finally {
+                    close(maxLogAppenderSet);
+                }
+            } else {
+                responseBody = JSON.stringify({ "status": "error", "message": "A logging context with the maximo root logger could not be found." });
+            }
+
+        } else {
+            responseBody = JSON.stringify({ "status": "error", "message": "Only the default org.apache.logging.log4j.core.impl.Log4jContextFactory context factory is supported." });
+        }
+    } else {
+        var root = LogManager.getLogger("maximo");
+        if (root) {
+
+            var console = root.getAppender(PARENT_APPENDER);
+            if (console) {
+                var layout = console.getLayout();
+                var writer = new WriterAppender(layout, output);
+
                 writer.setName(appenderName);
 
                 response.setBufferSize(0);
@@ -174,13 +248,11 @@ function _handleV7(timeout) {
                     root.removeAppender(appenderName);
                 }
             } else {
-                responseBody = JSON.stringify({ "status": "error", "message": "The user " + userInfo.getUserName() + " does not have permission to stream the Maximo log. The security option " + SECURITY_OPTION + " on the " + SECURITY_APP + " application is required." });
+                responseBody = JSON.stringify({ "status": "error", "message": "The standard Console log appender is not configured for the root maximo logger." });
             }
         } else {
-            responseBody = JSON.stringify({ "status": "error", "message": "The standard Console log appender is not configured for the root maximo logger." });
+            responseBody = JSON.stringify({ "status": "error", "message": "Cannot get the root maximo logger." });
         }
-    } else {
-        responseBody = JSON.stringify({ "status": "error", "message": "Cannot get the root maximo logger." });
     }
 }
 
