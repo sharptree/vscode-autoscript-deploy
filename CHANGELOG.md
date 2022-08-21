@@ -1,4 +1,8 @@
 # Release Notes
+## 1.6.0
+- Added support for exporting screen definition conditional properties.
+- Added support for Log4j 2, for Maximo environments that have been patched for Log4Shell.
+  
 ## 1.5.1 
 - Added support for systemlib presentation XML.
   
