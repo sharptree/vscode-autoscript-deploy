@@ -4,13 +4,17 @@
 /*
  *   Bootstrap script that is used to install the Sharptree Automation Script deploy utility.
  */
-var MboConstants = Java.type('psdi.mbo.MboConstants');
+MboConstants = Java.type('psdi.mbo.MboConstants');
 
-var SqlFormat = Java.type('psdi.mbo.SqlFormat');
+SqlFormat = Java.type('psdi.mbo.SqlFormat');
 
-var MXServer = Java.type('psdi.server.MXServer');
+MXServer = Java.type('psdi.server.MXServer');
 
-var MXSession = Java.type('psdi.util.MXSession');
+MXSession = Java.type('psdi.util.MXSession');
+
+MXException = Java.type('psdi.util.MXException');
+
+RuntimeException = Java.type('java.lang.RuntimeException');
 
 main();
 
@@ -85,13 +89,19 @@ function setupLoggers() {
         // if the out of the box root logger is missing, abort.
         if (!loggerSet.isEmpty()) {
             var scriptLogger = loggerSet.getMbo(0);
-
             // Add or update the Sharptree and Opqo loggers.
             addOrUpdateLogger('SHARPTREE.AUTOSCRIPT', 'WARN', scriptLogger);
-
             loggerSet.save();
-
-            MXServer.getMXServer().lookup('LOGGING').applySettings(false);
+            try {
+                MXServer.getMXServer().lookup('LOGGING').applySettings(false);
+            } catch (error) {
+                if (error instanceof MXException && error.getErrorKey() == 'applySettingsForFile' && error.getErrorGroup() == 'logging') {
+                    service.log_info('Set up the Sharptree Automation Script deploy utility Maximo loggers.');
+                    return;
+                } else {
+                    throw error;
+                }
+            }
             service.log_info('Set up the Sharptree Automation Script deploy utility Maximo loggers.');
         } else {
             service.log_warn('The root out of the box logger \'autoscript\' does not exist, skipping setting up Sharptree Automation Script deploy utility Maximo loggers.');
