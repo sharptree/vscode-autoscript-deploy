@@ -1,4 +1,7 @@
 # Release Notes
+## 1.6.2 
+- Updated dependencies to address security bulletins.
+  
 ## 1.6.1
 - Fixed error that could occur when applying the log level as part of the initial install.
   
