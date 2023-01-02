@@ -30,7 +30,7 @@ var currentWindow;
 var currentFollow;
 var logClient;
 
-const supportedVersions = ['7608', '7609', '76010', '76011', '7610', '7611', '7612', '7613'];
+const supportedVersions = ['7608', '7609', '76010', '76011', '7610', '7611', '7612', '7613', '8300','8400','8500'];
 
 var statusBar;
 
@@ -1013,11 +1013,13 @@ async function login(client) {
 			window.showErrorMessage('The host name "' + client.config.host + '" cannot be found.', { modal: true });
 		} else if (typeof error.code !== 'undefined' && error.code == 'ECONNRESET') {
 			window.showErrorMessage(error.message, { modal: true });
-		} else if (error.message.includes('ECONNREFUSED')) {
+		} else if (error.message.includes('ECONNREFUSED')) {			
 			window.showErrorMessage('Connection refused to host ' + client.config.host + ' on port ' + client.config.port, { modal: true });
-		} else if (error.isAxiosError && error.response.status == 401) {
+		} else if (error.message.includes('EPROTO')){
+			window.showErrorMessage('Connection refused to host ' + client.config.host + ' on port ' + client.config.port + ' because of an SSL connection error.\nAre you sure your server is using SSL or did you specify a non-SSL port?.', { modal: true });
+		} else if (error.isAxiosError && error.response && error.response.status && error.response.status == 401) {
 			window.showErrorMessage('User name and password combination are not valid. Try again.', { modal: true });
-		} else {
+		} else{		
 			window.showErrorMessage(error.message, { modal: true });
 		}
 		return false;
