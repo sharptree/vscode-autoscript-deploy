@@ -1,4 +1,8 @@
 # Release Notes
+## 1.6.3
+- Compatibility fixes for Maximo Manage 8.5
+- Fixed log header issue that caused log streaming to fail prematurely.
+
 ## 1.6.2 
 - Updated dependencies to address security bulletins.
   
