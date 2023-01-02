@@ -51,7 +51,8 @@ export default class MaximoClient {
         //     ca: config.ca
         // });
 
-        this.jar = new CookieJar();
+
+        this.jar = new CookieJar(null, { rejectPublicSuffixes: false });
 
         this.client = axios.create({
             withCredentials: true,
@@ -607,6 +608,7 @@ export default class MaximoClient {
             while (this._isLogging) {
                 // @ts-ignore
                 if (typeof lkp !== 'undefined') {
+                    lkp = lkp.replace(/(\r\n|\n|\r)/gm, '');
                     options.headers['log-lkp'] = lkp;
                 }
 
@@ -657,35 +659,38 @@ export default class MaximoClient {
 
                     lkp = await new Promise((resolve, reject) => {
                         let internalLKP = undefined;
-                        response.data.on('data', (data) => {
-                            if (!this._isLogging) {
-                                resolve();
-                            } else {
-                                if (data && data instanceof Uint8Array) {
-                                    let decoder = new TextDecoder('utf-8');
-                                    let sData = decoder.decode(data);
-                                    if (sData.startsWith('log-lkp=')) {
-                                        internalLKP = sData.substring(8);
-                                    } else if (sData.indexOf('WARNING: Cannot set status. Response already committed.') > 0) {
-                                        // do nothing.
-                                    } else if (sData === '') {
-                                        // do nothing on a blank line
-                                    } else {
-                                        fs.appendFileSync(filePath, sData);
+                        if (typeof response.data !== 'undefined') {
+                            response.data.on('data', (data) => {
+                                if (!this._isLogging) {
+                                    resolve();
+                                } else {
+                                    if (data && data instanceof Uint8Array) {
+                                        let decoder = new TextDecoder('utf-8');
+                                        let sData = decoder.decode(data);
+                                        if (sData.startsWith('log-lkp=')) {
+                                            internalLKP = sData.substring(8);
+                                        } else if (sData.indexOf('WARNING: Cannot set status. Response already committed.') > 0) {
+                                            // do nothing.
+                                        } else if (sData === '') {
+                                            // do nothing on a blank line
+                                        } else {
+                                            fs.appendFileSync(filePath, sData);
+                                        }
                                     }
                                 }
-                            }
-                        });
+                            });
 
-                        response.data.on('end', () => {
-                            resolve(internalLKP);
-                        });
+                            response.data.on('end', () => {
+                                resolve(internalLKP);
+                            });
 
-                        response.data.on('error', () => {
-                            this.stopLogging();
-                            reject();
-                        });
+                            response.data.on('error', () => {
+                                this.stopLogging();
+                                reject();
+                            });
+                        }
                     });
+
                 } else {
                     throw new Error(`Unexpected Content-Type ${contentType} was returned by the server.`);
                 }
@@ -698,29 +703,34 @@ export default class MaximoClient {
 
             var internalError = await new Promise((resolve, reject) => {
                 let completeData = '';
-                error.response.data.on('data', (data) => {
-                    if (!this._isLogging) {
-                        resolve();
-                    } else {
-                        completeData += data;
-                    }
-                });
+                if (typeof error.response !== 'undefined') {
+                    error.response.data.on('data', (data) => {
+                        if (!this._isLogging) {
+                            resolve();
+                        } else {
+                            completeData += data;
+                        }
+                    });
 
-                error.response.data.on('end', () => {
-                    console.log(completeData);
-                    if (completeData) {
-                        try {
-                            resolve(JSON.parse(completeData));
-                        } catch (error) { resolve(); }
-                    } else {
-                        resolve();
-                    }
-                });
+                    error.response.data.on('end', () => {
+                        console.log(completeData);
+                        if (completeData) {
+                            try {
+                                resolve(JSON.parse(completeData));
+                            } catch (error) { resolve(); }
+                        } else {
+                            resolve();
+                        }
+                    });
 
-                error.response.data.on('error', () => {
+                    error.response.data.on('error', () => {
+                        this.stopLogging();
+                        reject();
+                    });
+                }else{
                     this.stopLogging();
-                    reject();
-                });
+                    resolve();
+                }
             });
 
             if (internalError) {
