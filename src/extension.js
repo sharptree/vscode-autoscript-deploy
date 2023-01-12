@@ -641,8 +641,7 @@ export function activate(context) {
 															}
 														});
 													}
-													if (overwriteAll || overwrite) {
-														console.log(xml);
+													if (overwriteAll || overwrite) {														
 														fs.writeFileSync(outputFile, xml);
 														overwrite = false;
 													}
@@ -956,8 +955,7 @@ async function getMaximoConfig() {
 		}
 
 		// if the password has not been set then just return.
-		if (!password || password.trim() === '') {
-			console.log('Returning nothing');
+		if (!password || password.trim() === '') {			
 			return undefined;
 		}
 	}
