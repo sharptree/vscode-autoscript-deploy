@@ -630,7 +630,7 @@ export default class MaximoClient {
                             });
 
                             response.data.on('end', () => {
-                                console.log(completeData);
+                                
                                 if (completeData) {
                                     try {
                                         resolve(JSON.parse(completeData));
@@ -713,7 +713,7 @@ export default class MaximoClient {
                     });
 
                     error.response.data.on('end', () => {
-                        console.log(completeData);
+                        
                         if (completeData) {
                             try {
                                 resolve(JSON.parse(completeData));

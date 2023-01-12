@@ -209,7 +209,7 @@ To compare the current script or screen definition with the script or screen on 
 ![Compare Script](images/palette_compare_example.gif)
 
 ### Compare Screen
-![Compare Screen](images/pallette_compare_screen_example.gif)
+![Compare Screen](images/palette_compare_screen_example.gif)
 
 ## Log Streaming
 To stream the Maximo log to a local file click the `Maximo Log` status bar item to toggle streaming.  The rotating status icon indicates that the log is currently streaming.

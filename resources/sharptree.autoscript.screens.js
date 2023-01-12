@@ -111,8 +111,7 @@ function main() {
                 var loader = new PresentationLoader();
                 var wcsf = WebClientSessionFactory.getWebClientSessionFactory();
                 var wcs = wcsf.createSession(request.getHttpServletRequest(), request.getHttpServletResponse());
-
-                System.out.println(wcsf);
+                
                 loader.importApp(wcs, writer.toString());
 
                 response.status = 'success';
