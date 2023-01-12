@@ -412,8 +412,7 @@ function deployScript(scriptSource, language) {
                         throw new ScriptError("ondeploy_function_notfound", "The onDeploy function \"" + scriptConfig.onDeploy + "\" was not found.");
                     } else if (error instanceof ScriptException) {
                         throw new ScriptError("error_ondeploy", "Error calling onDeploy function \"" + scriptConfig.onDeploy + "\" :" + error.message);
-                    }
-                    System.out.println(error);
+                    }                    
                 }
             }
 
