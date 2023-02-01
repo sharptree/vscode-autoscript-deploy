@@ -568,46 +568,52 @@ function createOrUpdateProperty(property) {
             if (maxPropSet.isEmpty()) {
                 maxProp = maxPropSet.add();
                 maxProp.setValue("PROPNAME", property.propName);
-                maxProp.setValue("MAXTYPE", property.maxType);
-                maxProp.setValue("SECURELEVEL", property.secureLevel);
             } else {
                 maxProp = maxPropSet.moveFirst();
+            }
+
+            if (typeof property.secureLevel !== 'undefined') {
+                maxProp.setValue("SECURELEVEL", property.secureLevel);
+            }
+
+            if (typeof property.maxType !== 'undefined') {
+                maxProp.setValue("MAXTYPE", property.maxType);
             }
 
             if (typeof property.description !== 'undefined' && property.description) {
                 maxProp.setValue("DESCRIPTION", property.description);
             }
 
-            if (typeof property.encrypted !== 'undefined' ) {
+            if (typeof property.encrypted !== 'undefined') {
                 maxProp.setValue("ENCRYPTED", property.encrypted);
             }
 
-            if (typeof property.masked !== 'undefined' ) {
+            if (typeof property.masked !== 'undefined') {
                 maxProp.setValue("MASKED", property.masked);
-            } 
+            }
 
-            if (typeof property.globalOnly !== 'undefined' ) {
+            if (typeof property.globalOnly !== 'undefined') {
                 maxProp.setValue("GLOBALONLY", property.globalOnly);
-            } 
-                    
+            }
+
             if (typeof property.onlineChanges !== 'undefined') {
                 maxProp.setValue("ONLINECHANGES", property.onlineChanges);
-            } 
+            }
 
             if (typeof property.liveRefresh !== 'undefined') {
                 maxProp.setValue("LIVEREFRESH", property.liveRefresh);
-            } 
+            }
 
             if (typeof property.domainId !== 'undefined') {
                 maxProp.setValue("DOMAINID", property.domainId);
-            } else{
+            } else {
                 maxProp.setValueNull("DOMAINID");
             }
 
             if (typeof property.nullsAllowed !== 'undefined') {
                 maxProp.setValue("NULLSALLOWED", property.nullsAllowed);
-            } 
-            
+            }
+
             var propValueSet = maxProp.getMboSet("MAXPROPVALUE");
             var propValue;
 
@@ -617,23 +623,28 @@ function createOrUpdateProperty(property) {
                 propValue = propValueSet.moveFirst();
             }
 
-            if (typeof property.propValue !== 'undefined' || property.propValue) {
+            var toBeAdded = propValue.toBeAdded();
+
+            if (typeof property.propValue !== 'undefined' && property.propValue) {
                 propValue.setValue("PROPVALUE", property.propValue, MboConstants.NOACCESSCHECK);
-            } else {
-                propValue.setValueNull("PROPVALUE", MboConstants.NOACCESSCHECK);
-            }            
+            }
         }
 
         maxPropSet.save();
 
-        if (typeof property.nullsAllowed !== 'undefined' && !property.nullsAllowed) {
-            MXServer.getMXServer().reloadMaximoCache("MAXPROP", property.propName, true);
+        if (toBeAdded && typeof property.initialPropValue !== 'undefined' && property.initialPropValue) {
+            var id = maxProp.getUniqueIDValue();
+            maxPropSet.reset();
+            maxPropSet.getMboForUniqueId(id).getMboSet("MAXPROPVALUE").moveFirst().setValue("PROPVALUE", property.initialPropValue, MboConstants.NOACCESSCHECK);
+            maxPropSet.save();
         }
+
+        MXServer.getMXServer().reloadMaximoCache("MAXPROP", property.propName, true);
+
     } finally {
         close(maxPropSet);
     }
 }
-
 
 function createOrUpdateMaxVar(maxvar) {
 
