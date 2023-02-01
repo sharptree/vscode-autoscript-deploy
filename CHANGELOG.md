@@ -1,4 +1,8 @@
 # Release Notes
+## 1.7.0
+- Fixed bug in python scriptConfig parser that would find the scriptConfig even if it was commented out.
+- Add support for specifying maxvar, properties and maxmessages values in the scriptConfig.
+  
 ## 1.6.4
 - Fixed typo in documentation.
 - Removed debug console.log and System.out statements.
