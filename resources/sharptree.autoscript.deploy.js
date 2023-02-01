@@ -383,6 +383,30 @@ function deployScript(scriptSource, language) {
                 log_error("Error saving script configuration history." + JSON.stringify(error));
             }
 
+            var messages = scriptConfig.messages;
+
+            if (Array.isArray(messages)) {
+                messages.forEach(function (message) {
+                    createOrUpdateMessage(message);
+                });
+            }
+
+            var maxvars = scriptConfig.maxvars;
+
+            if (Array.isArray(maxvars)) {
+                maxvars.forEach(function (maxvar) {
+                    createOrUpdateMaxVar(maxvar);
+                });
+            }
+
+            var properties = scriptConfig.properties;
+
+            if (Array.isArray(properties)) {
+                properties.forEach(function (property) {
+                    createOrUpdateProperty(property);
+                });
+            }
+
             var ctx = new HashMap();
             if (scriptConfig.onDeploy) {
 
@@ -412,7 +436,7 @@ function deployScript(scriptSource, language) {
                         throw new ScriptError("ondeploy_function_notfound", "The onDeploy function \"" + scriptConfig.onDeploy + "\" was not found.");
                     } else if (error instanceof ScriptException) {
                         throw new ScriptError("error_ondeploy", "Error calling onDeploy function \"" + scriptConfig.onDeploy + "\" :" + error.message);
-                    }                    
+                    }
                 }
             }
 
@@ -476,9 +500,10 @@ function isInAdminGroup() {
 function getConfigFromScript(scriptSource, language) {
     if (scriptSource) {
         if (language === 'python' || language === 'jython') {
-            var regex = / *scriptConfig.*"""((.|\n|\r)*)"""/gm;
+            // var regex = / *scriptConfig.*"""((.|\n|\r)*)"""/gm;
+            var regex = /^(?!#).*scriptConfig.*"""(.|\n|\r)*?"""/gm;
             var found = scriptSource.match(regex);
-            if (found.length == 1) {
+            if (found && found.length == 1) {
                 var config = found[0];
                 config = config.trim().substring(config.indexOf("{"), config.length - 3);
                 return JSON.parse(config);
@@ -521,6 +546,250 @@ function getConfigFromScript(scriptSource, language) {
     }
 }
 
+function createOrUpdateProperty(property) {
+
+    if (typeof property.propName === 'undefined' || !property.propName) {
+        throw new ScriptError("message_missing_varname", "The property record is missing the required property \"propName\"");
+    }
+
+    var maxPropSet;
+    try {
+        maxPropSet = MXServer.getMXServer().getMboSet("MAXPROP", MXServer.getMXServer().getSystemUserInfo());
+        var sqlf = new SqlFormat("propname = :1");
+        sqlf.setObject(1, "MAXPROP", "PROPNAME", property.propName);
+        maxPropSet.setWhere(sqlf.format());
+
+        if (property.delete) {
+            if (!maxPropSet.isEmpty()) {
+                maxPropSet.moveFirst().delete();
+            }
+        } else {
+            var maxProp;
+            if (maxPropSet.isEmpty()) {
+                maxProp = maxPropSet.add();
+                maxProp.setValue("PROPNAME", property.propName);
+                maxProp.setValue("MAXTYPE", property.maxType);
+                maxProp.setValue("SECURELEVEL", property.secureLevel);
+            } else {
+                maxProp = maxPropSet.moveFirst();
+            }
+
+            if (typeof property.description !== 'undefined' && property.description) {
+                maxProp.setValue("DESCRIPTION", property.description);
+            }
+
+            if (typeof property.encrypted !== 'undefined' ) {
+                maxProp.setValue("ENCRYPTED", property.encrypted);
+            }
+
+            if (typeof property.masked !== 'undefined' ) {
+                maxProp.setValue("MASKED", property.masked);
+            } 
+
+            if (typeof property.globalOnly !== 'undefined' ) {
+                maxProp.setValue("GLOBALONLY", property.globalOnly);
+            } 
+                    
+            if (typeof property.onlineChanges !== 'undefined') {
+                maxProp.setValue("ONLINECHANGES", property.onlineChanges);
+            } 
+
+            if (typeof property.liveRefresh !== 'undefined') {
+                maxProp.setValue("LIVEREFRESH", property.liveRefresh);
+            } 
+
+            if (typeof property.domainId !== 'undefined') {
+                maxProp.setValue("DOMAINID", property.domainId);
+            } else{
+                maxProp.setValueNull("DOMAINID");
+            }
+
+            if (typeof property.nullsAllowed !== 'undefined') {
+                maxProp.setValue("NULLSALLOWED", property.nullsAllowed);
+            } 
+            
+            var propValueSet = maxProp.getMboSet("MAXPROPVALUE");
+            var propValue;
+
+            if (propValueSet.isEmpty()) {
+                propValue = propValueSet.add();
+            } else {
+                propValue = propValueSet.moveFirst();
+            }
+
+            if (typeof property.propValue !== 'undefined' || property.propValue) {
+                propValue.setValue("PROPVALUE", property.propValue, MboConstants.NOACCESSCHECK);
+            } else {
+                propValue.setValueNull("PROPVALUE", MboConstants.NOACCESSCHECK);
+            }            
+        }
+
+        maxPropSet.save();
+
+        if (typeof property.nullsAllowed !== 'undefined' && !property.nullsAllowed) {
+            MXServer.getMXServer().reloadMaximoCache("MAXPROP", property.propName, true);
+        }
+    } finally {
+        close(maxPropSet);
+    }
+}
+
+
+function createOrUpdateMaxVar(maxvar) {
+
+    if (typeof maxvar.varName === 'undefined' || !maxvar.varName) {
+        throw new ScriptError("message_missing_varname", "The maxvar record is missing the required property \"varName\"");
+    } else {
+        maxvar.varName = maxvar.varName.toUpperCase();
+    }
+
+    if (typeof maxvar.varType === 'undefined' || !maxvar.varType) {
+        throw new ScriptError("message_missing_vartype", "The maxvar record is missing the required property \"varType\"");
+    } else {
+        maxvar.varType = maxvar.varType.toUpperCase();
+    }
+
+
+    var maxvarTypeSet;
+    try {
+        maxvarTypeSet = MXServer.getMXServer().getMboSet("MAXVARTYPE", MXServer.getMXServer().getSystemUserInfo());
+
+        var sqlf = new SqlFormat("varname = :1");
+        sqlf.setObject(1, "MAXVARTYPE", "VARNAME", maxvar.varName);
+
+        maxvarTypeSet.setWhere(sqlf.format());
+        var maxvarType;
+
+        if (typeof maxvar.delete !== 'undefined' && maxvar.delete) {
+            if (!maxvarTypeSet.isEmpty()) {
+                var maxvarType = maxvarTypeSet.moveFirst();
+                maxvarType.getMboSet("MAXVARS").deleteAll();
+                maxvarType.delete();
+            }
+        } else {
+            if (maxvarTypeSet.isEmpty()) {
+                maxvarType = maxvarTypeSet.add();
+                maxvarType.setValue("VARNAME", maxvar.varName);
+                maxvarType.setValue("VARTYPE", maxvar.maxType);
+                var id = maxvarType.getUniqueIDValue();
+                maxvarTypeSet.save();
+                maxvarTypeSet.reset();
+                maxvarType = maxvarTypeSet.getMboForUniqueId(id);
+
+            } else {
+                maxvarType = maxvarTypeSet.moveFirst();
+            }
+
+            if (typeof maxvar.defaultValue !== 'undefined' && maxvar.defaultValue) {
+                maxvarType.setValue("DEFAULTVALUE", maxvar.defaultValue);
+            } else {
+                maxvarType.setValueNull("DEFAULTVALUE");
+            }
+
+            if (typeof maxvar.description !== 'undefined' && maxvar.description) {
+                maxvarType.setValue("DESCRIPTION", maxvar.description);
+            } else {
+                maxvarType.setValueNull("DESCRIPTION");
+            }
+
+            var maxvarsValueSet = maxvarType.getMboSet("MAXVARS");
+            var maxvarsValue;
+            if (maxvarsValueSet.isEmpty()) {
+                maxvarsValue = maxvarsValueSet.add();
+                maxvarsValue.setValue("VARNAME", maxvar.varName);
+                maxvarsValue.setValue("VARTYPE", maxvar.varType);
+
+
+                if (typeof maxvar.orgId !== 'undefined' && maxvar.orgId) {
+                    maxvarsValue.setValue("ORGID", maxvar.orgId);
+                }
+
+
+                if (typeof maxvar.siteId !== 'undefined' && maxvar.siteId) {
+                    maxvarsValue.setValue("SITEID", maxvar.siteId);
+                }
+            } else {
+                maxvarsValue = maxvarsValueSet.moveFirst();
+            }
+
+            if (typeof maxvar.varvalue !== 'undefined') {
+                maxvarsValue.setValue("VARVALUE", maxvar.varValue);
+            } else {
+                maxvarsValue.setValueNull("VARVALUE");
+            }
+        }
+
+        maxvarTypeSet.save();
+    } finally {
+        close(maxvarTypeSet);
+    }
+}
+
+function createOrUpdateMessage(message) {
+
+    if (typeof message.msgGroup === 'undefined' || !message.msgGroup || typeof message.msgKey === 'undefined' || !message.msgKey) {
+        throw new ScriptError("message_missing_group_or_key", "The message: \n" + JSON.stringify(message, null, 4) + "\nis missing either a msgKey or msgGroupp value.");
+    }
+
+    if (typeof message.value === 'undefined' || !message.value) {
+        throw new ScriptError("message_missing_value", "The message: " + message.msgGroup + ":" + message.msgKey + "\nis missing a message value.");
+    }
+
+    if (typeof message.prefix === 'undefined' || !message.prefix) {
+        message.prefix = "BMXZZ";
+    }
+
+    if (typeof message.suffix === 'undefined' || !message.suffix) {
+        message.suffix = "E";
+    }
+
+    if (typeof message.displayMethod === 'undefined' || !message.displayMethod) {
+        message.displayMethod = "MSGBOX";
+    }
+
+    if (typeof message.value === 'undefined' || !message.value) {
+        message.displayMethod = " ";
+    }
+
+    var maxMessagesSet;
+    try {
+        maxMessagesSet = MXServer.getMXServer().getMboSet("MAXMESSAGES", MXServer.getMXServer().getSystemUserInfo());
+
+        var sqlf = new SqlFormat("msggroup = :1 and msgkey = :2");
+        sqlf.setObject(1, "MAXMESSAGES", "MSGGROUP", message.msgGroup);
+        sqlf.setObject(2, "MAXMESSAGES", "MSGKEY", message.msgKey);
+
+        maxMessagesSet.setWhere(sqlf.format());
+        var maxMessage;
+
+        if (typeof message.delete !== 'undefined' && message.delete) {
+            if (!maxMessagesSet.isEmpty()) {
+                maxMessagesSet.moveFirst().delete();
+            }
+        } else {
+            if (maxMessagesSet.isEmpty()) {
+                maxMessage = maxMessagesSet.add();
+                maxMessage.setValue("MSGGROUP", message.msgGroup);
+                maxMessage.setValue("MSGKEY", message.msgKey);
+                maxMessage.setValue("MSGIDPREFIX", message.prefix);
+            } else {
+                maxMessage = maxMessagesSet.moveFirst();
+            }
+            maxMessage.setValue("MSGIDSUFFIX", message.suffix);
+            maxMessage.setValue("DISPLAYMETHOD", message.displayMethod);
+            if (message.value) {
+                maxMessage.setValue("VALUE", message.value);
+            } else {
+                maxMessage.setValueNull("VALUE", " ");
+            }
+        }
+
+        maxMessagesSet.save();
+    } finally {
+        close(maxMessagesSet);
+    }
+}
+
 function validateScriptConfig(scriptConfig) {
     if (!scriptConfig.autoscript || scriptConfig.autoscript.trim().length === 0) {
         throw new ScriptError("script_name_required", "The auto script name (autoscript) is required in the script configuration.");
@@ -544,6 +813,27 @@ function astToJavaScript(ast) {
         });
     } else if (ast.type === "Literal" && ast.value) {
         javaScript = JSON.parse(ast.value);
+    } else if (ast.type === "ArrayExpression" && ast.elements) {
+        javaScript = [];
+
+        ast.elements.forEach(function (element) {
+            if (element.type === "ObjectExpression" && element.properties) {
+                var elementObject = {};
+                element.properties.map(function (property) {
+                    if (property.value.type == "Literal" && property.key.type == "Identifier") {
+                        elementObject[property.key.name] = property.value.value;
+                    } else if (property.value.type == "ArrayExpression") {
+                        var child = [];
+                        elementObject.value.elements.map(function (element) {
+                            child.push(astToJavaScript(element));
+                        });
+                        elementObject[property.key.value] = child;
+                    }
+                });
+                javaScript.push(elementObject);
+            }
+        });
+
     }
 
     return javaScript;
