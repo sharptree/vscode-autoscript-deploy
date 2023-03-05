@@ -17,6 +17,7 @@ export default class MaximoConfig {
         apiKey,
         extractLocation,
         extractLocationScreens,
+        extractLocationForms,
     }
     ) {
         this.username = username;
@@ -34,6 +35,7 @@ export default class MaximoConfig {
         this.apiKey = apiKey;
         this.extractLocation = extractLocation;
         this.extractLocationScreens = extractLocationScreens;
+        this.extractLocationForms = extractLocationForms;
     }
 
     get maxauth() {

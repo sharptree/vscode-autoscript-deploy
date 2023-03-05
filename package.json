@@ -3,7 +3,7 @@
 	"displayName": "Maximo Development Tools",
 	"description": "An extension for developing and deploying Maximo automation scripts and screens from Visual Studio Code.",
 	"publisher": "Sharptree",
-	"version": "1.7.0",
+	"version": "1.8.0",
 	"galleryBanner": {
 		"color": "#372063",
 		"theme": "dark"
@@ -32,6 +32,7 @@
 		"onCommand:maximo-script-deploy.deploy",
 		"onCommand:maximo-script-deploy.screens",
 		"onCommand:maximo-script-deploy.compare",
+		"onCommand:maximo-script-deploy.form",
 		"*"
 	],
 	"main": "./dist/extension",
@@ -70,6 +71,11 @@
 					"default": "",
 					"description": "The Maximo screens extraction location."
 				},
+				"sharptree.maximo.extractInspectionFormsLocation": {
+					"type": "string",
+					"default": "",
+					"description": "The Maximo inspection forms extraction location."
+				},				
 				"sharptree.maximo.port": {
 					"type": "number",
 					"default": 443,
@@ -149,6 +155,10 @@
 			{
 				"command": "maximo-script-deploy.id",
 				"title": "Insert Unique Id for Maximo Presentation Tag"
+			},
+			{
+				"command": "maximo-script-deploy.forms",
+				"title": "Extract Inspection Forms"
 			}
 		],
 		"keybindings": [
