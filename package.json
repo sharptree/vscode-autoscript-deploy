@@ -3,7 +3,7 @@
 	"displayName": "Maximo Development Tools",
 	"description": "An extension for developing and deploying Maximo automation scripts and screens from Visual Studio Code.",
 	"publisher": "Sharptree",
-	"version": "1.7.0",
+	"version": "1.8.0",
 	"galleryBanner": {
 		"color": "#372063",
 		"theme": "dark"
@@ -158,7 +158,7 @@
 			},
 			{
 				"command": "maximo-script-deploy.forms",
-				"title": "Extract Maximo Inspection Forms"
+				"title": "Extract Inspection Forms"
 			}
 		],
 		"keybindings": [

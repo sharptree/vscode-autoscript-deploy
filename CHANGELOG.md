@@ -1,4 +1,7 @@
 # Release Notes
+## 1.8.0
+- Add support for extracting and deploying inspection forms.
+  
 ## 1.7.0
 - Fixed bug in python scriptConfig parser that would find the scriptConfig even if it was commented out.
 - Add support for specifying maxvar, properties and maxmessages values in the scriptConfig.
