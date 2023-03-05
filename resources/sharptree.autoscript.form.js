@@ -33,11 +33,13 @@ function main() {
             if (httpMethod.toLowerCase() === 'get') {
                 var formId = getInspectionFormId();
                 if (typeof formId === 'undefined' || formId === null || !formId) {
+
+                    var formNames = [];
                     // If nothing is requested then return a list of all screens.
                     var inspectionFormSet;
                     try {
                         inspectionFormSet = MXServer.getMXServer().getMboSet('INSPECTIONFORM', userInfo);
-                        inspectionFormSet.setOrderBy('inspformnum');
+                        inspectionFormSet.setOrderBy('inspformnum, revision desc');
                         var sqlf = new SqlFormat('status != :1');
                         sqlf.setObject(1, 'INSPECTIONFORM', 'STATUS', 'REVISED');
                         inspectionFormSet.setWhere(sqlf.format());
@@ -46,13 +48,18 @@ function main() {
                         var inspectionForm = inspectionFormSet.getMbo(0);
 
                         while (inspectionForm) {
-                            var form = {
-                                'inspformnum': inspectionForm.getString('INSPFORMNUM'),
-                                'name': inspectionForm.getString('NAME'),
-                                'status': inspectionForm.getString('STATUS'),
-                                'id': inspectionForm.getUniqueIDValue()
-                            };
-                            inspectionForms.push(form);
+                            if (formNames.indexOf(inspectionForm.getString('INSPFORMNUM')) < 0) {
+                                var form = {
+                                    'inspformnum': inspectionForm.getString('INSPFORMNUM'),
+                                    'name': inspectionForm.getString('NAME'),
+                                    'status': inspectionForm.getString('STATUS'),
+                                    'id': inspectionForm.getUniqueIDValue()
+                                };
+
+                                inspectionForms.push(form);
+                                formNames.push(inspectionForm.getString('INSPFORMNUM'));
+                            }
+
                             inspectionFormSet.remove(0);
                             inspectionForm = inspectionFormSet.getMbo(0);
                         }
@@ -79,8 +86,8 @@ function main() {
                 // Because Maximo demo data is poor, inspection forms are shipped with missing YORN values that need to be fixed.
                 var db = new DBShortcut();
                 try {
-                    db.connect(userInfo.getConnectionKey());                    
-                    db.execute(DBShortcut.UPDATE, new SqlFormat('update inspectionform set readconfirmation = 0 where readconfirmation is null'));                    
+                    db.connect(userInfo.getConnectionKey());
+                    db.execute(DBShortcut.UPDATE, new SqlFormat('update inspectionform set readconfirmation = 0 where readconfirmation is null'));
                     db.execute(DBShortcut.UPDATE, new SqlFormat('update inspectionform set audioguided = 0 where audioguided is null'));
                     db.execute(DBShortcut.UPDATE, new SqlFormat('update inspfield set visible = 1 where visible is null'));
                     db.execute(DBShortcut.UPDATE, new SqlFormat('update inspfieldoption set requireaction = 0 where requireaction is null'));
@@ -248,7 +255,7 @@ function importForm(form) {
                     var tgtquestion = findNewQuestionNumber(option.tgtquestion, form);
                     var srcfield = findNewFieldNumber(option.srcfield, form);
                     var tgtfield = findNewFieldNumber(option.tgtfield, form);
-                
+
                     if (srcquestion && tgtquestion && srcfield && tgtfield) {
                         var inspCascadeOption = inspCascadeOptionSet.add();
                         inspCascadeOption.setValue('INSPFORMNUM', formNum);
@@ -270,12 +277,12 @@ function importForm(form) {
                     }
                 });
             }
-            
+
             var inspFormScriptSet = inspectionForm.getMboSet('INSPFORMSCRIPT');
             inspFormScriptSet.deleteAll();
 
-            if(typeof form.scripts !=='undefined'){
-                form.scripts.forEach(function(script){
+            if (typeof form.scripts !== 'undefined') {
+                form.scripts.forEach(function (script) {
                     var inspFormScript = inspFormScriptSet.add();
                     inspFormScript.setValue('INSPFORMNUM', formNum);
                     inspFormScript.setValue('REVISION', revision);
@@ -286,27 +293,27 @@ function importForm(form) {
 
             }
         }
-        
-        if (typeof form.activateOnDeploy !== 'undefined' && form.activateOnDeploy){                                  
-            
+
+        if (typeof form.activateOnDeploy !== 'undefined' && form.activateOnDeploy) {
+
             var id = inspectionForm.getUniqueIDValue();
 
             inspectionFormSet.save();
-            
+
             __close(inspectionFormSet);
-            
+
             inspectionFormSet = MXServer.getMXServer().getMboSet('INSPECTIONFORM', userInfo);
             inspectionForm = inspectionFormSet.getMboForUniqueId(id);
-            
+
 
             inspectionForm.changeFormStatus('ACTIVE');
 
             inspectionFormSet.save();
 
-        }else{
+        } else {
             inspectionFormSet.save();
         }
-        
+
     } finally {
         __close(inspectionFormSet);
     }
@@ -369,6 +376,7 @@ function extractForm(formId) {
             result.sourceVersion = Version.getProductVersion();
             result.activateOnDeploy = false;
             result.inspformnum = inspectionForm.getString('INSPFORMNUM');
+            result.revision = inspectionForm.getInt('REVISION');
             result.name = inspectionForm.getString('NAME');
             result.instructions = inspectionForm.getString('DESCRIPTION_LONGDESCRIPTION');
             result.reason = inspectionForm.getString('REASON');
