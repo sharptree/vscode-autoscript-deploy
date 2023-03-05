@@ -11,20 +11,21 @@ After installation you must provide connection details for your target instance 
 ### Maximo Settings
 The following are settings available under the `Sharptree > Maximo` group.
 
-| Setting                   | Default               | Description                                                                                                                                                                   |
-| :-------------------------| :---------------------| :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Allow Untrusted Certs     | false                 | When checked, ignores SSL validation rules.                                                                                                                                   |
-| API Key                   |                       | The Maximo API key that will be used to access Maximo. If provided, the user name and password are ignored if configured.                                                     |
-| Context                   | maximo                | The part of the URL that follows the hostname, by default it is `maximo`.                                                                                                     |
-| Custom CA                 |                       | The full chain for the server CA in PEM format.                                                                                                                               |
-| Extract Location          | Current open folder   | Directory where extracted script files will be stored.                                                                                                                               |
-| Extract Screen Location   | Current open folder   | Directory where extracted screen XML files will be stored.                                                                                                                               |
-| Host                      |                       | The Maximo host name *without* the http/s protocol prefix.                                                                                                                    |
-| Maxauth Only              | false                 | Both Maxauth and Basic headers are usually sent for login, however on WebLogic if Basic fails the Maxauth header is ignored. When checked, only the Maxauth header is sent.   |
-| Port                      | 443                   | The Maximo port number, 80 for http, 443 for https or your custom port such as 9080.                                                                                          |
-| Timeout                   | 30                    | The time in seconds to wait for Maximo to respond.                                                                                                                            |
-| User                      |                       | The user that will be used to connect to Maximo.                                                                                                                              |
-| Use SSL                   | true                  | When checked, SSL will be used, the provided port must be configured for SSL                                                                                                  | 
+| Setting                              | Default               | Description                                                                                                                                                                   |
+| :------------------------------------| :---------------------| :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Allow Untrusted Certs                | false                 | When checked, ignores SSL validation rules.                                                                                                                                   |
+| API Key                              |                       | The Maximo API key that will be used to access Maximo. If provided, the user name and password are ignored if configured.                                                     |
+| Context                              | maximo                | The part of the URL that follows the hostname, by default it is `maximo`.                                                                                                     |
+| Custom CA                            |                       | The full chain for the server CA in PEM format.                                                                                                                               |
+| Extract Inspection Forms Location    | Current open folder   | Directory where extracted inspection files will be stored.  
+| Extract Location                     | Current open folder   | Directory where extracted script files will be stored.                                                                                                                               |
+| Extract Screen Location              | Current open folder   | Directory where extracted screen XML files will be stored.                                                                                                                               |
+| Host                                 |                       | The Maximo host name *without* the http/s protocol prefix.                                                                                                                    |
+| Maxauth Only                         | false                 | Both Maxauth and Basic headers are usually sent for login, however on WebLogic if Basic fails the Maxauth header is ignored. When checked, only the Maxauth header is sent.   |
+| Port                                 | 443                   | The Maximo port number, 80 for http, 443 for https or your custom port such as 9080.                                                                                          |
+| Timeout                              | 30                    | The time in seconds to wait for Maximo to respond.                                                                                                                            |
+| User                                 |                       | The user that will be used to connect to Maximo.                                                                                                                              |
+| Use SSL                              | true                  | When checked, SSL will be used, the provided port must be configured for SSL                                                                                                  | 
 
 > The Authentication Type setting has been removed and replaced with automatic detection of authentication type.
 
@@ -84,6 +85,7 @@ All value names within the `scriptConfig` map to the application label, without 
 An `onDeploy` property can be defined with a value specifying the name of a function in the deployed script that will be called when the script is deployed.  This provides the opportunity to perform configurations in addition to the standard script configurations. Two global variables are provided, the `service` variable, which is the standard `com.ibm.tivoli.maximo.script.Service` class and the `onDeploy` variable, which is a `boolean` value that indicates that the `onDeploy` function is being invoked.  To execute the `onDeploy` function, the whole script must be evaluated and the `onDeploy` variable allows skipping execution during this evaluation.
 
 > Maximo requires that JavaScript objects have quoted properties, as shown below.  If you are using Prettier as your code formatter it may automatically remove these quotes, which will result in errors when deploying.  To retain the quotes go to the Visual Studio Code Settings (`⌘ + ,` or `ctrl + ,`), select `Prettier`, then find the `Quote Props` setting and select the `preserve` option.  
+>
 > 
 > ![Prettier>Quote Props>preserve](./images/prettier_config.png)
 
@@ -176,17 +178,23 @@ scriptConfig = """{
 
 # Features
 ## Deploy to Maximo
-To deploy a script or screen definition, open script or screen definition in Visual Studio Code, then bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Deploy to Maximo`. If this is the first time deploying a script or screen definition after starting Visual Studio Code you will be prompted for your Maximo password as this extension does not store passwords. The script or screen definition is then deployed as seen below.
+To deploy a script, screen definition or inspection form, open script, screen definition or inspection form extract in Visual Studio Code, then bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Deploy to Maximo`. If this is the first time deploying a script or screen definition after starting Visual Studio Code you will be prompted for your Maximo password as this extension does not store passwords. The script or screen definition is then deployed as seen below.
 
 ### Deploy Script
 ![Deploy Automation Script](./images/palette_script_deploy_example.gif)
 
+When deploying an automation script, after the script has been deployed you can view the script in Maximo. Each deployment replaces the script launch point configuration with the configuration defined in the `scriptConfig` JSON.
+
+![Maximo Automation Script](images/example_script_maximo.png)
 ### Deploy Screen
 ![Deploy Screen](./images/palette_screen_deploy_example.gif)
 
-If deploying an automation script, after the script has been deployed you can view the script in Maximo. Each deployment replaces the script launch point configuration with the configuration defined in the `scriptConfig` JSON.
+### Deploy Inspection Form
+![Deploy Screen](./images/palette_form_deploy_example.gif)
 
-![Maximo Automation Script](images/example_script_maximo.png)
+When deploying an inspection form the form is matched based on the inspection form name, not the inspection number since it may differ between the source and target systems. If the form already exists the current form is revised and the form definition completely replaces the previous configuration. The option attribute `activateOnDeploy` can be specified in the inspection form JSON to indicate that the new revision should be marked as active when the form is deployed.
+
+> The `sourceVersion` attribute indicates the version of the source system. Inspection forms are portable between versions as long as the target system is the same or a later version than the source. 
 
 ## Extract Automation Scripts
 To extract the scripts currently deployed to Maximo, bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Extract Automation Scripts`. The extension will query Maximo for the available scripts and then prompt for confirmation to extract the scripts as shown below. Scripts are saved to the directory specified in the `Extract Location` setting. If the setting has not been configured, the scripts are extracted to the current workspace folder.
@@ -203,6 +211,13 @@ To extract the screens from Maximo, bring up the Visual Studio Code Command Pale
 
 ### Extracted Metadata
 As of version 1.6.0 extracted screens will include a `metadata` tag that contains the conditional properties configuration. It also includes the security group and condition definitions that support creating the security group if it doesn't exist and creating *or* updating the conditional expressions. The `metadata` tag is removed as part of the import process and will error if you attempt to import the exported presentation XML through the front end user interface.
+
+## Extract Inspection Forms
+To extract inspection forms from Maximo, bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Extract Inspection Forms`. The extension will query Maximo for the latest inspection forms and then prompt for confirmation to extract the inspection forms as shown below. Inspection forms are saved to the directory specified in the `Extract Inspection Forms Location` setting. If the setting has not been configured, the inspection forms are extracted to the current workspace folder. The extract files are named with the inspection form name, with dashes `-` replacing spaces and with a `.json` file extension.
+
+> The extract includes the source inspection form and revision number. Note that these values are for reference purposes only and a new inspection form and revision number will be generated in the target system.
+
+![Extract Screen Definition](images/palette_form_extract_example.gif)
 
 ## Compare with Maximo
 To compare the current script or screen definition with the script or screen on the server, bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Compare with Maximo`. The extension will query Maximo for the current script or screen that is in the editor based on the `scriptConfig` variable or `<presentation id=""` attribute and open a new window, providing the Visual Studio Code diff editor.
