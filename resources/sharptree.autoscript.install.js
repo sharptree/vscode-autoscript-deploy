@@ -6,6 +6,8 @@
  */
 MboConstants = Java.type('psdi.mbo.MboConstants');
 
+DBShortcut = Java.type('psdi.mbo.DBShortcut');
+
 SqlFormat = Java.type('psdi.mbo.SqlFormat');
 
 MXServer = Java.type('psdi.server.MXServer');
@@ -71,6 +73,18 @@ function main() {
 
 }
 
+function fixInspectionForms(){
+    // Because Maximo demo data is poor, inspection forms are shipped with missing YORN values that need to be fixed.
+    var db = new DBShortcut();
+    try {
+        db.connect(userInfo.getConnectionKey());
+        db.execute(DBShortcut.UPDATE, 'update inspectionform set readconfirmation = 0 where readconfirmation is null');
+        db.execute(DBShortcut.UPDATE, 'update inspectionform set audioguided = 0 where audioguided is null');
+        db.commit();
+    } finally {
+        db.close();
+    }
+}
 
 // Set up the Sharptree Automation Script deploy utility loggers
 function setupLoggers() {
