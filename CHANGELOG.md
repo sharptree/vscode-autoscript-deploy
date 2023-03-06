@@ -1,4 +1,7 @@
 # Release Notes
+## 1.8.1
+- Add support for extracting and deploying inspection domains and signatures.
+  
 ## 1.8.0
 - Add support for extracting and deploying inspection forms.
   
