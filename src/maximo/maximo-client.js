@@ -35,8 +35,8 @@ export default class MaximoClient {
         // keep a reference to the config for later use.
         this.config = config;
 
-        this.requiredScriptVersion = '1.18.0';
-        this.currentScriptVersion = '1.18.0';
+        this.requiredScriptVersion = '1.19.0';
+        this.currentScriptVersion = '1.19.0';
 
         if (config.ca) {
             https.globalAgent.options.ca = config.ca;
