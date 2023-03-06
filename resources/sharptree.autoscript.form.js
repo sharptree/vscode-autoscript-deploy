@@ -223,6 +223,15 @@ function importForm(form) {
                         setValueIfDefined(inspField, 'VISIBLE', field.visible);
                         setValueIfDefined(inspField, 'DESCRIPTION_LONGDESCRIPTION', field.information);
 
+
+                        if (hasAttribute("INSPFIELD", "DOMAINID")) {
+                            setValueIfDefined(inspField, 'DOMAINID', field.domainid);                            
+                        }
+
+                        if (hasAttribute("INSPFIELD", "DOMAINTYPE")) {
+                            setValueIfDefined(inspField, 'DOMAINTYPE', field.domaintype);                            
+                        }
+
                         if (typeof field.options !== 'undefined') {
                             var inspFieldOptionSet = inspField.getMboSet('INSPFIELDOPTION');
                             field.options.forEach(function (option) {
@@ -425,14 +434,21 @@ function extractForm(formId) {
                     field.endlabel = inspField.getString('ENDLABEL');
                     field.steps = inspField.getInt('STEPS');
                     field.initialvalue = inspField.getInt('INITIALVALUE');
-                    field.endvalue = inspField.getInt('ENDVALUE');
-                    // get the meter
+                    field.endvalue = inspField.getInt('ENDVALUE');                    
                     field.metername = inspField.getString('METERNAME');
                     field.metertype = inspField.getString('METERTYPE');
                     field.showdate = inspField.getBoolean('SHOWDATE');
                     field.showtime = inspField.getBoolean('SHOWTIME');
                     field.doctype = inspField.getString('DOCTYPE');
                     field.visible = inspField.getBoolean('VISIBLE');
+
+                    if (hasAttribute("INSPFIELD", "DOMAINID")){
+                        field.domainid = inspField.getString("DOMAINID");                        
+                    }
+
+                    if (hasAttribute("INSPFIELD", "DOMAINTYPE")) {
+                        field.domaintype = inspField.getString("DOMAINTYPE");                        
+                    }
 
                     if (!inspField.isNull('DESCRIPTION_LONGDESCRIPTION')) {
                         field.information = inspField.getString('DESCRIPTION_LONGDESCRIPTION');
@@ -539,6 +555,10 @@ function extractForm(formId) {
     } finally {
         __close(inspectionFormSet);
     }
+}
+
+function hasAttribute(objectName, attributeName){
+    return MXServer.getMXServer().getMaximoDD().getMboSetInfo(objectName).getAttribute(attributeName)!=null;
 }
 
 function getInspectionFormId() {
