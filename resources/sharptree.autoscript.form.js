@@ -225,11 +225,11 @@ function importForm(form) {
 
 
                         if (hasAttribute("INSPFIELD", "DOMAINID")) {
-                            setValueIfDefined(inspField, 'DOMAINID', field.domainid);                            
+                            setValueIfDefined(inspField, 'DOMAINID', field.domainid);
                         }
 
                         if (hasAttribute("INSPFIELD", "DOMAINTYPE")) {
-                            setValueIfDefined(inspField, 'DOMAINTYPE', field.domaintype);                            
+                            setValueIfDefined(inspField, 'DOMAINTYPE', field.domaintype);
                         }
 
                         if (typeof field.options !== 'undefined') {
@@ -408,7 +408,9 @@ function extractForm(formId) {
                 question.inspformnum = inspQuestion.getString('INSPFORMNUM');
                 question.description = inspQuestion.getString('DESCRIPTION');
                 question.information = inspQuestion.getString('DESCRIPTION_LONGDESCRIPTION');
-                question.groupid = inspQuestion.getInt('GROUPID');
+                if (!inspQuestion.isNull('GROUPID')) {
+                    question.groupid = inspQuestion.getInt('GROUPID');
+                }
                 question.sequence = inspQuestion.getInt('SEQUENCE');
                 question.groupseq = inspQuestion.getDouble('GROUPSEQ');
                 question.required = inspQuestion.getBoolean('REQUIRED');
@@ -432,9 +434,16 @@ function extractForm(formId) {
                     field.required = inspField.getBoolean('REQUIRED');
                     field.initiallabel = inspField.getString('INITIALLABEL');
                     field.endlabel = inspField.getString('ENDLABEL');
-                    field.steps = inspField.getInt('STEPS');
-                    field.initialvalue = inspField.getInt('INITIALVALUE');
-                    field.endvalue = inspField.getInt('ENDVALUE');                    
+                    if (!inspField.isNull('STEPS')) {
+                        field.steps = inspField.getInt('STEPS');
+                    }
+                    if (!inspField.isNull('INITIALVALUE')) {
+                        field.initialvalue = inspField.getInt('INITIALVALUE');
+                    }
+                    if (!inspField.isNull('ENDVALUE')) {
+                        field.endvalue = inspField.getInt('ENDVALUE');
+                    }
+                    
                     field.metername = inspField.getString('METERNAME');
                     field.metertype = inspField.getString('METERTYPE');
                     field.showdate = inspField.getBoolean('SHOWDATE');
@@ -442,12 +451,12 @@ function extractForm(formId) {
                     field.doctype = inspField.getString('DOCTYPE');
                     field.visible = inspField.getBoolean('VISIBLE');
 
-                    if (hasAttribute("INSPFIELD", "DOMAINID")){
-                        field.domainid = inspField.getString("DOMAINID");                        
+                    if (hasAttribute("INSPFIELD", "DOMAINID")) {
+                        field.domainid = inspField.getString("DOMAINID");
                     }
 
                     if (hasAttribute("INSPFIELD", "DOMAINTYPE")) {
-                        field.domaintype = inspField.getString("DOMAINTYPE");                        
+                        field.domaintype = inspField.getString("DOMAINTYPE");
                     }
 
                     if (!inspField.isNull('DESCRIPTION_LONGDESCRIPTION')) {
@@ -557,8 +566,8 @@ function extractForm(formId) {
     }
 }
 
-function hasAttribute(objectName, attributeName){
-    return MXServer.getMXServer().getMaximoDD().getMboSetInfo(objectName).getAttribute(attributeName)!=null;
+function hasAttribute(objectName, attributeName) {
+    return MXServer.getMXServer().getMaximoDD().getMboSetInfo(objectName).getAttribute(attributeName) != null;
 }
 
 function getInspectionFormId() {
