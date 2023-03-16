@@ -1,4 +1,7 @@
 # Release Notes
+## 1.8.2
+- Fixed issue where inspection form null integer values were being exported as zeros instead of null.
+  
 ## 1.8.1
 - Add support for extracting and deploying inspection domains and signatures.
   
