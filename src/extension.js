@@ -30,7 +30,7 @@ var currentWindow;
 var currentFollow;
 var logClient;
 
-const supportedVersions = ['7608', '7609', '76010', '76011', '7610', '7611', '7612', '7613', '8300','8400','8500','8600'];
+const supportedVersions = ['7608', '7609', '76010', '76011', '7610', '7611', '7612', '7613', '8300', '8400', '8500', '8600'];
 
 var statusBar;
 
@@ -404,18 +404,18 @@ export function activate(context) {
 							} else if (fileName.endsWith('.json')) {
 								const formText = document.getText();
 								if (formText && formText.trim().length > 0) {
-									
-									try{
+
+									try {
 										// test parse
 										JSON.parse(formText);
-									}catch(error){
+									} catch (error) {
 										window.showErrorMessage(`File ${fileName} is not a valid JSON formatted inspection form extract.\n\n${error.message}`, { modal: true });
 										return;
 									}
 
 									let form = JSON.parse(formText);
 
-									if(typeof form.name === 'undefined' || !form.name){
+									if (typeof form.name === 'undefined' || !form.name) {
 										window.showErrorMessage(`File ${fileName} does not have a 'name' attribute and is not a valid inspection form extract.`, { modal: true });
 										return;
 									}
@@ -447,7 +447,7 @@ export function activate(context) {
 										});
 								} else {
 									window.showErrorMessage('The selected inspection form cannot be empty.', { modal: true });
-								}															
+								}
 							} else {
 								window.showErrorMessage('The selected file must have a Javascript (\'.js\') or Python (\'.py\') file extension for an automation script, (\'.xml\') for a screen definition or (\'.json\') for an inspection form.', { modal: true });
 							}
@@ -688,7 +688,7 @@ export function activate(context) {
 															}
 														});
 													}
-													if (overwriteAll || overwrite) {														
+													if (overwriteAll || overwrite) {
 														fs.writeFileSync(outputFile, xml);
 														overwrite = false;
 													}
@@ -791,7 +791,7 @@ export function activate(context) {
 
 											let fileExtension = '.json';
 
-											let outputFile = extractLoc + '/' + formInfo.name.toLowerCase().replaceAll(' ', '-').replaceAll('/','-').replaceAll('\\','-') + fileExtension;
+											let outputFile = extractLoc + '/' + formInfo.name.toLowerCase().replaceAll(' ', '-').replaceAll('/', '-').replaceAll('\\', '-') + fileExtension;
 											let source = JSON.stringify(formInfo, null, 4);
 											// if the file doesn't exist then just write it out.
 											if (!fs.existsSync(outputFile)) {
@@ -1130,7 +1130,7 @@ async function getMaximoConfig() {
 		}
 
 		// if the password has not been set then just return.
-		if (!password || password.trim() === '') {			
+		if (!password || password.trim() === '') {
 			return undefined;
 		}
 	}
@@ -1187,13 +1187,13 @@ async function login(client) {
 			window.showErrorMessage('The host name "' + client.config.host + '" cannot be found.', { modal: true });
 		} else if (typeof error.code !== 'undefined' && error.code == 'ECONNRESET') {
 			window.showErrorMessage(error.message, { modal: true });
-		} else if (error.message.includes('ECONNREFUSED')) {			
+		} else if (error.message.includes('ECONNREFUSED')) {
 			window.showErrorMessage('Connection refused to host ' + client.config.host + ' on port ' + client.config.port, { modal: true });
-		} else if (error.message.includes('EPROTO')){
+		} else if (error.message.includes('EPROTO')) {
 			window.showErrorMessage('Connection refused to host ' + client.config.host + ' on port ' + client.config.port + ' because of an SSL connection error.\nAre you sure your server is using SSL or did you specify a non-SSL port?.', { modal: true });
 		} else if (error.isAxiosError && error.response && error.response.status && error.response.status == 401) {
 			window.showErrorMessage('User name and password combination are not valid. Try again.', { modal: true });
-		} else{		
+		} else {
 			window.showErrorMessage(error.message, { modal: true });
 		}
 		return false;
