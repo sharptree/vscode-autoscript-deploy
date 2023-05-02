@@ -756,17 +756,17 @@ export function activate(context) {
 						if (workspace.workspaceFolders !== undefined) {
 							extractLoc = workspace.workspaceFolders[0].uri.fsPath;
 						} else {
-							window.showErrorMessage('A working folder must be selected or an export folder configured before exporting screen definitions.', { modal: true });
+							window.showErrorMessage('A working folder must be selected or an export folder configured before exporting inspection forms.', { modal: true });
 							return;
 						}
 					}
 
 					if (!fs.existsSync(extractLoc)) {
-						window.showErrorMessage(`The screen extract folder ${extractLoc} does not exist.`, { modal: true });
+						window.showErrorMessage(`The inspection form extract folder ${extractLoc} does not exist.`, { modal: true });
 						return;
 					}
 
-					let formNames = await window.withProgress({ title: 'Getting screen names', location: ProgressLocation.Notification }, async () => {
+					let formNames = await window.withProgress({ title: 'Getting inspection forms', location: ProgressLocation.Notification }, async () => {
 						return await client.getAllForms();
 					});
 
@@ -791,7 +791,7 @@ export function activate(context) {
 
 											let fileExtension = '.json';
 
-											let outputFile = extractLoc + '/' + formInfo.name.toLowerCase().replaceAll(' ', '-') + fileExtension;
+											let outputFile = extractLoc + '/' + formInfo.name.toLowerCase().replaceAll(' ', '-').replaceAll('/','-').replaceAll('\\','-') + fileExtension;
 											let source = JSON.stringify(formInfo, null, 4);
 											// if the file doesn't exist then just write it out.
 											if (!fs.existsSync(outputFile)) {
@@ -830,7 +830,7 @@ export function activate(context) {
 									});
 
 									if (!cancelToken.isCancellationRequested) {
-										window.showInformationMessage('Screen definitions extracted.', { modal: true });
+										window.showInformationMessage('Inspection forms extracted.', { modal: true });
 									}
 								}
 								);
@@ -838,7 +838,7 @@ export function activate(context) {
 						});
 
 					} else {
-						window.showErrorMessage('No screen definitions were found to extract.', { modal: true });
+						window.showErrorMessage('No inspection forms were found to extract.', { modal: true });
 					}
 
 				}
