@@ -191,8 +191,10 @@ function importForm(form) {
 
                 inspQuestion.setValue('REQUIRED', typeof question.required !== 'undefined' ? question.required : false);
 
-                if (typeof question.audiocachequestion !== 'undefined') {
-                    inspQuestion.setValue('AUDIOCACHEQUESTION', Base64.getDecoder().decode(question.audiocachequestion));
+                if (hasAttribute('INSPQUESTION', 'AUDIOCACHEQUESTION')) {
+                    if (typeof question.audiocachequestion !== 'undefined') {
+                        inspQuestion.setValue('AUDIOCACHEQUESTION', Base64.getDecoder().decode(question.audiocachequestion));
+                    }
                 }
 
 
@@ -247,8 +249,10 @@ function importForm(form) {
                                 setValueIfDefined(inspFieldOption, 'COLOR', option.color);
                                 setValueIfDefined(inspFieldOption, 'ICON', option.icon);
 
-                                if (typeof option.audiocachefback !== 'undefined') {
-                                    inspQuestion.setValue('AUDIOCACHEFBACK', Base64.getDecoder().decode(option.audiocachefback));
+                                if (hasAttribute('INSPFIELDOPTION', 'AUDIOCACHEFBACK')) {
+                                    if (typeof option.audiocachefback !== 'undefined') {
+                                        inspQuestion.setValue('AUDIOCACHEFBACK', Base64.getDecoder().decode(option.audiocachefback));
+                                    }
                                 }
                             });
                         }
@@ -393,8 +397,10 @@ function extractForm(formId) {
             result.readconfirmation = inspectionForm.getBoolean('READCONFIRMATION');
             result.audioguided = inspectionForm.getBoolean('AUDIOGUIDED');
 
-            if (!inspectionForm.isNull('AUDIOCACHEFORM')) {
-                result.audiocacheform = Base64.getEncoder().encode(inspectionForm.getBytes('AUDIOCACHEFORM'));
+            if (hasAttribute('INSPQUESTION', 'AUDIOCACHEFORM')) {
+                if (!inspectionForm.isNull('AUDIOCACHEFORM')) {
+                    result.audiocacheform = Base64.getEncoder().encode(inspectionForm.getBytes('AUDIOCACHEFORM'));
+                }
             }
 
             var inspQuestionSet = inspectionForm.getMboSet('INSPQUESTION');
@@ -443,7 +449,7 @@ function extractForm(formId) {
                     if (!inspField.isNull('ENDVALUE')) {
                         field.endvalue = inspField.getInt('ENDVALUE');
                     }
-                    
+
                     field.metername = inspField.getString('METERNAME');
                     field.metertype = inspField.getString('METERTYPE');
                     field.showdate = inspField.getBoolean('SHOWDATE');
@@ -487,8 +493,10 @@ function extractForm(formId) {
                         option.color = inspFieldOption.getString('COLOR');
                         option.icon = inspFieldOption.getString('ICON');
 
-                        if (!inspFieldOption.isNull('AUDIOCACHEFBACK')) {
-                            question.audiocachefback = Base64.getEncoder().encode(inspField.getBytes('AUDIOCACHEFBACK'));
+                        if (hasAttribute('INSPFIELDOPTION', 'AUDIOCACHEFBACK')) {
+                            if (!inspFieldOption.isNull('AUDIOCACHEFBACK')) {
+                                question.audiocachefback = Base64.getEncoder().encode(inspField.getBytes('AUDIOCACHEFBACK'));
+                            }
                         }
 
                         fieldOptions.push(option);
