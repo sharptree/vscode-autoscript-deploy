@@ -1,4 +1,8 @@
 # Release Notes
+## 1.8.3
+- Fixed issue with extracting inspection forms with names that include path characters.
+- Fixed issue with support for missing AUDIOCACHE attributes.
+- Fixed incorrect messages for exporting forms.
 ## 1.8.2
 - Fixed issue where inspection form null integer values were being exported as zeros instead of null.
   
