@@ -1,4 +1,6 @@
 # Release Notes
+## 1.8.4
+- Add the `request` implicit variable to the `onDeploy` context.
 ## 1.8.3
 - Fixed issue with extracting inspection forms with names that include path characters.
 - Fixed issue with support for missing AUDIOCACHE attributes.
