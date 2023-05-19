@@ -418,10 +418,12 @@ function deployScript(scriptSource, language) {
                 if (!bindings.put) {
                     var ctx = new HashMap();
                     ctx.put("service", service);
+                    ctx.put("request", request);
                     ctx.put("onDeploy", true);
                     bindings = new ScriptBinding(ctx);
                 } else {
                     bindings.put("service", service);
+                    ctx.put("request", request);
                     bindings.put("onDeploy", true);
                 }
 
