@@ -1,4 +1,6 @@
 # Release Notes
+## 1.8.5
+- Fixed script version numbering.
 ## 1.8.4
 - Add the `request` implicit variable to the `onDeploy` context.
 ## 1.8.3
