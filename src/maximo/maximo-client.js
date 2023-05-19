@@ -35,8 +35,8 @@ export default class MaximoClient {
         // keep a reference to the config for later use.
         this.config = config;
 
-        this.requiredScriptVersion = '1.22.0';
-        this.currentScriptVersion = '1.22.0';
+        this.requiredScriptVersion = '1.23.0';
+        this.currentScriptVersion = '1.23.0';
 
         if (config.ca) {
             https.globalAgent.options.ca = config.ca;
@@ -357,7 +357,7 @@ export default class MaximoClient {
         return result.data;
     }
 
-    async postScript(script, progress, fileName) {
+    async postScript(script, progress, fileName, deployScript) {
 
         if (!this._isConnected) {
             await this.connect();
@@ -366,6 +366,22 @@ export default class MaximoClient {
         let isPython = fileName.endsWith('.py');
 
         progress.report({ increment: 10, message: `Deploying script ${fileName}` });
+
+        if (deployScript) {
+
+            const deployOptions = {
+                url: 'script/sharptree.autoscript.deploy' + (isPython ? '/python' : ''),
+                method: MaximoClient.Method.POST,
+                headers: {
+                    'Content-Type': 'text/plain',
+                    Accept: 'application/json'
+                },
+                data: deployScript
+            };
+            // @ts-ignore
+            await this.client.request(deployOptions);
+        }
+
 
         const options = {
             url: 'script/sharptree.autoscript.deploy' + (isPython ? '/python' : ''),
@@ -413,7 +429,7 @@ export default class MaximoClient {
         return result.data;
 
     }
-    
+
     async postForm(form, progress) {
 
         if (!this._isConnected) {
@@ -429,7 +445,7 @@ export default class MaximoClient {
                 'Content-Type': 'text/plain',
                 Accept: 'application/json'
             },
-            data: JSON.stringify(form,null,4)
+            data: JSON.stringify(form, null, 4)
         };
 
         progress.report({ increment: 50, message: `Deploying inspection form ${form.name}` });
@@ -613,7 +629,7 @@ export default class MaximoClient {
 
         source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.form.js')).toString();
         await this._installOrUpdateScript('sharptree.autoscript.form', 'Sharptree Inspection Forms Script', source, progress, increment);
-        
+
         await this._fixInspectionFormData();
 
     }

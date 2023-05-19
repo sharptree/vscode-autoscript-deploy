@@ -310,16 +310,22 @@ export function activate(context) {
 
 						if (document) {
 							let fileName = path.basename(document.fileName);
-							if (fileName.endsWith('.js') || fileName.endsWith('.py')) {
+							let deployFileName = document.fileName.substr(0, document.fileName.lastIndexOf('.')) + '-deploy' + document.fileName.substr(document.fileName.lastIndexOf('.'));
+							
+							if (fileName.endsWith('.js') || fileName.endsWith('.py')) {								
 								// Get the document text
 								const script = document.getText();
+								var scriptDeploy;
+								if(fs.existsSync(deployFileName)){
+									scriptDeploy = fs.readFileSync(deployFileName);
+								}
 								if (script && script.trim().length > 0) {
 									await window.withProgress({ cancellable: false, title: 'Script', location: ProgressLocation.Notification },
 										async (progress) => {
 											progress.report({ message: `Deploying script ${fileName}`, increment: 0 });
-
+							
 											await new Promise(resolve => setTimeout(resolve, 500));
-											let result = await client.postScript(script, progress, fileName);
+											let result = await client.postScript(script, progress, fileName, scriptDeploy);
 
 											if (result) {
 												if (result.status === 'error') {

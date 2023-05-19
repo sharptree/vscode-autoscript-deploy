@@ -17,6 +17,8 @@ MXException = Java.type("psdi.util.MXException");
 Version = Java.type("psdi.util.Version");
 
 ScriptBinding = Java.type("com.ibm.tivoli.maximo.script.ScriptBinding");
+ScriptCache = Java.type("com.ibm.tivoli.maximo.script.ScriptCache");
+ScriptDriverFactory = Java.type("com.ibm.tivoli.maximo.script.ScriptDriverFactory");
 
 ScriptContext = Java.type("javax.script.ScriptContext");
 ScriptEngineManager = Java.type("javax.script.ScriptEngineManager");
@@ -419,11 +421,13 @@ function deployScript(scriptSource, language) {
                     var ctx = new HashMap();
                     ctx.put("service", service);
                     ctx.put("request", request);
+                    ctx.put("userInfo", userInfo);
                     ctx.put("onDeploy", true);
                     bindings = new ScriptBinding(ctx);
                 } else {
                     bindings.put("service", service);
-                    ctx.put("request", request);
+                    bindings.put("request", request);
+                    bindings.put("userInfo", userInfo);
                     bindings.put("onDeploy", true);
                 }
 
@@ -439,6 +443,29 @@ function deployScript(scriptSource, language) {
                     } else if (error instanceof ScriptException) {
                         throw new ScriptError("error_ondeploy", "Error calling onDeploy function \"" + scriptConfig.onDeploy + "\" :" + error.message);
                     }
+                }
+            } else if (typeof scriptConfig.onDeployScript !== 'undefined' && scriptConfig.onDeployScript) {
+                var deployScript = ScriptCache.getInstance().getScriptInfo(scriptConfig.onDeployScript);
+                if (deployScript) {
+                    
+                    var ctx = new HashMap();
+                    ctx.put("service", service);
+                    ctx.put("request", request);
+                    ctx.put("userInfo", userInfo);
+                    ctx.put("onDeploy", true);                    
+
+                    ScriptDriverFactory.getInstance().getScriptDriver(deployScript.getName()).runScript(deployScript.getName(), ctx);
+                }
+            } else {
+                var deployScript = ScriptCache.getInstance().getScriptInfo(scriptConfig.autoscript + ".DEPLOY");
+                if (deployScript) {
+                    var ctx = new HashMap();
+                    ctx.put("service", service);
+                    ctx.put("request", request);
+                    ctx.put("userInfo", userInfo);
+                    ctx.put("onDeploy", true);
+                    
+                    ScriptDriverFactory.getInstance().getScriptDriver(deployScript.getName()).runScript(deployScript.getName(), ctx);
                 }
             }
 
