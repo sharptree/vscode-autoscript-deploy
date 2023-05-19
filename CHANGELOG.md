@@ -1,4 +1,7 @@
 # Release Notes
+## 1.9.0
+- Add support for onDeployScript and automatic use of .DEPLOY extension scripts.
+- Add support for automatically deploying scripts with the same name as the primary script, with a `-deploy` suffix.
 ## 1.8.5
 - Fixed script version numbering.
 ## 1.8.4
