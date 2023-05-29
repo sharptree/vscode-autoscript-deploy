@@ -29,6 +29,32 @@ The following are settings available under the `Sharptree > Maximo` group.
 
 > The Authentication Type setting has been removed and replaced with automatic detection of authentication type.
 
+### .devtools-config.json
+A file named `.devtools-config.json` can be created in the root directory of the project folder to override the VS Code settings. This file is a JSON formatted and contains the setting attributes to override, any settings not included in the file will be taken from the VS Code settings. 
+
+The `password` and `apiKey` attributes will be automatically encrypted on first use. If the `password` or `apiKey` needs to be updated, the encrypted value can be replaced with the new plain text value, which will again be automatically encrypted on first use.
+
+### Sample
+```json
+{
+    "host":"The Maximo host name",
+    "port":80|443,
+    "context":"maximo",
+    "useSSL":true|false,
+    "username":"The Maximo username",
+    "password":"The Maximo user's password",
+    "apiKey":"A Maximo API key",
+    "allowUntrustedCerts":true|false,
+    "timeout":30,
+    "ca":"A PEM formatted CA",
+    "maxauthOnly":true|false,
+    "extractLocation":"Path to the script extract directory",
+    "extractLocationScreens":"Path to the screens extract directory",
+    "extractLocationForms":"Path to the forms extract directory"
+}
+```
+> Since `.devtools-config.json` may contain sensitive connection information it should *never* be checked into Git. A `.gitignore` entry for `.devtools-config.json` is automatically created the first time the `.devtools-config.json` is used by the extension to ensure that it is not accidentally included in a commit.
+
 ### Logging Settings
 The following are settings available under the `Sharptree > Maximo > Logging` group.
 

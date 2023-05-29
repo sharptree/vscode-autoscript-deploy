@@ -1,16 +1,13 @@
-import { window, workspace, commands } from 'vscode';
+import { window, commands } from 'vscode';
 import isValidHostname from 'is-valid-hostname';
 
 
-export function validateSettings() {
+export function validateSettings(maximoConfig) {
 
-    const settings = workspace.getConfiguration('sharptree');
-
-    const host = settings.get("maximo.host");
-    const userName = settings.get("maximo.user");
-    const useSSL = settings.get("maximo.useSSL");
-    const port = settings.get("maximo.port");
-    const apiKey = settings.get("maximo.apiKey");
+    const host = maximoConfig.host;  
+    const userName = maximoConfig.username; 
+    const port = maximoConfig.port; 
+    const apiKey = maximoConfig.apiKey;
 
     if (!host) {
         window.showInformationMessage('The Maximo host is missing, set it now?', { modal: true }, ...['Yes']).then((response) => {

@@ -6,6 +6,7 @@ import {
     CookieJar,
     Cookie
 } from 'tough-cookie';
+
 import * as semver from 'semver';
 import {
     InvalidApiKeyError,
@@ -58,7 +59,7 @@ export default class MaximoClient {
             withCredentials: true,
             // httpsAgent: httpsAgent,
             baseURL: config.baseURL,
-            timeout: config.connectTimeout,
+            timeout: config.connectTimeout,            
         });
 
         this.client.interceptors.request.use(function (request) {
@@ -91,9 +92,9 @@ export default class MaximoClient {
                     request.params = { 'lean': (this.config.lean ? 'true' : 'false') };
                 }
             }
-
+            
             // @ts-ignore
-            this.jar.getCookiesSync((request.url && request.url.startsWith('http')) ? request.url : request.baseURL, function (err, cookies) {
+            this.jar.getCookiesSync(request.baseURL, function (err, cookies) {
                 request.headers['cookie'] = cookies.join('; ');
             });
 
@@ -290,7 +291,7 @@ export default class MaximoClient {
             var oidcStateCookie = parsedCookies.filter((c) => c.key.toLowerCase().startsWith(oidcStateCookieNamePrefix.toLowerCase()));
             if (!oidcStateCookie || oidcStateCookie.length == 0) return false;
 
-            // determine the identifier for the corresponsing req url cookie name.
+            // determine the identifier for the corresponding req url cookie name.
             var stateIdentifier = oidcStateCookie[0].key.substring(oidcStateCookieNamePrefix.length);
             var oidcReqUrlCookieNamePrefix = 'WASReqURLOidc';
             var targetCookieName = oidcReqUrlCookieNamePrefix + stateIdentifier;
