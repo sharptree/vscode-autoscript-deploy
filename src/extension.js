@@ -16,6 +16,7 @@ import * as crypto from 'crypto';
 import * as temp from 'temp';
 import { TextDecoder, TextEncoder } from 'text-encoding';
 
+import LocalConfiguration from './config';
 
 temp.track();
 
@@ -33,9 +34,10 @@ var logClient;
 const supportedVersions = ['7608', '7609', '76010', '76011', '7610', '7611', '7612', '7613', '8300', '8400', '8500', '8600'];
 
 var statusBar;
+var secretStorage;
 
 export function activate(context) {
-
+	secretStorage = context.secrets;
 
 	context.subscriptions.push(workspace.onDidChangeConfiguration(_onConfigurationChange.bind(workspace)));
 	currentWindow = window;
@@ -310,20 +312,20 @@ export function activate(context) {
 
 						if (document) {
 							let fileName = path.basename(document.fileName);
-							let deployFileName = document.fileName.substr(0, document.fileName.lastIndexOf('.')) + '-deploy' + document.fileName.substr(document.fileName.lastIndexOf('.'));
-							
-							if (fileName.endsWith('.js') || fileName.endsWith('.py')) {								
+							let deployFileName = document.fileName.substring(0, document.fileName.lastIndexOf('.')) + '-deploy' + document.fileName.substr(document.fileName.lastIndexOf('.'));
+
+							if (fileName.endsWith('.js') || fileName.endsWith('.py')) {
 								// Get the document text
 								const script = document.getText();
 								var scriptDeploy;
-								if(fs.existsSync(deployFileName)){
+								if (fs.existsSync(deployFileName)) {
 									scriptDeploy = fs.readFileSync(deployFileName);
 								}
 								if (script && script.trim().length > 0) {
 									await window.withProgress({ cancellable: false, title: 'Script', location: ProgressLocation.Notification },
 										async (progress) => {
 											progress.report({ message: `Deploying script ${fileName}`, increment: 0 });
-							
+
 											await new Promise(resolve => setTimeout(resolve, 500));
 											let result = await client.postScript(script, progress, fileName, scriptDeploy);
 
@@ -1084,80 +1086,118 @@ function formatXML(sourceXml) {
 }
 
 async function getMaximoConfig() {
-	// make sure we have all the settings.
-	if (!validateSettings()) {
+
+	try {
+		let localConfig = await getLocalConfig();
+		if (!localConfig) {
+			localConfig = {};
+		}
+
+		let settings = workspace.getConfiguration('sharptree');
+
+		let host = localConfig.host ?? settings.get('maximo.host');
+		let userName = localConfig.username ?? settings.get('maximo.user');
+		let useSSL = typeof localConfig.useSSL !== 'undefined' ? localConfig.useSSL : settings.get('maximo.useSSL');
+		let port = localConfig.port ?? settings.get('maximo.port');
+		let apiKey = localConfig.apiKey ?? settings.get('maximo.apiKey');
+
+		let allowUntrustedCerts = typeof localConfig.allowUntrustedCerts !== 'undefined' ? localConfig.allowUntrustedCerts : settings.get('maximo.allowUntrustedCerts');
+		let maximoContext = localConfig.context ?? settings.get('maximo.context');
+		let timeout = localConfig.timeout ?? settings.get('maximo.timeout');
+		let ca = localConfig.ca ?? settings.get('maximo.customCA');
+		let maxauthOnly = typeof localConfig.maxauthOnly !== 'undefined' ? localConfig.maxauthOnly : settings.get('maximo.maxauthOnly');
+		let extractLocation = localConfig.extractLocation ?? settings.get('maximo.extractLocation');
+		let extractLocationScreens = localConfig.extractLocationScreens ?? settings.get('maximo.extractScreenLocation');
+		let extractLocationForms = localConfig.extractLocationForms ?? settings.get('maximo.extractInspectionFormsLocation');
+
+		// make sure we have all the settings.
+		if (!validateSettings({ host: host, username: userName, port: port, apiKey: apiKey })) {
+			return;
+		}
+
+		// if the last user doesn't match the current user then request the password.
+		if (lastUser && lastUser !== userName) {
+			password = null;
+		}
+
+		if (lastHost && lastHost !== host) {
+			password = null;
+		}
+
+		if (lastPort && lastPort !== port) {
+			password = null;
+		}
+
+		if (lastContext && lastContext !== maximoContext) {
+			password = null;
+		}
+
+		if (typeof localConfig.password !== 'undefined') {
+			password = localConfig.password;
+			apiKey = localConfig.apiKey;
+		}
+
+
+		if (!apiKey) {
+			if (!password) {
+				password = await window.showInputBox({
+					prompt: `Enter ${userName}'s password`,
+					password: true,
+					validateInput: text => {
+						if (!text || text.trim() === '') {
+							return 'A password is required';
+						}
+					}
+				});
+			}
+
+			// if the password has not been set then just return.
+			if (!password || password.trim() === '') {
+				return undefined;
+			}
+		}
+
+		return new MaximoConfig({
+			username: userName,
+			password: password,
+			useSSL: useSSL,
+			host: host,
+			port: port,
+			context: maximoContext,
+			connectTimeout: timeout * 1000,
+			responseTimeout: timeout * 1000,
+			allowUntrustedCerts: allowUntrustedCerts,
+			ca: ca,
+			maxauthOnly: maxauthOnly,
+			apiKey: apiKey,
+			extractLocation: extractLocation,
+			extractLocationScreens: extractLocationScreens,
+			extractLocationForms: extractLocationForms
+		});
+	} catch (error) {
+		if (error.reason == 'WRONG_FINAL_BLOCK_LENGTH'){
+			window.showErrorMessage('An error occurred decrypting the password or API Key from the .devtools-config.json file.', { modal: true });
+		}else{
+			window.showErrorMessage(error.message, { modal: true });
+		}
+		
 		return;
 	}
+}
 
-	let settings = workspace.getConfiguration('sharptree');
+async function getLocalConfig() {
 
-	let host = settings.get('maximo.host');
-	let userName = settings.get('maximo.user');
-	let useSSL = settings.get('maximo.useSSL');
-	let port = settings.get('maximo.port');
-	let apiKey = settings.get('maximo.apiKey');
-
-	let allowUntrustedCerts = settings.get('maximo.allowUntrustedCerts');
-	let maximoContext = settings.get('maximo.context');
-	let timeout = settings.get('maximo.timeout');
-	let ca = settings.get('maximo.customCA');
-	let maxauthOnly = settings.get('maximo.maxauthOnly');
-	let extractLocation = settings.get('maximo.extractLocation');
-	let extractLocationScreens = settings.get('maximo.extractScreenLocation');
-	let extractLocationForms = settings.get('maximo.extractInspectionFormsLocation');
-
-	// if the last user doesn't match the current user then request the password.
-	if (lastUser && lastUser !== userName) {
-		password = null;
-	}
-
-	if (lastHost && lastHost !== host) {
-		password = null;
-	}
-
-	if (lastPort && lastPort !== port) {
-		password = null;
-	}
-
-	if (lastContext && lastContext !== maximoContext) {
-		password = null;
-	}
-	if (!apiKey) {
-		if (!password) {
-			password = await window.showInputBox({
-				prompt: `Enter ${userName}'s password`,
-				password: true,
-				validateInput: text => {
-					if (!text || text.trim() === '') {
-						return 'A password is required';
-					}
-				}
-			});
-		}
-
-		// if the password has not been set then just return.
-		if (!password || password.trim() === '') {
-			return undefined;
+	if (workspace.workspaceFolders !== undefined) {
+		let workspaceConfigPath = workspace.workspaceFolders[0].uri.fsPath + path.sep + '.devtools-config.json';
+		if (fs.existsSync(workspaceConfigPath)) {
+			let localConfig = new LocalConfiguration(workspaceConfigPath, secretStorage);
+			if (localConfig.configAvailable) {
+				await localConfig.encryptIfRequired();
+				return await localConfig.config;
+			}
 		}
 	}
-
-	return new MaximoConfig({
-		username: userName,
-		password: password,
-		useSSL: useSSL,
-		host: host,
-		port: port,
-		context: maximoContext,
-		connectTimeout: timeout * 1000,
-		responseTimeout: timeout * 1000,
-		allowUntrustedCerts: allowUntrustedCerts,
-		ca: ca,
-		maxauthOnly: maxauthOnly,
-		apiKey: apiKey,
-		extractLocation: extractLocation,
-		extractLocationScreens: extractLocationScreens,
-		extractLocationForms: extractLocationForms
-	});
+	return {};
 }
 
 function getLoggingConfig() {
@@ -1199,6 +1239,8 @@ async function login(client) {
 			window.showErrorMessage('Connection refused to host ' + client.config.host + ' on port ' + client.config.port + ' because of an SSL connection error.\nAre you sure your server is using SSL or did you specify a non-SSL port?.', { modal: true });
 		} else if (error.isAxiosError && error.response && error.response.status && error.response.status == 401) {
 			window.showErrorMessage('User name and password combination are not valid. Try again.', { modal: true });
+		} else if (client.config.apiKey && error.response.status == 400){
+			window.showErrorMessage('The provided API Key is invalid. Try again.', { modal: true });
 		} else {
 			window.showErrorMessage(error.message, { modal: true });
 		}
