@@ -1,15 +1,23 @@
 # Release Notes
+## 1.10.0
+- Add support for .devools-config.json local configuration file.
+- Fixed issue with cookie handling with the latest release of MAS8
+  
 ## 1.9.0
 - Add support for onDeployScript and automatic use of .DEPLOY extension scripts.
 - Add support for automatically deploying scripts with the same name as the primary script, with a `-deploy` suffix.
+
 ## 1.8.5
 - Fixed script version numbering.
+
 ## 1.8.4
 - Add the `request` implicit variable to the `onDeploy` context.
+
 ## 1.8.3
 - Fixed issue with extracting inspection forms with names that include path characters.
 - Fixed issue with support for missing AUDIOCACHE attributes.
 - Fixed incorrect messages for exporting forms.
+
 ## 1.8.2
 - Fixed issue where inspection form null integer values were being exported as zeros instead of null.
   
