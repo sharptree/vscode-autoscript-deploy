@@ -109,7 +109,7 @@ A `properties`, `maxvars`, or `messages` property may be included within the `sc
 All value names within the `scriptConfig` map to the application label, without spaces and in camel case. For example if the label in the application is `Before Save` the corresponding value name is `beforeSave`.
 
 ### On Deploy Properties
-There are three options for triggering script actions when a script is deployed. The `onDeploy` property can be defined with a value specifying the name of a function within in the deployed script that will be called when the script is deployed, the `onDeployScript` property can be defined with the name of another script that will be invoked when the the current script is deployed or if a script with the same name as the current script with `.DEPLOY` appended to the name exists, it will be automatically invoked.
+There are three options for triggering script actions when a script is deployed. The `onDeploy` property can be defined with a value specifying the name of a function within in the deployed script that will be called when the script is deployed, the `onDeployScript` property can be defined with the name of another script that will be invoked when the the current script is deployed or if a script with the same name as the current script with `.DEPLOY` appended to the name exists, it will be automatically invoked. The deploy script will automatically be delete after execution unless the `deleteDeployScript` property is set to `false`.
 
 The following four global variables are provided to the deployment scripts.
 
@@ -120,7 +120,7 @@ The following four global variables are provided to the deployment scripts.
 | service          | com.ibm.tivoli.maximo.script.ScriptService      | The standard service class provided to all automation scripts.                               |
 | userInfo         | psdi.security.UserInfo                          | The UserInfo object for the current user.                                                    |
 
-When using a script for deploy actions, that script file may be named the same as the primary script with `-deploy` appended to the file name and with the same extension to have it automatically deployed with the primary script.  For example if a script is contained in a file named `example.js` the deployment script can be saved in a file named `example-deploy.js` and the deployment script will be deployed to Maximo first so it is available to be called by the primary script at deploy time.
+When using a script for deploy actions, that script file may be named the same as the primary script with `-deploy` appended to the file name and with the same extension to have it automatically deployed with the primary script.  For example if a script is contained in a file named `example.js` the deployment script can be saved in a file named `example-deploy.js` and the deployment script will be deployed to Maximo first so it is available to be called by the primary script at deploy time. 
 
 > Maximo requires that JavaScript objects have quoted properties, as shown below.  If you are using Prettier as your code formatter it may automatically remove these quotes, which will result in errors when deploying.  To retain the quotes go to the Visual Studio Code Settings (`⌘ + ,` or `ctrl + ,`), select `Prettier`, then find the `Quote Props` setting and select the `preserve` option.  
 >
