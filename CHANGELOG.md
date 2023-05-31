@@ -1,4 +1,7 @@
 # Release Notes
+## 1.10.1
+- Remove the deploy script by default after the deployment completes.
+  
 ## 1.10.0
 - Add support for .devools-config.json local configuration file.
 - Fixed issue with cookie handling with the latest release of MAS8
