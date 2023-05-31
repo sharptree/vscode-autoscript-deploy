@@ -312,7 +312,7 @@ export function activate(context) {
 
 						if (document) {
 							let fileName = path.basename(document.fileName);
-							let deployFileName = document.fileName.substring(0, document.fileName.lastIndexOf('.')) + '-deploy' + document.fileName.substr(document.fileName.lastIndexOf('.'));
+							let deployFileName = document.fileName.substring(0, document.fileName.lastIndexOf('.')) + '-deploy' + document.fileName.substring(document.fileName.lastIndexOf('.'));
 
 							if (fileName.endsWith('.js') || fileName.endsWith('.py')) {
 								// Get the document text
