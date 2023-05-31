@@ -447,7 +447,7 @@ function deployScript(scriptSource, language) {
             } else if (typeof scriptConfig.onDeployScript !== 'undefined' && scriptConfig.onDeployScript) {
                 var deployScript = ScriptCache.getInstance().getScriptInfo(scriptConfig.onDeployScript);
                 if (deployScript) {
-                    
+
                     var ctx = new HashMap();
                     ctx.put("service", service);
                     ctx.put("request", request);
@@ -455,10 +455,30 @@ function deployScript(scriptSource, language) {
                     ctx.put("onDeploy", true);                    
 
                     ScriptDriverFactory.getInstance().getScriptDriver(deployScript.getName()).runScript(deployScript.getName(), ctx);
+                    
+                    if (typeof scriptConfig.deleteDeployScript === 'undefined' || scriptConfig.deleteDeployScript == null || scriptConfig.deleteDeployScript) {
+                        var deployAutoScriptSet;
+                        try {
+                            deployAutoScriptSet = MXServer.getMXServer().getMboSet("AUTOSCRIPT", userInfo);
+                            var deploySqlf = new SqlFormat("autoscript = :1");
+                            deploySqlf.setObject(1, "AUTOSCRIPT", "AUTOSCRIPT", deployScript.getName());
+
+                            deployAutoScriptSet.setWhere(deploySqlf.format());
+                            var deployAutoScript = deployAutoScriptSet.moveFirst();
+                            if (deployAutoScript) {
+                                deployAutoScript.delete();
+                                deployAutoScriptSet.save();
+                            }
+
+                        } finally {
+                            close(deployAutoScriptSet);
+                        }
+                    }                    
                 }
             } else {
                 var deployScript = ScriptCache.getInstance().getScriptInfo(scriptConfig.autoscript + ".DEPLOY");
                 if (deployScript) {
+                
                     var ctx = new HashMap();
                     ctx.put("service", service);
                     ctx.put("request", request);
@@ -466,6 +486,25 @@ function deployScript(scriptSource, language) {
                     ctx.put("onDeploy", true);
                     
                     ScriptDriverFactory.getInstance().getScriptDriver(deployScript.getName()).runScript(deployScript.getName(), ctx);
+
+                    if(typeof scriptConfig.deleteDeployScript === 'undefined' || scriptConfig.deleteDeployScript == null || scriptConfig.deleteDeployScript){
+                        var deployAutoScriptSet;
+                        try{
+                            deployAutoScriptSet  = MXServer.getMXServer().getMboSet("AUTOSCRIPT", userInfo);
+                            var deploySqlf = new SqlFormat("autoscript = :1");
+                            deploySqlf.setObject(1, "AUTOSCRIPT", "AUTOSCRIPT", deployScript.getName());
+
+                            deployAutoScriptSet.setWhere(deploySqlf.format());
+                            var deployAutoScript = deployAutoScriptSet.moveFirst();
+                            if (deployAutoScript){
+                                deployAutoScript.delete();
+                                deployAutoScriptSet.save();
+                            }
+
+                        }finally{
+                            close(deployAutoScriptSet);
+                        }
+                    }
                 }
             }
 
