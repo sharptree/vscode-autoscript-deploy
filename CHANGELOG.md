@@ -1,4 +1,9 @@
 # Release Notes
+## 1.11.0
+- Add the ability to extract single scripts, screens and forms.
+- Removed dependency on DigestUtils which was not available in all versions and patch levels.
+- Fixed bug with importing inspection forms with more than one file upload questions.
+  
 ## 1.10.1
 - Remove the deploy script by default after the deployment completes.
   
