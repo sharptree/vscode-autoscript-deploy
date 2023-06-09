@@ -7,23 +7,28 @@ RESTRequest = Java.type("com.ibm.tivoli.oslc.RESTRequest");
 ScriptInfo = Java.type("com.ibm.tivoli.maximo.script.ScriptInfo");
 ScriptCache = Java.type("com.ibm.tivoli.maximo.script.ScriptCache");
 ScriptDriverFactory = Java.type("com.ibm.tivoli.maximo.script.ScriptDriverFactory");
+MessageDigest = Java.type("java.security.MessageDigest");
+
 
 // eslint-disable-next-line no-global-assign
+Character = Java.type("java.lang.Character");
 String = Java.type("java.lang.String");
 System = Java.type("java.lang.System");
+
+MessageDigest = Java.type("java.security.MessageDigest");
 
 ZonedDateTime = Java.type("java.time.ZonedDateTime");
 DateTimeFormatter = Java.type("java.time.format.DateTimeFormatter");
 
 HashMap = Java.type("java.util.HashMap");
 
-DigestUtils = Java.type("org.apache.commons.codec.digest.DigestUtils");
-
 SqlFormat = Java.type("psdi.mbo.SqlFormat");
 MXServer = Java.type("psdi.server.MXServer");
 
 MXApplicationException = Java.type("psdi.util.MXApplicationException");
 MXLoggerFactory = Java.type("psdi.util.logging.MXLoggerFactory");
+
+var sha256 = MessageDigest.getInstance("SHA-256");
 
 var logger = MXLoggerFactory.getLogger("maximo.script." + service.getScriptName());
 
@@ -212,7 +217,7 @@ function createOrUpdateScript(scriptName, script, userName) {
         scriptInfo.deployed = System.currentTimeMillis();
         scriptInfo.deployedBy = userName;
         scriptInfo.deployedAsDate = DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(ZonedDateTime.now());
-        scriptInfo.hash = DigestUtils.shaHex(script);
+        scriptInfo.hash = sha256Hex(script);
 
 
         if (toBeCreated) {
@@ -334,7 +339,7 @@ function _calculateSignature(config) {
 
     // remove an existing signature so it isn't included in the hash
     delete evalConfig.signature;
-    return DigestUtils.shaHex(JSON.stringify(evalConfig, null, 4));
+    return sha256Hex(JSON.stringify(evalConfig, null, 4));
 }
 
 function ConfigError(reason, message) {
@@ -383,4 +388,21 @@ function log_warn(msg) {
 
 function log_error(msg) {
     logger.error(msg);
+}
+
+function sha256Hex(value) {
+    try {
+        return toHex(sha256.digest(value.getBytes("utf8")));
+    } catch (error) {
+        logger.error(error);
+    }
+}
+
+function toHex(value) {
+    var result = [];
+    for (var n = 0, l = value.length; n < l; n++) {
+        var hex = Number(Character.codePointAt(new String(value), n)).toString(16);
+        result.push(hex);
+    }
+    return result.join('');
 }
