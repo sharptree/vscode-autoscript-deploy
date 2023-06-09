@@ -28,12 +28,12 @@
 		"vscode": "^1.57.0"
 	},
 	"activationEvents": [
-		"onCommand:maximo-script-deploy.extracts",
+		"onCommand:maximo-script-deploy.extract",
+		"onCommand:maximo-script-deploy.extractOne",
 		"onCommand:maximo-script-deploy.deploy",
 		"onCommand:maximo-script-deploy.screens",
-		"onCommand:maximo-script-deploy.compare",
-		"onCommand:maximo-script-deploy.form",
-		"*"
+		"onCommand:maximo-script-deploy.compare",		
+		"onCommand:maximo-script-deploy.form"		
 	],
 	"main": "./dist/extension",
 	"contributes": {
@@ -142,24 +142,37 @@
 			},
 			{
 				"command": "maximo-script-deploy.extract",
-				"title": "Extract Automation Scripts"
+				"title": "Extract All Automation Scripts"
 			},
+			{
+				"command": "maximo-script-deploy.extractOne",
+				"title": "Extract Automation Script"
+			},			
 			{
 				"command": "maximo-script-deploy.compare",
 				"title": "Compare with Maximo"
 			},
 			{
 				"command": "maximo-script-deploy.screens",
-				"title": "Extract Screen Definitions"
+				"title": "Extract All Screen Definitions"
 			},
+			{
+				"command": "maximo-script-deploy.screensOne",
+				"title": "Extract Screen Definition"
+			},			
 			{
 				"command": "maximo-script-deploy.id",
 				"title": "Insert Unique Id for Maximo Presentation Tag"
 			},
 			{
 				"command": "maximo-script-deploy.forms",
-				"title": "Extract Inspection Forms"
+				"title": "Extract All Inspection Forms"
+			},
+			{
+				"command": "maximo-script-deploy.formsOne",
+				"title": "Extract Inspection Form"
 			}
+
 		],
 		"keybindings": [
 			{

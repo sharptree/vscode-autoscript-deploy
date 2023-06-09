@@ -31,7 +31,7 @@ var currentWindow;
 var currentFollow;
 var logClient;
 
-const supportedVersions = ['7608', '7609', '76010', '76011', '7610', '7611', '7612', '7613', '8300', '8400', '8500', '8600','8600-60'];
+const supportedVersions = ['7608', '7609', '76010', '76011', '7610', '7611', '7612', '7613', '8300', '8400', '8500', '8600'];
 
 var statusBar;
 var secretStorage;
@@ -613,6 +613,108 @@ export function activate(context) {
 		}
 	);
 
+	let disposableExtractOne = commands.registerCommand(
+		'maximo-script-deploy.extractOne',
+		async function () {
+
+			const config = await getMaximoConfig();
+
+			if (!config) {
+				return;
+			}
+
+			let client;
+
+			try {
+				client = new MaximoClient(config);
+
+				if (await login(client)) {
+					let extractLoc = config.extractLocation;
+					// if the extract location has not been specified use the workspace folder.
+					if (typeof extractLoc === 'undefined' || !extractLoc) {
+						if (workspace.workspaceFolders !== undefined) {
+							extractLoc = workspace.workspaceFolders[0].uri.fsPath;
+						} else {
+							window.showErrorMessage('A working folder must be selected or an export folder configured before exporting automation scripts. ', { modal: true });
+							return;
+						}
+					}
+
+					if (!fs.existsSync(extractLoc)) {
+						window.showErrorMessage(`The script extract folder ${extractLoc} does not exist.`, { modal: true });
+						return;
+					}
+
+					let scriptNames = await window.withProgress({ title: 'Getting script names', location: ProgressLocation.Notification }, async (progress) => {
+						return await client.getAllScriptNames(progress);
+					});
+
+					if (typeof scriptNames !== 'undefined' && scriptNames.length > 0) {
+						scriptNames.sort();
+						await window.showQuickPick(scriptNames, { placeHolder: 'Search for script' }).then(async (scriptName) => {
+							if (typeof scriptName !== 'undefined') {
+								await window.withProgress({
+									title: `Extracting ${scriptName}`,
+									location: ProgressLocation.Notification,
+									cancellable: true
+								}, async (progress, cancelToken) => {
+
+									let scriptInfo = await client.getScript(scriptName);
+
+									let fileExtension = getExtension(scriptInfo.scriptLanguage);
+
+									let outputFile = extractLoc + '/' + scriptName.toLowerCase() + fileExtension;
+
+									// if the file doesn't exist then just write it out.
+									if (!fs.existsSync(outputFile)) {
+										fs.writeFileSync(outputFile, scriptInfo.script);
+									} else {
+										let incomingHash = crypto.createHash('sha256').update(scriptInfo.script).digest('hex');
+										let fileHash = crypto.createHash('sha256').update(fs.readFileSync(outputFile)).digest('hex');
+
+										if (fileHash !== incomingHash) {
+											await window.showInformationMessage(`The script ${scriptName.toLowerCase()}${fileExtension} exists. \nReplace?`, { modal: true }, ...['Replace']).then(async (response) => {
+												if (response === 'Replace') {
+													fs.writeFileSync(outputFile, scriptInfo.script);
+												} else {
+													cancelToken.cancel();
+												}
+											});
+										}
+
+									}
+
+									if (!cancelToken.isCancellationRequested) {
+										window.showInformationMessage(`Automation script "${scriptName}" extracted.`, { modal: true });
+									}
+								}
+								);
+							}
+						});
+
+					}
+				}
+			} catch (error) {
+				if (error && typeof error.reasonCode !== 'undefined' && error.reasonCode === 'BMXAA0021E') {
+					password = undefined;
+					window.showErrorMessage(error.message, { modal: true });
+				} else if (error && typeof error.message !== 'undefined') {
+					window.showErrorMessage(error.message, { modal: true });
+				} else {
+					window.showErrorMessage('An unexpected error occurred: ' + error, { modal: true });
+				}
+
+			} finally {
+				// if the client exists then disconnect it.
+				if (client) {
+					await client.disconnect().catch(() => {
+						//do nothing with this
+					});
+				}
+			}
+		}
+	);
+
 
 	let disposableExtractScreens = commands.registerCommand(
 		'maximo-script-deploy.screens',
@@ -711,6 +813,114 @@ export function activate(context) {
 
 									if (!cancelToken.isCancellationRequested) {
 										window.showInformationMessage('Screen definitions extracted.', { modal: true });
+									}
+								}
+								);
+							}
+						});
+
+					} else {
+						window.showErrorMessage('No screen definitions were found to extract.', { modal: true });
+					}
+
+				}
+			} catch (error) {
+				if (error && typeof error.reasonCode !== 'undefined' && error.reasonCode === 'BMXAA0021E') {
+					password = undefined;
+					window.showErrorMessage(error.message, { modal: true });
+				} else if (error && typeof error.message !== 'undefined') {
+					window.showErrorMessage(error.message, { modal: true });
+				} else {
+					window.showErrorMessage('An unexpected error occurred: ' + error, { modal: true });
+				}
+
+			} finally {
+				// if the client exists then disconnect it.
+				if (client) {
+					await client.disconnect().catch(() => {
+						//do nothing with this
+					});
+				}
+			}
+		});
+
+	let disposableExtractScreenOne = commands.registerCommand(
+		'maximo-script-deploy.screensOne',
+		async function () {
+
+			const config = await getMaximoConfig();
+
+			if (!config) {
+				return;
+			}
+
+			let client;
+
+			try {
+				client = new MaximoClient(config);
+
+				if (await login(client)) {
+					let extractLoc = config.extractLocationScreens;
+					// if the extract location has not been specified use the workspace folder.
+					if (typeof extractLoc === 'undefined' || !extractLoc) {
+						if (workspace.workspaceFolders !== undefined) {
+							extractLoc = workspace.workspaceFolders[0].uri.fsPath;
+						} else {
+							window.showErrorMessage('A working folder must be selected or an export folder configured before exporting screen definitions.', { modal: true });
+							return;
+						}
+					}
+
+					if (!fs.existsSync(extractLoc)) {
+						window.showErrorMessage(`The screen extract folder ${extractLoc} does not exist.`, { modal: true });
+						return;
+					}
+
+					let screenNames = await window.withProgress({ title: 'Getting screen names', location: ProgressLocation.Notification }, async () => {
+						return await client.getAllScreenNames();
+					});
+
+					if (typeof screenNames !== 'undefined' && screenNames.length > 0) {
+						screenNames.sort();
+						await window.showQuickPick(screenNames, { placeHolder: 'Search for screen' }).then(async (screenName) => {
+							if (typeof screenName !== 'undefined') {
+								await window.withProgress({
+									title: `Extracting Screen ${screenName}`,
+									location: ProgressLocation.Notification,
+									cancellable: true
+								}, async (progress, cancelToken) => {
+
+									let screenInfo = await client.getScreen(screenName);
+
+									let fileExtension = '.xml';
+
+									let outputFile = extractLoc + '/' + screenName.toLowerCase() + fileExtension;
+									let xml = format(screenInfo.presentation);
+									// if the file doesn't exist then just write it out.
+									if (!fs.existsSync(outputFile)) {
+										fs.writeFileSync(outputFile, xml);
+									} else {
+
+										let incomingHash = crypto.createHash('sha256').update(xml).digest('hex');
+										let fileHash = crypto.createHash('sha256').update(fs.readFileSync(outputFile)).digest('hex');
+
+										if (fileHash !== incomingHash) {
+
+											await window.showInformationMessage(`The screen ${screenName.toLowerCase()}${fileExtension} exists. \nReplace?`, { modal: true }, ...['Replace']).then(async (response) => {
+												if (response === 'Replace') {
+													fs.writeFileSync(outputFile, xml);
+												} else {
+													cancelToken.cancel();
+												}
+											});
+
+										}
+									}
+
+									if (cancelToken.isCancellationRequested) {
+										return;
+									} else {
+										window.showInformationMessage(`Screen "${screenName}" extracted.`, { modal: true });
 									}
 								}
 								);
@@ -870,8 +1080,119 @@ export function activate(context) {
 			}
 		});
 
+	let disposableExtractFormsOne = commands.registerCommand(
+		'maximo-script-deploy.formsOne',
+		async function () {
 
-	context.subscriptions.push(disposableDeploy, disposableExtract, disposableCompare, disposableExtractScreens, disposableInsert, disposableExtractForms);
+			const config = await getMaximoConfig();
+
+			if (!config) {
+				return;
+			}
+
+			let client;
+
+			try {
+				client = new MaximoClient(config);
+
+				if (await login(client)) {
+					let extractLoc = config.extractLocationForms;
+					// if the extract location has not been specified use the workspace folder.
+					if (typeof extractLoc === 'undefined' || !extractLoc) {
+						if (workspace.workspaceFolders !== undefined) {
+							extractLoc = workspace.workspaceFolders[0].uri.fsPath;
+						} else {
+							window.showErrorMessage('A working folder must be selected or an export folder configured before exporting inspection forms.', { modal: true });
+							return;
+						}
+					}
+
+					if (!fs.existsSync(extractLoc)) {
+						window.showErrorMessage(`The inspection form extract folder ${extractLoc} does not exist.`, { modal: true });
+						return;
+					}
+
+					let formFullNames = await window.withProgress({ title: 'Getting inspection forms', location: ProgressLocation.Notification }, async () => {
+						return await client.getAllForms();
+					});
+
+					if (typeof formFullNames !== 'undefined' && formFullNames.length > 0) {
+						var formNames = formFullNames.map(x => x.name);
+						formNames.sort();
+						await window.showQuickPick(formNames, { placeHolder: 'Search for form' }).then(async (formName) => {
+							if (typeof formName !== 'undefined') {
+								var form = formFullNames.find(x => x.name == formName);
+
+								await window.withProgress({
+									title: `Extracting Inspection Form ${formName}`,
+									location: ProgressLocation.Notification,
+									cancellable: true
+								}, async (progress, cancelToken) => {
+									let formInfo = await client.getForm(form.id);
+
+									let fileExtension = '.json';
+
+									let outputFile = extractLoc + '/' + formInfo.name.toLowerCase().replaceAll(' ', '-').replaceAll('/', '-').replaceAll('\\', '-') + fileExtension;
+									let source = JSON.stringify(formInfo, null, 4);
+									// if the file doesn't exist then just write it out.
+									if (!fs.existsSync(outputFile)) {
+										fs.writeFileSync(outputFile, source);
+									} else {
+
+										let incomingHash = crypto.createHash('sha256').update(source).digest('hex');
+										let fileHash = crypto.createHash('sha256').update(fs.readFileSync(outputFile)).digest('hex');
+
+										if (fileHash !== incomingHash) {
+
+											await window.showInformationMessage(`The inspection form ${form.name} exists. \nReplace?`, { modal: true }, ...['Replace']).then(async (response) => {
+												if (response === 'Replace') {
+													fs.writeFileSync(outputFile, source);
+												} else {
+													cancelToken.cancel();
+												}
+											});
+
+
+										}
+									}
+
+									if (cancelToken.isCancellationRequested) {
+										return;
+									} else {
+										window.showInformationMessage(`Inspection form "${formName}" extracted.`, { modal: true });
+									}
+								}
+								);
+							}
+						});
+
+					} else {
+						window.showErrorMessage('No inspection forms were found to extract.', { modal: true });
+					}
+
+				}
+			} catch (error) {
+				if (error && typeof error.reasonCode !== 'undefined' && error.reasonCode === 'BMXAA0021E') {
+					password = undefined;
+					window.showErrorMessage(error.message, { modal: true });
+				} else if (error && typeof error.message !== 'undefined') {
+					window.showErrorMessage(error.message, { modal: true });
+				} else {
+					window.showErrorMessage('An unexpected error occurred: ' + error, { modal: true });
+				}
+
+			} finally {
+				// if the client exists then disconnect it.
+				if (client) {
+					await client.disconnect().catch(() => {
+						//do nothing with this
+					});
+				}
+			}
+		});
+
+
+	context.subscriptions.push(disposableDeploy, disposableExtract, disposableCompare, disposableExtractScreens, disposableExtractScreenOne, disposableInsert, disposableExtractForms, disposableExtractOne, disposableExtractFormsOne);
 
 }
 
@@ -1175,12 +1496,12 @@ async function getMaximoConfig() {
 			extractLocationForms: extractLocationForms
 		});
 	} catch (error) {
-		if (error.reason == 'WRONG_FINAL_BLOCK_LENGTH'){
+		if (error.reason == 'WRONG_FINAL_BLOCK_LENGTH') {
 			window.showErrorMessage('An error occurred decrypting the password or API Key from the .devtools-config.json file.', { modal: true });
-		}else{
+		} else {
 			window.showErrorMessage(error.message, { modal: true });
 		}
-		
+
 		return;
 	}
 }
@@ -1239,7 +1560,7 @@ async function login(client) {
 			window.showErrorMessage('Connection refused to host ' + client.config.host + ' on port ' + client.config.port + ' because of an SSL connection error.\nAre you sure your server is using SSL or did you specify a non-SSL port?.', { modal: true });
 		} else if (error.isAxiosError && error.response && error.response.status && error.response.status == 401) {
 			window.showErrorMessage('User name and password combination are not valid. Try again.', { modal: true });
-		} else if (client.config.apiKey && error.response.status == 400){
+		} else if (client.config.apiKey && error.response.status == 400) {
 			window.showErrorMessage('The provided API Key is invalid. Try again.', { modal: true });
 		} else {
 			window.showErrorMessage(error.message, { modal: true });
