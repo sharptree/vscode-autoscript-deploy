@@ -31,7 +31,7 @@ var currentWindow;
 var currentFollow;
 var logClient;
 
-const supportedVersions = ['7608', '7609', '76010', '76011', '7610', '7611', '7612', '7613', '8300', '8400', '8500', '8600'];
+const supportedVersions = ['7608', '7609', '76010', '76011', '7610', '7611', '7612', '7613', '8300', '8400', '8500', '8600','8600-60'];
 
 var statusBar;
 var secretStorage;
