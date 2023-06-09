@@ -133,6 +133,9 @@ function main() {
 }
 
 function importForm(form) {
+    // Make sure the inspection doc types are set up before importing.    
+    fixInspectionAppDocTypes();
+
     var inspectionFormSet;
     try {
         inspectionFormSet = MXServer.getMXServer().getMboSet('INSPECTIONFORM', userInfo);
@@ -226,11 +229,11 @@ function importForm(form) {
                         setValueIfDefined(inspField, 'DESCRIPTION_LONGDESCRIPTION', field.information);
 
 
-                        if (hasAttribute("INSPFIELD", "DOMAINID")) {
+                        if (hasAttribute('INSPFIELD', 'DOMAINID')) {
                             setValueIfDefined(inspField, 'DOMAINID', field.domainid);
                         }
 
-                        if (hasAttribute("INSPFIELD", "DOMAINTYPE")) {
+                        if (hasAttribute('INSPFIELD', 'DOMAINTYPE')) {
                             setValueIfDefined(inspField, 'DOMAINTYPE', field.domaintype);
                         }
 
@@ -457,12 +460,12 @@ function extractForm(formId) {
                     field.doctype = inspField.getString('DOCTYPE');
                     field.visible = inspField.getBoolean('VISIBLE');
 
-                    if (hasAttribute("INSPFIELD", "DOMAINID")) {
-                        field.domainid = inspField.getString("DOMAINID");
+                    if (hasAttribute('INSPFIELD', 'DOMAINID')) {
+                        field.domainid = inspField.getString('DOMAINID');
                     }
 
-                    if (hasAttribute("INSPFIELD", "DOMAINTYPE")) {
-                        field.domaintype = inspField.getString("DOMAINTYPE");
+                    if (hasAttribute('INSPFIELD', 'DOMAINTYPE')) {
+                        field.domaintype = inspField.getString('DOMAINTYPE');
                     }
 
                     if (!inspField.isNull('DESCRIPTION_LONGDESCRIPTION')) {
@@ -617,6 +620,35 @@ function getInspectionFormId() {
     }
 
     return URLDecoder.decode(action.toLowerCase(), StandardCharsets.UTF_8.name());
+}
+
+
+function fixInspectionAppDocTypes() {
+    var docTypesSet;
+    var applications = ['INSPECTOR', 'INSPECTORSUP'];
+    try {
+        docTypesSet = MXServer.getMXServer().getMboSet('DOCTYPES', userInfo);
+
+        for (index in applications) {
+            var application = applications[index];
+            var sqlf = new SqlFormat('doctype not in (select doctype from appdoctype where app = :1)');
+            sqlf.setObject(1, 'APPDOCTYPE', 'APP', application);
+            docTypesSet.setWhere(sqlf.format());
+            docTypesSet.reset();
+
+            var docTypes = docTypesSet.moveFirst();
+
+            while (docTypes) {
+                var appDocType = docTypes.getMboSet('APPDOCTYPE').add();
+                appDocType.setValue('APP', application);
+                appDocType.setValue('DOCTYPE', docTypes.getString('DOCTYPE'));
+                docTypes = docTypesSet.moveNext();
+            }
+            docTypesSet.save();        
+        }
+    } finally {
+        __close(docTypesSet);
+    }
 }
 
 // Cleans up the MboSet connections and closes the set.
