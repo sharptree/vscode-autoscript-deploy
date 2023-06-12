@@ -3,7 +3,7 @@
 	"displayName": "Maximo Development Tools",
 	"description": "An extension for developing and deploying Maximo automation scripts and screens from Visual Studio Code.",
 	"publisher": "Sharptree",
-	"version": "1.10.1",
+	"version": "1.12.0",
 	"galleryBanner": {
 		"color": "#372063",
 		"theme": "dark"
@@ -32,11 +32,23 @@
 		"onCommand:maximo-script-deploy.extractOne",
 		"onCommand:maximo-script-deploy.deploy",
 		"onCommand:maximo-script-deploy.screens",
-		"onCommand:maximo-script-deploy.compare",		
-		"onCommand:maximo-script-deploy.form"		
+		"onCommand:maximo-script-deploy.screensOne",		
+		"onCommand:maximo-script-deploy.compare",
+		"onCommand:maximo-script-deploy.forms",
+		"onCommand:maximo-script-deploy.formsOne"
 	],
 	"main": "./dist/extension",
 	"contributes": {
+		"snippets": [
+			{
+				"language": "javascript",
+				"path": "./snippets/snippets_javascript.json"
+			},
+			{
+				"language": "python",
+				"path": "./snippets/snippets_python.json"
+			}
+		],
 		"configuration": {
 			"title": "Maximo",
 			"properties": {
@@ -147,7 +159,7 @@
 			{
 				"command": "maximo-script-deploy.extractOne",
 				"title": "Extract Automation Script"
-			},			
+			},
 			{
 				"command": "maximo-script-deploy.compare",
 				"title": "Compare with Maximo"
@@ -159,7 +171,7 @@
 			{
 				"command": "maximo-script-deploy.screensOne",
 				"title": "Extract Screen Definition"
-			},			
+			},
 			{
 				"command": "maximo-script-deploy.id",
 				"title": "Insert Unique Id for Maximo Presentation Tag"
@@ -172,7 +184,6 @@
 				"command": "maximo-script-deploy.formsOne",
 				"title": "Extract Inspection Form"
 			}
-
 		],
 		"keybindings": [
 			{
@@ -213,7 +224,7 @@
 		"webpack-cli": "^4.10.0"
 	},
 	"dependencies": {
-		"axios": "^0.26.1",		
+		"axios": "^0.26.1",
 		"axios-oauth-client": "^1.5.0",
 		"axios-token-interceptor": "^0.2.0",
 		"is-valid-hostname": "^1.0.2",

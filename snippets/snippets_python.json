@@ -1,0 +1,1247 @@
+{
+    "getScriptName": {
+        "prefix": [
+            "service.getScriptName()"
+        ],
+        "body": [
+            "service.getScriptName()"
+        ],
+        "description": "Get the script name."
+    },
+    "getMbo": {
+        "prefix": [
+            "service.getMbo()"
+        ],
+        "body": [
+            "service.getMbo()"
+        ],
+        "description": "Get the current Mbo or null if not available."
+    },
+    "getMboName": {
+        "prefix": [
+            "service.getMboName()"
+        ],
+        "body": [
+            "service.getMboName()"
+        ],
+        "description": "Get the current Mbo name or null if not available."
+    },
+    "jsonToString": {
+        "prefix": [
+            "service.jsonToString(jsonObject)"
+        ],
+        "body": [
+            "service.jsonToString(${0:jsonObject})"
+        ],
+        "description": "Convert a JSONObject to a String."
+    },
+    "jsonarrayToString": {
+        "prefix": [
+            "service.jsonarrayToString(jsonArray)"
+        ],
+        "body": [
+            "service.jsonarrayToString(${0:jsonArray})"
+        ],
+        "description": "Convert a JSONArray to a String."
+    },
+    "tojsonarray": {
+        "prefix": [
+            "service.tojsonarray(string)"
+        ],
+        "body": [
+            "service.tojsonarray(${0:string})"
+        ],
+        "description": "Convert a String to a JSONArray."
+    },
+    "tojsonobject": {
+        "prefix": [
+            "service.tojsonobject(string)"
+        ],
+        "body": [
+            "service.tojsonobject(${0:string})"
+        ],
+        "description": "Convert a String to a JSONObject."
+    },
+    "webclientsession": {
+        "prefix": [
+            "service.webclientsession()"
+        ],
+        "body": [
+            "service.webclientsession()"
+        ],
+        "description": "Get a reference tot the current WebClientSession if available."
+    },
+    "closeDialog": {
+        "prefix": [
+            "service.closeDialog()"
+        ],
+        "body": [
+            "service.closeDialog()"
+        ],
+        "description": "Close the current on screen dialog if a dialog is displayed."
+    },
+    "getMboSet": {
+        "prefix": [
+            "service.getMboSet(mboSetName, userInfo)"
+        ],
+        "body": [
+            "service.getMboSet(\"${1:mboSetName}\", ${0:userInfo})"
+        ],
+        "description": "Fetches a new MboSet using the provided mboSetName and userInfo."
+    },
+    "launchDialog": {
+        "prefix": [
+            "service.launchDialog(dialogId)"
+        ],
+        "body": [
+            "service.launchDialog(\"${0:dialogId}\")"
+        ],
+        "description": "Opens a new dialog in the UI with the provided dialogId."
+    },
+    "openURL": {
+        "prefix": [
+            "service.openURL(url, newWindow)"
+        ],
+        "body": [
+            "service.openURL(\"${2:url}\",${1|true,false|})"
+        ],
+        "description": "Opens a URL, if newWindow is true will open the URL in a new browser window."
+    },
+    "httpget": {
+        "prefix": [
+            "service.httpget(url)"
+        ],
+        "body": [
+            "service.httpget(\"${0:url}\")"
+        ],
+        "description": "Fetches data from the provided url and returns it as a String value."
+    },
+    "httpgetWithCredentials": {
+        "prefix": [
+            "service.httpget(url, username, pass)"
+        ],
+        "body": [
+            "service.httpget(\"${2:url}\",\"${1:username}\",\"${0:password}\")"
+        ],
+        "description": "Fetches data from the provided url using the provided username and password to perform BASIC authentication, then returns the data as a String value."
+    },
+    "httppost": {
+        "prefix": [
+            "service.httppost(url, data)"
+        ],
+        "body": [
+            "service.httppost(\"${1:url}\", \"${0:data}\")"
+        ],
+        "description": "Posts the provided data to the provided url and returns the result as a String if available."
+    },
+    "httppostWithCredentials": {
+        "prefix": [
+            "service.httppost(url, username, password, data)"
+        ],
+        "body": [
+            "service.httppost(\"${3:url}\",\"${2:username}\",\"${1:password}\",\"${0:data}\")"
+        ],
+        "description": "Posts the provided data to the provided url using the username and password to perform BASIC authentication, then returns the result as a String if available."
+    },
+    "httppostasbytes": {
+        "prefix": [
+            "service.httppostasbytes(url, username, password, data)"
+        ],
+        "body": [
+            "service.httppostasbytes(\"${3:url}\",\"${2:username}\",\"${1:password}\",${0:data})"
+        ],
+        "description": "Posts the provided byte array to the provided url using the username and password to perform BASIC authentication, then returns the result as a byte array if available."
+    },
+    "httppostasjson": {
+        "prefix": [
+            "service.httppostasjson(url, username, password, headers, jsonArtifact)"
+        ],
+        "body": [
+            "service.httppostasjson(\"${4:url}\",\"${3:username}\",\"${2:password}\",\"${1:headers}\", ${0:jsonArtifact})"
+        ],
+        "description": "Posts the provided JSON Artifact to the provided url using the username and password to perform BASIC authentication, with the headers provided as a comma delimited list of key:value pairs delimited with a colon, then returns the result as a byte array if available."
+    },
+    "httpgetasjson": {
+        "prefix": [
+            "service.httpgetasjson(url, username, headers, password)"
+        ],
+        "body": [
+            "service.httppostasjson(\"${3:url}\",\"${2:username}\",\"${1:headers}\", \"${0:password}\")"
+        ],
+        "description": "Gets the provided URL as a JSONArtifact using the username and password to perform BASIC authentication, with the headers provided as a comma delimited list of key:value pairs delimited with a colon. Note: for some unfathomable reason that the username and password parameters are separated by the headers parameter."
+    },
+    "httpgetasbytes": {
+        "prefix": [
+            "service.httpgetasbytes(url, username, password)"
+        ],
+        "body": [
+            "service.httpgetasbytes(\"${2:url}\",\"${1:username}\", \"${0:password}\")"
+        ],
+        "description": "Gets the provided URL as a byte array using the username and password to perform BASIC authentication."
+    },
+    "invokeEndpoint": {
+        "prefix": [
+            "service.invokeEndpoint(url, metaData, data)"
+        ],
+        "body": [
+            "service.invokeEndpoint(\"${2:url}\",${1:metaData}, ${0:data})"
+        ],
+        "description": "Invokes the provide URL with the provided metaData. The data parameter may be a String or byte array and either a String or byte array will be returned according to the type provided. The meta data is a Map<String, String> object containing the following HTTPHandler parameters: ALLRESPONSEHEADERS, CONNECTTIMEOUT, ERRORONSTATUS, FIREANDFORGET, HEADERS, HTTPEXIT, HTTPMETHOD, PASSWORD, READTIMEOUT, REQUEST_COOKIES, URL, USERNAME. The provided metaData Map will be updated with a RESPONSE_STATUS, RESPONSE_STATUS_TEXT and RESPONSE_HEADERS."
+    },
+    "log": {
+        "prefix": [
+            "service.log(doNotUse)"
+        ],
+        "body": [
+            "service.log(${0:doNotUse})"
+        ],
+        "description": "Logs a message to the log, do not use this as it does not respect log levels. "
+    },
+    "log_debug": {
+        "prefix": [
+            "service.log_debug(message)"
+        ],
+        "body": [
+            "service.log_debug(\"${0:message}\")"
+        ],
+        "description": "Logs a DEBUG level message to the log."
+    },
+    "log_debugException": {
+        "prefix": [
+            "service.log_debug(message, throwable)"
+        ],
+        "body": [
+            "service.log_debug(\"${1:message}\",${1:throwable})"
+        ],
+        "description": "Logs a DEBUG level message to the log and prints the stack trace of the provided Throwable object."
+    },
+    "log_info": {
+        "prefix": [
+            "service.log_info(message)"
+        ],
+        "body": [
+            "service.log_info(\"${0:message}\")"
+        ],
+        "description": "Logs a INFO level message to the log."
+    },
+    "log_infoException": {
+        "prefix": [
+            "service.log_info(message, throwable)"
+        ],
+        "body": [
+            "service.log_info(\"${1:message}\",${1:throwable})"
+        ],
+        "description": "Logs a INFO level message to the log and prints the stack trace of the provided Throwable object."
+    },
+    "log_warn": {
+        "prefix": [
+            "service.log_warn(message)"
+        ],
+        "body": [
+            "service.log_warn(\"${0:message}\")"
+        ],
+        "description": "Logs a WARN level message to the log."
+    },
+    "log_warnException": {
+        "prefix": [
+            "service.log_warn(message, throwable)"
+        ],
+        "body": [
+            "service.log_warn(\"${1:message}\",${1:throwable})"
+        ],
+        "description": "Logs a WARN level message to the log and prints the stack trace of the provided Throwable object."
+    },
+    "log_error": {
+        "prefix": [
+            "service.log_error(message)"
+        ],
+        "body": [
+            "service.log_error(\"${0:message}\")"
+        ],
+        "description": "Logs a ERROR level message to the log."
+    },
+    "log_errorException": {
+        "prefix": [
+            "service.log_error(message, throwable)"
+        ],
+        "body": [
+            "service.log_error(\"${1:message}\",${1:throwable})"
+        ],
+        "description": "Logs a ERROR level message to the log and prints the stack trace of the provided Throwable object."
+    },
+    "log_fatal": {
+        "prefix": [
+            "service.log_fatal(message)"
+        ],
+        "body": [
+            "service.log_fatal(\"${0:message}\")"
+        ],
+        "description": "Logs a FATAL level message to the log."
+    },
+    "log_fatalException": {
+        "prefix": [
+            "service.log_fatal(message, throwable)"
+        ],
+        "body": [
+            "service.log_fatal(\"${1:message}\",${1:throwable})"
+        ],
+        "description": "Logs a FATAL level message to the log and prints the stack trace of the provided Throwable object."
+    },
+    "wsinteraction": {
+        "prefix": [
+            "service.wsinteraction(interactionName)"
+        ],
+        "body": [
+            "service.wsinteraction(\"${0:interactionName}\")"
+        ],
+        "description": "Invokes the Integration interaction provided."
+    },
+    "logError": {
+        "prefix": [
+            "service.logError(errorMessage)"
+        ],
+        "body": [
+            "service.logError(\"${0:errorMessage}\")"
+        ],
+        "description": "Logs to the ERROR level log. If invoked from a AutoScript test dialog, will add the log message to the script output. "
+    },
+    "yncerror": {
+        "prefix": [
+            "service.yncerror(group, key)"
+        ],
+        "body": [
+            "service.yncerror(\"${1:group}\", \"${0:key]\")"
+        ],
+        "description": "Raises a Yes / No / Cancel exception with the message for the provided message group and key."
+    },
+    "yncerrorWithParams": {
+        "prefix": [
+            "service.yncerror(group, key, params)"
+        ],
+        "body": [
+            "service.yncerror(\"${2:group}\", \"${1:key}\", ${0:params)"
+        ],
+        "description": "Raises a Yes / No / Cancel exception with the message for the provided message group and key and message substitution variables provided in a String array."
+    },
+    "raiseSkipTransaction": {
+        "prefix": [
+            "service.raiseSkipTransaction()"
+        ],
+        "body": [
+            "service.raiseSkipTransaction()"
+        ],
+        "description": "Raises and integration skip type Maximo exception, which is a MXApplicationException with the message group 'iface' and message key 'SKIP_TRANSACTION'.  This causes the current transaction to be skipped when used in an integration automation script."
+    },
+    "yncuserinput": {
+        "prefix": [
+            "service.yncuserinput()"
+        ],
+        "body": [
+            "service.yncuserinput()"
+        ],
+        "description": "Gets the result of the Yes / No / Cancel exception. The values are service.YNC_NULL (-1) no input available, service.YNC_YES (8) the user selected Yes, service.YNC_NO (16) the user selected No, service.YNC_OK (2) the user selected OK, service.YNC_CANCEL (4) the user selected Cancel."
+    },
+    "getProperty": {
+        "prefix": [
+            "service.getProperty(propertyName)"
+        ],
+        "body": [
+            "service.getProperty(\"${0:propertyName}\")"
+        ],
+        "description": "Gets the value of a the specified Maximo property name."
+    },
+    "getLogger": {
+        "prefix": [
+            "service.getLogger(loggerName)"
+        ],
+        "body": [
+            "service.getLogger(\"${0:loggerName}\")"
+        ],
+        "description": "Gets a Maximo logger based on the name provided."
+    },
+    "error": {
+        "prefix": [
+            "service.error(group, key)"
+        ],
+        "body": [
+            "service.error(\"${1:group}\", \"${0:key}\")"
+        ],
+        "description": "Throws a MXApplicationException with the message specified by the Maximo message group and key."
+    },
+    "errorWithParams": {
+        "prefix": [
+            "service.error(group, key, params)"
+        ],
+        "body": [
+            "service.error(\"${2:group}\", \"${1:key}\", ${0:params})"
+        ],
+        "description": "Throws a MXApplicationException with the message specified by the Maximo message group and key and the message parameters filled from the provided params String array."
+    },
+    "setWarningParams": {
+        "prefix": [
+            "service.setWarning(group, key, params)"
+        ],
+        "body": [
+            "service.setWarning(\"${2:group}\", \"${1:key}\", ${0:params})"
+        ],
+        "description": "Adds a warning to the current MboSet if available, with the message specified by the Maximo message group and key and the message parameters filled from the provided params String array."
+    },
+    "invokeChannel": {
+        "prefix": [
+            "service.invokeChannel(channelName)"
+        ],
+        "body": [
+            "service.invokeChannel(\"${0:channelName}\")"
+        ],
+        "description": "Invokes an integration channel based on the name provided."
+    },
+    "invokeWorkflow": {
+        "prefix": [
+            "service.invokeWorkflow(workflowName)"
+        ],
+        "body": [
+            "service.invokeWorkflow(\"${0:workflowName}\")"
+        ],
+        "description": "Invokes the named workflow for the current Mbo. Note this requires an Mbo to be available and will throw a NullPointerException if a current Mbo is not available."
+    },
+    "invokeScript": {
+        "prefix": [
+            "service.invokeScript(scriptName)"
+        ],
+        "body": [
+            "service.invokeScript(\"${0:scriptName}\")"
+        ],
+        "description": "Invokes the named script and returns a Map with the script variables and functions bound to a new Map."
+    },
+    "invokeScriptWithMap": {
+        "prefix": [
+            "service.invokeScript(scriptName, context)"
+        ],
+        "body": [
+            "service.invokeScript(\"${1:scriptName}\", ${0:context})"
+        ],
+        "description": "Invokes the named script and returns a Map with the script variables and functions bound to the provided context Map."
+    },
+    "invokeScriptFunction": {
+        "prefix": [
+            "service.invokeScript(scriptName, functionName, args)"
+        ],
+        "body": [
+            "service.invokeScript(\"${2:scriptName}\", \"${1:functionName}\", ${0:args})"
+        ],
+        "description": "Invokes the named function on the named script with the array of arguments provided and returns the result of the function."
+    },
+    "interactive": {
+        "prefix": "interactive",
+        "body": [
+            "interactive"
+        ],
+        "description": "Implicit boolean variable that indicates if the script was invoked in an user interactive context."
+    },
+    "action": {
+        "prefix": "action",
+        "body": [
+            "action"
+        ],
+        "description": "Implicit String variable that indicates the name of the action for the action launch point."
+    },
+    "app": {
+        "prefix": "app",
+        "body": [
+            "app"
+        ],
+        "description": "Implicit String variable that indicates the name of the application the script was invoke within."
+    },
+    "domainid": {
+        "prefix": "domainid",
+        "body": [
+            "domainid"
+        ],
+        "description": "Implicit String variable that indicates the name of the domain used to provide the list of values when using an attribute launch point with a Retrieve List."
+    },
+    "errorgroup": {
+        "prefix": "errorgroup",
+        "body": [
+            "errorgroup"
+        ],
+        "description": "Implicit String variable that indicates the message group that will be used to throw an error from the script."
+    },
+    "errorkey": {
+        "prefix": "errorkey",
+        "body": [
+            "errorkey"
+        ],
+        "description": "Implicit String variable that indicates the message key that will be used to throw an error from the script."
+    },
+    "evalresult": {
+        "prefix": "evalresult",
+        "body": [
+            "evalresult"
+        ],
+        "description": "Implicit boolean variable that can be set in the script to indicate that the result should be evaluated for workflow and security Condition launch points."
+    },
+    "launchPoint": {
+        "prefix": "launchPoint",
+        "body": [
+            "launchPoint"
+        ],
+        "description": "Implicit String variable that provides the name of the launch point that initiated the script, null if invoked from a web request."
+    },
+    "listErrorGroup": {
+        "prefix": "listErrorGroup",
+        "body": [
+            "listErrorGroup"
+        ],
+        "description": "Implicit String variable that can be set in the script to indicate the message group to use when a list validation fails for attribute launch points with a Retrieve List."
+    },
+    "listErrorKey": {
+        "prefix": "listErrorKey",
+        "body": [
+            "listErrorKey"
+        ],
+        "description": "Implicit String variable that can be set in the script to indicate the message key to use when a list validation fails for attribute launch points with a Retrieve List."
+    },
+    "listOrder": {
+        "prefix": "listOrder",
+        "body": [
+            "listOrder"
+        ],
+        "description": "Implicit String variable that can be set in the script to provide an order by clause for the displayed list for attribute launch points with a Retrieve List."
+    },
+    "listWhere": {
+        "prefix": "listWhere",
+        "body": [
+            "listWhere"
+        ],
+        "description": "Implicit String variable that can be set in the script to provide a where clause for the displayed list for attribute launch points with a Retrieve List."
+    },
+    "mboname": {
+        "prefix": "mboname",
+        "body": [
+            "mboname"
+        ],
+        "description": "Implicit String variable that provides the name of the current Mbo object if available, null otherwise."
+    },
+    "onadd": {
+        "prefix": "onadd",
+        "body": [
+            "onadd"
+        ],
+        "description": "Implicit boolean variable for launch points that have an Mbo object, indicates if the script was called during an on add event for the Mbo."
+    },
+    "ondelete": {
+        "prefix": "ondelete",
+        "body": [
+            "ondelete"
+        ],
+        "description": "Implicit boolean variable for launch points that have an Mbo object, indicates if the script was called during an on delete event for the Mbo."
+    },
+    "onupdate": {
+        "prefix": "onupdate",
+        "body": [
+            "onupdate"
+        ],
+        "description": "Implicit boolean variable for launch points that have an Mbo object, indicates if the script was called during an on update event for the Mbo."
+    },
+    "params": {
+        "prefix": "params",
+        "body": [
+            "params"
+        ],
+        "description": "Implicit String array variable that will be used to fill the message parameters for an error thrown from the script."
+    },
+    "relationObject": {
+        "prefix": "relationObject",
+        "body": [
+            "relationObject"
+        ],
+        "description": "Implicit String variable that can be set in the script to provide the related object name for attribute launch points with a Retrieve List."
+    },
+    "relationWhere": {
+        "prefix": "relationWhere",
+        "body": [
+            "relationWhere"
+        ],
+        "description": "Implicit String variable that can be set in the script to provide the relationship where clause for attribute launch points with a Retrieve List."
+    },
+    "scriptName": {
+        "prefix": "scriptName",
+        "body": [
+            "scriptName"
+        ],
+        "description": "Implicit String variable that is the name of the current Script."
+    },
+    "srcKeys": {
+        "prefix": "srcKeys",
+        "body": [
+            "srcKeys"
+        ],
+        "description": "Implicit String array variable that can be set to specify the source keys from the look up list for attribute launch points with a Retrieve List."
+    },
+    "targetKeys": {
+        "prefix": "targetKeys",
+        "body": [
+            "targetKeys"
+        ],
+        "description": "Implicit String array variable that can be set to specify the target keys for the look up list for attribute launch points with a Retrieve List."
+    },
+    "thisvalue": {
+        "prefix": "thisvalue",
+        "body": [
+            "thisvalue"
+        ],
+        "description": "Implicit String variable that can be set as the initial value for Objects for Attributes with an initialize launch point."
+    },
+    "user": {
+        "prefix": "user",
+        "body": [
+            "user"
+        ],
+        "description": "Implicit String variable that provides the current user name, generally prefer getting the userInfo object for this information."
+    },
+    "MboConstantsREADONLY": {
+        "prefix": "MboConstants.READONLY",
+        "body": [
+            "MboConstants.READONLY"
+        ],
+        "description": "Constants flag to indicate an attribute or object is read-only."
+    },
+    "MboConstantsDISCARDABLE": {
+        "prefix": "MboConstants.DISCARDABLE",
+        "body": [
+            "MboConstants.DISCARDABLE"
+        ],
+        "description": "Constants flag to indicate an MboSet can discard Mbo objects as iterated reducing memory usage and making the MboSet read-only and forward only."
+    },
+    "MboConstantsREQUIRED": {
+        "prefix": "MboConstants.REQUIRED",
+        "body": [
+            "MboConstants.REQUIRED"
+        ],
+        "description": "Constants flag to indicate an attribute is required."
+    },
+    "MboConstantsNOVALIDATION": {
+        "prefix": "MboConstants.NOVALIDATION",
+        "body": [
+            "MboConstants.NOVALIDATION"
+        ],
+        "description": "Constants flag to indicate an attribute validation will be skipped when a value is set."
+    },
+    "MboConstantsNOACCESSCHECK": {
+        "prefix": "MboConstants.NOACCESSCHECK",
+        "body": [
+            "MboConstants.NOACCESSCHECK"
+        ],
+        "description": "Constants flag to indicate an attribute read-only flag will be ignored."
+    },
+    "MboConstantsNOACTION": {
+        "prefix": "MboConstants.NOACTION",
+        "body": [
+            "MboConstants.NOACTION"
+        ],
+        "description": "Constants flag to indicate an attribute actions will not be performed when a value is set."
+    },
+    "MboConstantsNOVALIDATION_AND_NOACTION": {
+        "prefix": "MboConstants.NOVALIDATION_AND_NOACTION",
+        "body": [
+            "MboConstants.NOVALIDATION_AND_NOACTION"
+        ],
+        "description": "Constants flag to indicate an attribute actions will not be performed when a value is set and no validation will occur."
+    },
+    "userInfo.getBaseCaltype": {
+        "prefix": "userInfo.getBaseCaltype()",
+        "body": [
+            "userInfo.getBaseCaltype()"
+        ],
+        "description": "Get the current user's base Calendar name."
+    },
+    "userInfo.getBaseCurrency": {
+        "prefix": "userInfo.getBaseCurrency()",
+        "body": [
+            "userInfo.getBaseCurrency()"
+        ],
+        "description": "Get the current user's base currency type."
+    },
+    "userInfo.getCaltype": {
+        "prefix": "userInfo.getCaltype()",
+        "body": [
+            "userInfo.getCaltype()"
+        ],
+        "description": "Get the current user's Calendar name."
+    },
+    "userInfo.getClientAddr": {
+        "prefix": "userInfo.getClientAddr()",
+        "body": [
+            "userInfo.getClientAddr()"
+        ],
+        "description": "Get the current user's client IP address."
+    },
+    "userInfo.getClientHost": {
+        "prefix": "userInfo.getClientHost()",
+        "body": [
+            "userInfo.getClientHost()"
+        ],
+        "description": "Get the current user's client host name."
+    },
+    "userInfo.getConnectionKey": {
+        "prefix": "userInfo.getConnectionKey()",
+        "body": [
+            "userInfo.getConnectionKey()"
+        ],
+        "description": "Get the current user's database connection key. Can be used with the DBShortcut class to get direct database access."
+    },
+    "userInfo.getDefaultLang": {
+        "prefix": "userInfo.getDefaultLang()",
+        "body": [
+            "userInfo.getDefaultLang()"
+        ],
+        "description": "Get the current user's default language."
+    },
+    "userInfo.getDefaultLocaleStr": {
+        "prefix": "userInfo.getDefaultLocaleStr()",
+        "body": [
+            "userInfo.getDefaultLocaleStr()"
+        ],
+        "description": "Get the current user's default Locale as a String value."
+    },
+    "userInfo.getDefaultTZStr": {
+        "prefix": "userInfo.getDefaultTZStr()",
+        "body": [
+            "userInfo.getDefaultTZStr()"
+        ],
+        "description": "Get the current user's default timezone as a String value."
+    },
+    "userInfo.getDisplayName": {
+        "prefix": "userInfo.getDisplayName()",
+        "body": [
+            "userInfo.getDisplayName()"
+        ],
+        "description": "Get the current user's display name."
+    },
+    "userInfo.getEmail": {
+        "prefix": "userInfo.getEmail()",
+        "body": [
+            "userInfo.getEmail()"
+        ],
+        "description": "Get the current user's email address."
+    },
+    "userInfo.getIBMID": {
+        "prefix": "userInfo.getIBMID()",
+        "body": [
+            "userInfo.getIBMID()"
+        ],
+        "description": "Get the current user's IBM Id."
+    },
+    "userInfo.getInsertSite": {
+        "prefix": "userInfo.getInsertSite()",
+        "body": [
+            "userInfo.getInsertSite()"
+        ],
+        "description": "Get the current user's default insert site."
+    },
+    "userInfo.getLangCode": {
+        "prefix": "userInfo.getLangCode()",
+        "body": [
+            "userInfo.getLangCode()"
+        ],
+        "description": "Get the current user's language code."
+    },
+    "userInfo.getLocale": {
+        "prefix": "userInfo.getLocale()",
+        "body": [
+            "userInfo.getLocale()"
+        ],
+        "description": "Get the current user's Locale object, which is a java.util.Locale type."
+    },
+    "userInfo.getLoginID": {
+        "prefix": "userInfo.getLoginID()",
+        "body": [
+            "userInfo.getLoginID()"
+        ],
+        "description": "Get the current user's login Id."
+    },
+    "userInfo.getLoginUserName": {
+        "prefix": "userInfo.getLoginUserName()",
+        "body": [
+            "userInfo.getLoginUserName()"
+        ],
+        "description": "Get the current user's login user name."
+    },
+    "userInfo.getMaxSessionID": {
+        "prefix": "userInfo.getMaxSessionID()",
+        "body": [
+            "userInfo.getMaxSessionID()"
+        ],
+        "description": "Get the current user's Maximo session Id, which is the unique identifier for the Maximo sesison in the MAXSESSION table."
+    },
+    "userInfo.getPersonId": {
+        "prefix": "userInfo.getPersonId()",
+        "body": [
+            "userInfo.getPersonId()"
+        ],
+        "description": "Get the current user's person Id."
+    },
+    "userInfo.getPhone": {
+        "prefix": "userInfo.getPhone()",
+        "body": [
+            "userInfo.getPhone()"
+        ],
+        "description": "Get the current user's phone number."
+    },
+    "userInfo.getSchemaOwner": {
+        "prefix": "userInfo.getSchemaOwner()",
+        "body": [
+            "userInfo.getSchemaOwner()"
+        ],
+        "description": "Get the schema owner for the current user session."
+    },
+    "userInfo.getSeatid": {
+        "prefix": "userInfo.getSeatid()",
+        "body": [
+            "userInfo.getSeatid()"
+        ],
+        "description": "Get the current user's seat Id."
+    },
+    "userInfo.getServerGuid": {
+        "prefix": "userInfo.getServerGuid()",
+        "body": [
+            "userInfo.getServerGuid()"
+        ],
+        "description": "Get the current user's server GUID, note that this may be randomly generated and note stable between calls."
+    },
+    "userInfo.getStartApp": {
+        "prefix": "userInfo.getStartApp()",
+        "body": [
+            "userInfo.getStartApp()"
+        ],
+        "description": "Get the current user's starting application."
+    },
+    "userInfo.getSubscriberid": {
+        "prefix": "userInfo.getSubscriberid()",
+        "body": [
+            "userInfo.getSubscriberid()"
+        ],
+        "description": "Get the current user's subscriber Id."
+    },
+    "userInfo.getSubscriptionId": {
+        "prefix": "userInfo.getSubscriptionId()",
+        "body": [
+            "userInfo.getSubscriptionId()"
+        ],
+        "description": "Get the current user's subscription Id."
+    },
+    "userInfo.getSubscriptionPartNumber": {
+        "prefix": "userInfo.getSubscriptionPartNumber()",
+        "body": [
+            "userInfo.getSubscriptionPartNumber()"
+        ],
+        "description": "Get the current user's subscription part number."
+    },
+    "userInfo.getTimeZone": {
+        "prefix": "userInfo.getTimeZone()",
+        "body": [
+            "userInfo.getTimeZone()"
+        ],
+        "description": "Get the current user's time zone as a java.util.TimeZone Java object."
+    },
+    "userInfo.getTitle": {
+        "prefix": "userInfo.getTitle()",
+        "body": [
+            "userInfo.getTitle()"
+        ],
+        "description": "Get the current user's title."
+    },
+    "userInfo.getUserLoginDetails": {
+        "prefix": "userInfo.getUserLoginDetails()",
+        "body": [
+            "userInfo.getUserLoginDetails()"
+        ],
+        "description": "Get the current user's login details as a psdi.security.UserLoginDetails Java object. Note that most of the information available in the UserLoginDetails class is also available on the UserInfo class."
+    },
+    "userInfo.getUserName": {
+        "prefix": "userInfo.getUserName()",
+        "body": [
+            "userInfo.getUserName()"
+        ],
+        "description": "Get the current user's user name."
+    },
+    "userInfo.isInteractive": {
+        "prefix": "userInfo.isInteractive()",
+        "body": [
+            "userInfo.isInteractive()"
+        ],
+        "description": "Boolean value that indicates if the user session is interactive."
+    },
+    "userInfo.isRestUser": {
+        "prefix": "userInfo.isRestUser()",
+        "body": [
+            "userInfo.isRestUser()"
+        ],
+        "description": "Boolean value that indicates if the user session is using the REST API."
+    },
+    "userInfo.toJSON": {
+        "prefix": "userInfo.toJSON(jsonObject, lean)",
+        "body": [
+            "userInfo.toJSON(${2:jsonObject}, ${1|true, false|})"
+        ],
+        "description": "Serializes the UserInfo object to the provided JSONObject, the lean parameter indicates if the serialization should be lean or use the rdf prefix."
+    },
+    "mbo.delete": {
+        "prefix": "mbo.delete()",
+        "body": [
+            "mbo.delete()"
+        ],
+        "description": "Marks the current Mbo for deletion."
+    },
+    "mbo.deleteWithFlag": {
+        "prefix": "mbo.delete(accessModifier)",
+        "body": [
+            "mbo.delete(${0:accessModifier})"
+        ],
+        "description": "Marks the current Mbo for deletion with an MboConstants access modifier to skip validation."
+    },
+    "mbo.duplicate": {
+        "prefix": "mbo.duplicate()",
+        "body": [
+            "mbo.duplicate()"
+        ],
+        "description": "Creates a duplicate of the curret Mbo, the exact fields copied will depend on the specific object implementation."
+    },
+    "mbo.generateAutoKey": {
+        "prefix": "mbo.generateAutoKey()",
+        "body": [
+            "mbo.generateAutoKey()"
+        ],
+        "description": "Populates the key field for the object with the next value from the AUTOKEY table for the current object."
+    },
+    "mbo.getBoolean": {
+        "prefix": "mbo.getBoolean(attributeName)",
+        "body": [
+            "mbo.getBoolean(\"${0:attributeName}\")"
+        ],
+        "description": "Gets the boolean value for the specified attribute name."
+    },
+    "mbo.getByte": {
+        "prefix": "mbo.getByte(attributeName)",
+        "body": [
+            "mbo.getByte(\"${0:attributeName}\")"
+        ],
+        "description": "Gets the byte value for the specified attribute name."
+    },
+    "mbo.getBytes": {
+        "prefix": "mbo.getBytes(attributeName)",
+        "body": [
+            "mbo.getBytes(\"${0:attributeName}\")"
+        ],
+        "description": "Gets the byte array value for the specified attribute name."
+    },
+    "mbo.getDate": {
+        "prefix": "mbo.getDate(attributeName)",
+        "body": [
+            "mbo.getDate(\"${0:attributeName}\")"
+        ],
+        "description": "Gets the Java Date object (java.util.Date) for the specified attribute name."
+    },
+    "mbo.getDouble": {
+        "prefix": "mbo.getDouble(attributeName)",
+        "body": [
+            "mbo.getDouble(\"${0:attributeName}\")"
+        ],
+        "description": "Gets the double value for the specified attribute name."
+    },
+    "mbo.getFloat": {
+        "prefix": "mbo.getFloat(attributeName)",
+        "body": [
+            "mbo.getFloat(\"${0:attributeName}\")"
+        ],
+        "description": "Gets the float value for the specified attribute name."
+    },
+    "mbo.getInt": {
+        "prefix": "mbo.getInt(attributeName)",
+        "body": [
+            "mbo.getInt(\"${0:attributeName}\")"
+        ],
+        "description": "Gets the int value for the specified attribute name."
+    },
+    "mbo.getList": {
+        "prefix": "mbo.getList(attributeName)",
+        "body": [
+            "mbo.getList(\"${0:attributeName}\")"
+        ],
+        "description": "Gets the look up value list MboSet for the specified attribute name or null if the attribute does not have a value list."
+    },
+    "mbo.getLong": {
+        "prefix": "mbo.getLong(attributeName)",
+        "body": [
+            "mbo.getLong(\"${0:attributeName}\")"
+        ],
+        "description": "Gets the long value for the specified attribute name."
+    },
+    "mbo.getMboSet": {
+        "prefix": "mbo.getMboSet(name)",
+        "body": [
+            "mbo.getMboSet(\"${0:name}\")"
+        ],
+        "description": "Gets a related MboSet (psdi.mbo.MboSet) from the MAXRELATIONSHIP name provided."
+    },
+    "mbo.getMboSetTemp": {
+        "prefix": "mbo.getMboSet(name, objectName, whereClause )",
+        "body": [
+            "mbo.getMboSet(\"${2:name}\", \"${1:objectName}\", \"${0:whereClause}\");"
+        ],
+        "description": "Gets a related MboSet (psdi.mbo.MboSet) to the specified object name, assigning a temporary name from the name parameter and using the specified where clause to fetch the related records."
+    },
+    "mbo.getMboSetInfo": {
+        "prefix": "mbo.getMboSetInfo()",
+        "body": [
+            "mbo.getMboSetInfo()"
+        ],
+        "description": "Gets the MboSetInfo (psdi.mbo.MboSetInfo) object for the Mbo.  The MboSetInfo object provides metadata about the current Mbo."
+    },
+    "mbo.getMboValueInfo": {
+        "prefix": "mbo.getMboValueInfo(attributeName)",
+        "body": [
+            "mbo.getMboValueInfo(\"${0:attributeName}\")"
+        ],
+        "description": "Gets the getMboValueInfo (psdi.mbo.getMboValueInfo) the specified attribute.  The getMboValueInfo object provides detailed metadata about the current Mbo attribute value."
+    },
+    "mbo.getName": {
+        "prefix": "mbo.getName()",
+        "body": [
+            "mbo.getName()"
+        ],
+        "description": "Gets the name of the Mbo."
+    },
+    "mbo.getOwner": {
+        "prefix": "mbo.getOwner()",
+        "body": [
+            "mbo.getOwner()"
+        ],
+        "description": "Gets the parent/owner of the Mbo if it fetched as part of a relationship set, such as a POLINE referncing a PO."
+    },
+    "mbo.getString": {
+        "prefix": "mbo.getString(attributeName)",
+        "body": [
+            "mbo.getString(\"${0:attributeName}\")"
+        ],
+        "description": "Gets the String (java.lang.String) value for the specified attribute name."
+    },
+    "mbo.getStringWithLanguage": {
+        "prefix": "mbo.getString(attributeName, langCode)",
+        "body": [
+            "mbo.getString(${1:attributeName}, ${0:langCode})"
+        ],
+        "description": "Gets the String (java.lang.String) value for language code provided for the specified attribute name."
+    },
+    "mbo.getUniqueIDName": {
+        "prefix": "mbo.getUniqueIDName()",
+        "body": [
+            "mbo.getUniqueIDName()"
+        ],
+        "description": "Gets attribute name for the unique Id attribute."
+    },
+    "mbo.getUniqueIDValue": {
+        "prefix": "mbo.getUniqueIDValue()",
+        "body": [
+            "mbo.getUniqueIDValue()"
+        ],
+        "description": "Gets unqiue Id long value for the Mbo."
+    },
+    "mbo.getUserInfo": {
+        "prefix": "mbo.getUserInfo()",
+        "body": [
+            "mbo.getUserInfo()"
+        ],
+        "description": "Gets the UserInfo (psdi.security.UserInfo) object that fetched the Mbo."
+    },
+    "mbo.getUserName": {
+        "prefix": "mbo.getUserName()",
+        "body": [
+            "mbo.getUserName()"
+        ],
+        "description": "Gets the user name for the user that fetched the Mbo."
+    },
+    "mbo.isAutoKeyed": {
+        "prefix": "mbo.isAutoKeyed(attributeName)",
+        "body": [
+            "mbo.isAutoKeyed(\"${0:attributeName}\")"
+        ],
+        "description": "Gets a boolean value indiciating if the specified attribute has an AUTOKEY entry associated with it."
+    },
+    "mbo.isBasedOn": {
+        "prefix": "mbo.isBasedOn(objectName)",
+        "body": [
+            "mbo.isBasedOn(${0:objectName})"
+        ],
+        "description": "Gets a boolean value indiciating if the Mbo is based on an object such as SR being based on TICKET."
+    },
+    "mbo.isModified": {
+        "prefix": "mbo.isModified()",
+        "body": [
+            "mbo.isModified()"
+        ],
+        "description": "Gets a boolean value indiciating if the Mbo has been modified."
+    },
+    "mbo.isModifiedAttribute": {
+        "prefix": "mbo.isModified(attributeName)",
+        "body": [
+            "mbo.isModified(\"${0:attributeName}\")"
+        ],
+        "description": "Gets a boolean value indiciating if the attribute specified has been modified."
+    },
+    "mbo.isNew": {
+        "prefix": "mbo.isNew()",
+        "body": [
+            "mbo.isNew()"
+        ],
+        "description": "Gets a boolean value indiciating if the Mbo is new (to be saved)."
+    },
+    "mbo.isNull": {
+        "prefix": "mbo.isNull(attributeName)",
+        "body": [
+            "mbo.isNull(\"${0:attributeName}\")"
+        ],
+        "description": "Gets a boolean value indiciating if the attribute specified contains a null value."
+    },
+    "mbo.isSelected": {
+        "prefix": "mbo.isSelected()",
+        "body": [
+            "mbo.isSelected()"
+        ],
+        "description": "Gets a boolean value indiciating if the Mbo has been selected from a list."
+    },
+    "mbo.select": {
+        "prefix": "mbo.select()",
+        "body": [
+            "mbo.select()"
+        ],
+        "description": "Marks the Mbo as having been selected in a list."
+    },
+    "mbo.setFieldFlag": {
+        "prefix": "mbo.setFieldFlag(attributeName, flag, state)",
+        "body": [
+            "mbo.setFieldFlag(\"${3:attributeName}\",${2|MboConstants.DELAYVALIDATION,  MboConstants.HIDDEN, MboConstants.READONLY, MboConstants.REQUIRED|}, ${1|true, false|})"
+        ],
+        "description": "Sets an attribute field flag for the attribute specified, the MboConstants value flag and a boolean state value to indicate if the flag specified is active."
+    },
+    "mbo.setFlag": {
+        "prefix": "mbo.setFlag(flag, state)",
+        "body": [
+            "mbo.setFlag(${2|MboConstants.DELAYVALIDATION, MboConstants.READONLY, MboConstants.REQUIRED|}, ${1|true, false|})"
+        ],
+        "description": "Sets a flag for the Mbo from the MboConstants value flag and a boolean state value to indicate if the flag specified is active."
+    },
+    "mbo.setModified": {
+        "prefix": "mbo.setModified( modified)",
+        "body": [
+            "mbo.setModified( ${1|true, false|})"
+        ],
+        "description": "Sets the flag to indiciate if the Mbo has been modified and if it needs to be saved."
+    },
+    "mbo.setValue": {
+        "prefix": "mbo.setValue(attributeName, value)",
+        "body": [
+            "mbo.setValue(\"${1:attributeName}\", ${0:value})"
+        ],
+        "description": "Sets the value fo the attribute specified. This method is overloaded for many data types, use the setValueNull() method to set a null value to avoid ambiguity of which type is being set."
+    },
+    "mbo.setValueWithFlag": {
+        "prefix": "mbo.setValue(attributeName, value, flag)",
+        "body": [
+            "mbo.setValue(\"${3:attributeName}\", ${2:value}, ${1|MboConstants.NOACCESSCHECK, MboConstants.NOVALIDATION, MboConstants.NOACTION, MboConstants.NOVALIDATION_AND_NOACTION |})"
+        ],
+        "description": "Sets the value fo the attribute specified, the flag is an MboConstants flag. This method is overloaded for many data types, use the setValueNull() method to set a null value to avoid ambiguity of which type is being set."
+    },
+    "mbo.setValueNull": {
+        "prefix": "mbo.setValueNull(attributeName)",
+        "body": [
+            "mbo.setValueNull(\"${0:attributeName}\")"
+        ],
+        "description": "Sets the value fo the attribute specified to null."
+    },
+    "mbo.setValueNullWithFlags": {
+        "prefix": "mbo.setValueNull(attributeName, flag)",
+        "body": [
+            "mbo.setValueNull(\"${2:attributeName}\" ,${1|MboConstants.NOACCESSCHECK, MboConstants.NOVALIDATION, MboConstants.NOACTION, MboConstants.NOVALIDATION_AND_NOACTION |})"
+        ],
+        "description": "Sets the value fo the attribute specified to null with the MboConstants flag."
+    },
+    "mbo.toBeAdded": {
+        "prefix": "mbo.toBeAdded()",
+        "body": [
+            "mbo.toBeAdded()"
+        ],
+        "description": "Returns a boolean value indicating if the Mbo is to be added."
+    },
+    "mbo.toBeDeleted": {
+        "prefix": "mbo.toBeDeleted()",
+        "body": [
+            "mbo.toBeDeleted()"
+        ],
+        "description": "Returns a boolean value indicating if the Mbo is to be deleted."
+    },
+    "mbo.toBeSaved": {
+        "prefix": "mbo.toBeSaved()",
+        "body": [
+            "mbo.toBeSaved()"
+        ],
+        "description": "Returns a boolean value indicating if the Mbo is to be saved."
+    },
+    "mbo.toBeUpdated": {
+        "prefix": "mbo.toBeUpdated()",
+        "body": [
+            "mbo.toBeUpdated()"
+        ],
+        "description": "Returns a boolean value indicating if the Mbo is to be updated."
+    },
+    "mbo.toBeValidated": {
+        "prefix": "mbo.toBeValidated()",
+        "body": [
+            "mbo.toBeValidated()"
+        ],
+        "description": "Returns a boolean value indicating if the Mbo is to be validated."
+    },
+    "mbo.undelete": {
+        "prefix": "mbo.undelete()",
+        "body": [
+            "mbo.undelete()"
+        ],
+        "description": "Undeletes the Mbo, resetting its deleted flag."
+    },
+    "mbo.unselect": {
+        "prefix": "mbo.unselect()",
+        "body": [
+            "mbo.unselect()"
+        ],
+        "description": "Unselects the Mbo from the list."
+    },
+    "mbo.validate": {
+        "prefix": "mbo.validate()",
+        "body": [
+            "mbo.validate()"
+        ],
+        "description": "Validates the Mbo values."
+    },
+    "functionClose": {
+        "prefix": "def close(set)",
+        "body": [
+            "def close(set):",
+            "   if set is not None:",
+            "       set.cleanup()",
+            "       set.close()"
+        ],
+        "description": "Utility function to close MboSets."
+    } , 
+    "varScriptConfig": {
+        "prefix": "scriptConfig",
+        "body": [
+            "scriptConfig = \"\"\"{",
+            "   \"autoscript\":\"${4:scriptName}\",",
+            "   \"description\":\"${3:description}\",",
+            "   \"version\":\"${2:version}\",",
+            "   \"active\":\"${1|true, false|}\",",
+            "   \"logLevel\":\"${0:ERROR}\",",
+            "}\"\"\""
+        ]
+    }
+}

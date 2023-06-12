@@ -283,6 +283,17 @@ When editing a screen definition XML, ensuring that the `id` attribute is unique
 To insert or update the `id` attribute of a tag to the unique value of the current time in milliseconds since epoch, bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Insert Unique Id for Maximo Presentation Tag` or press `ctrl + ⌘ + i` or `ctrl + alt + i`).
 
 ![Update unique Id](images/unique_id_example.gif)
+
+## Snippets
+The Maximo Development Tools extension provides snippets for all the built in classes including the majority of methods on the `mbo`, `service` and `userInfo` built in objects. While not providing a full language server it should provide a majority of common methods on the implicit variables. 
+
+There are also snippets for common functions such as a `close` function or the `scriptConfig` variable.  If there are any additional snippets you would like added please contact us at  [hello@sharptree.io](mailto:hello@sharptree.io).
+
+![Snippets in action](./images/snippets.gif)
+
+Pressing `ctrl+space` will bring up help information for each snippet, describing what the snippet does with information about the parameters.
+![Snippet information](./images/snippet_description.png)
+
 # Requirements
 
 - Maximo 7.6.0.8 or higher, Maximo Application Suite 8 is supported.

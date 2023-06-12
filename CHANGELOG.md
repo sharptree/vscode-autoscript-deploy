@@ -1,4 +1,7 @@
 # Release Notes
+## 1.12.0
+- Add snippets support.
+
 ## 1.11.0
 - Add the ability to extract single scripts, screens and forms.
 - Removed dependency on DigestUtils which was not available in all versions and patch levels.
