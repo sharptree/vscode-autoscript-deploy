@@ -85,7 +85,7 @@
             "service.getMboSet(mboSetName, userInfo)"
         ],
         "body": [
-            "service.getMboSet(${1:mboSetName}, ${0:userInfo});"
+            "service.getMboSet(\"${1:mboSetName}\", ${0:userInfo});"
         ],
         "description": "Fetches a new MboSet using the provided mboSetName and userInfo."
     },
@@ -94,7 +94,7 @@
             "service.launchDialog(dialogId)"
         ],
         "body": [
-            "service.launchDialog(${0:dialogId});"
+            "service.launchDialog(\"${0:dialogId}\");"
         ],
         "description": "Opens a new dialog in the UI with the provided dialogId."
     },
@@ -103,7 +103,7 @@
             "service.openURL(url, newWindow)"
         ],
         "body": [
-            "service.openURL(${2:url},${1|true,false|});"
+            "service.openURL(\"${2:url}\",${1|true,false|});"
         ],
         "description": "Opens a URL, if newWindow is true will open the URL in a new browser window."
     },
@@ -112,7 +112,7 @@
             "service.httpget(url)"
         ],
         "body": [
-            "service.httpget(${0:url});"
+            "service.httpget(\"${0:url}\");"
         ],
         "description": "Fetches data from the provided url and returns it as a String value."
     },
@@ -121,7 +121,7 @@
             "service.httpget(url, username, pass)"
         ],
         "body": [
-            "service.httpget(${2:url},${1:username},${0:password});"
+            "service.httpget(\"${2:url}\",\"${1:username}\",\"${0:password}\");"
         ],
         "description": "Fetches data from the provided url using the provided username and password to perform BASIC authentication, then returns the data as a String value."
     },
@@ -130,7 +130,7 @@
             "service.httppost(url, data)"
         ],
         "body": [
-            "service.httppost(${1:url}, ${0:data});"
+            "service.httppost(\"${1:url}\", \"${0:data}\");"
         ],
         "description": "Posts the provided data to the provided url and returns the result as a String if available."
     },
@@ -139,7 +139,7 @@
             "service.httppost(url, username, password, data)"
         ],
         "body": [
-            "service.httppost(${3:url},${2:user},${1:password} ${0:data});"
+            "service.httppost(\"${3:url}\",\"${2:username}\",\"${1:password}\", \"${0:data}\");"
         ],
         "description": "Posts the provided data to the provided url using the username and password to perform BASIC authentication, then returns the result as a String if available."
     },
@@ -148,7 +148,7 @@
             "service.httppostasbytes(url, username, password, data)"
         ],
         "body": [
-            "service.httppostasbytes(${3:url},${2:user},${1:password} ${0:data});"
+            "service.httppostasbytes(\"${3:url}\",\"${2:username}\",\"${1:password}\", ${0:data});"
         ],
         "description": "Posts the provided byte array to the provided url using the username and password to perform BASIC authentication, then returns the result as a byte array if available."
     },
@@ -157,7 +157,7 @@
             "service.httppostasjson(url, username, password, headers, jsonArtifact)"
         ],
         "body": [
-            "service.httppostasjson(${4:url},${3:user},${2:password}, ${1:headers}, ${0:jsonArtifact});"
+            "service.httppostasjson(\"${4:url}\",\"${3:username}\",\"${2:password}\",\"${1:headers}\", ${0:jsonArtifact});"
         ],
         "description": "Posts the provided JSON Artifact to the provided url using the username and password to perform BASIC authentication, with the headers provided as a comma delimited list of key:value pairs delimited with a colon, then returns the result as a byte array if available."
     },
@@ -166,7 +166,7 @@
             "service.httpgetasjson(url, username, headers, password)"
         ],
         "body": [
-            "service.httppostasjson(${3:url},${2:user},${1:headers}, ${0:password});"
+            "service.httppostasjson(\"${3:url}\",\"${2:username}\",\"${1:headers}\",\"${0:password}\");"
         ],
         "description": "Gets the provided URL as a JSONArtifact using the username and password to perform BASIC authentication, with the headers provided as a comma delimited list of key:value pairs delimited with a colon. Note: for some unfathomable reason that the username and password parameters are separated by the headers parameter."
     },
@@ -175,7 +175,7 @@
             "service.httpgetasbytes(url, username, password)"
         ],
         "body": [
-            "service.httpgetasbytes(${2:url},${1:user}, ${0:password});"
+            "service.httpgetasbytes(\"${2:url}\",\"${1:username}\",\"${0:password}\");"
         ],
         "description": "Gets the provided URL as a byte array using the username and password to perform BASIC authentication."
     },
@@ -184,7 +184,7 @@
             "service.invokeEndpoint(url, metaData, data)"
         ],
         "body": [
-            "service.invokeEndpoint(${2:url},${1:metaData}, ${0:data});"
+            "service.invokeEndpoint(\"${2:url}\",${1:metaData}, ${0:data});"
         ],
         "description": "Invokes the provide URL with the provided metaData. The data parameter may be a String or byte array and either a String or byte array will be returned according to the type provided. The meta data is a Map<String, String> object containing the following HTTPHandler parameters: ALLRESPONSEHEADERS, CONNECTTIMEOUT, ERRORONSTATUS, FIREANDFORGET, HEADERS, HTTPEXIT, HTTPMETHOD, PASSWORD, READTIMEOUT, REQUEST_COOKIES, URL, USERNAME. The provided metaData Map will be updated with a RESPONSE_STATUS, RESPONSE_STATUS_TEXT and RESPONSE_HEADERS."
     },
@@ -202,7 +202,7 @@
             "service.log_debug(message)"
         ],
         "body": [
-            "service.log_debug(${0:message});"
+            "service.log_debug(\"${0:message}\");"
         ],
         "description": "Logs a DEBUG level message to the log."
     },
@@ -211,7 +211,7 @@
             "service.log_debug(message, throwable)"
         ],
         "body": [
-            "service.log_debug(${1:message},${1:throwable});"
+            "service.log_debug(\"${1:message}\",${1:throwable});"
         ],
         "description": "Logs a DEBUG level message to the log and prints the stack trace of the provided Throwable object."
     },
@@ -220,7 +220,7 @@
             "service.log_info(message)"
         ],
         "body": [
-            "service.log_info(${0:message});"
+            "service.log_info(\"${0:message}\");"
         ],
         "description": "Logs a INFO level message to the log."
     },
@@ -229,7 +229,7 @@
             "service.log_info(message, throwable)"
         ],
         "body": [
-            "service.log_info(${1:message},${1:throwable});"
+            "service.log_info(\"${1:message}\",${1:throwable});"
         ],
         "description": "Logs a INFO level message to the log and prints the stack trace of the provided Throwable object."
     },
@@ -238,7 +238,7 @@
             "service.log_warn(message)"
         ],
         "body": [
-            "service.log_warn(${0:message});"
+            "service.log_warn(\"${0:message}\");"
         ],
         "description": "Logs a WARN level message to the log."
     },
@@ -247,7 +247,7 @@
             "service.log_warn(message, throwable)"
         ],
         "body": [
-            "service.log_warn(${1:message},${1:throwable});"
+            "service.log_warn(\"${1:message}\",${1:throwable});"
         ],
         "description": "Logs a WARN level message to the log and prints the stack trace of the provided Throwable object."
     },
@@ -256,7 +256,7 @@
             "service.log_error(message)"
         ],
         "body": [
-            "service.log_error(${0:message});"
+            "service.log_error(\"${0:message}\");"
         ],
         "description": "Logs a ERROR level message to the log."
     },
@@ -265,7 +265,7 @@
             "service.log_error(message, throwable)"
         ],
         "body": [
-            "service.log_error(${1:message},${1:throwable});"
+            "service.log_error(\"${1:message}\",${1:throwable});"
         ],
         "description": "Logs a ERROR level message to the log and prints the stack trace of the provided Throwable object."
     },
@@ -274,7 +274,7 @@
             "service.log_fatal(message)"
         ],
         "body": [
-            "service.log_fatal(${0:message});"
+            "service.log_fatal(\"${0:message}\");"
         ],
         "description": "Logs a FATAL level message to the log."
     },
@@ -283,7 +283,7 @@
             "service.log_fatal(message, throwable)"
         ],
         "body": [
-            "service.log_fatal(${1:message},${1:throwable});"
+            "service.log_fatal(\"${1:message}\",${1:throwable});"
         ],
         "description": "Logs a FATAL level message to the log and prints the stack trace of the provided Throwable object."
     },
@@ -292,7 +292,7 @@
             "service.wsinteraction(interactionName)"
         ],
         "body": [
-            "service.wsinteraction(${0:interactionName});"
+            "service.wsinteraction(\"${0:interactionName}\");"
         ],
         "description": "Invokes the Integration interaction provided."
     },
@@ -301,7 +301,7 @@
             "service.logError(errorMessage)"
         ],
         "body": [
-            "service.logError(${0:errorMessage});"
+            "service.logError(\"${0:errorMessage}\");"
         ],
         "description": "Logs to the ERROR level log. If invoked from a AutoScript test dialog, will add the log message to the script output. "
     },
@@ -310,7 +310,7 @@
             "service.yncerror(group, key)"
         ],
         "body": [
-            "service.yncerror(${1:group}, ${0:key);"
+            "service.yncerror(\"${1:group}\",\"${0:key}\");"
         ],
         "description": "Raises a Yes / No / Cancel exception with the message for the provided message group and key."
     },
@@ -319,7 +319,7 @@
             "service.yncerror(group, key, params)"
         ],
         "body": [
-            "service.yncerror(${2:group}${1:key}, ${0:params);"
+            "service.yncerror(\"${2:group}\", \"${1:key}\", ${0:params);"
         ],
         "description": "Raises a Yes / No / Cancel exception with the message for the provided message group and key and message substitution variables provided in a String array."
     },
@@ -346,7 +346,7 @@
             "service.getProperty(propertyName)"
         ],
         "body": [
-            "service.getProperty(${0:propertyName});"
+            "service.getProperty(\"${0:propertyName}\");"
         ],
         "description": "Gets the value of a the specified Maximo property name."
     },
@@ -355,7 +355,7 @@
             "service.getLogger(loggerName)"
         ],
         "body": [
-            "service.getLogger(${0:loggerName});"
+            "service.getLogger(\"${0:loggerName}\");"
         ],
         "description": "Gets a Maximo logger based on the name provided."
     },
@@ -364,7 +364,7 @@
             "service.error(group, key)"
         ],
         "body": [
-            "service.error(${1:group}, ${0:key});"
+            "service.error(\"${1:group}\", \"${0:key}\");"
         ],
         "description": "Throws a MXApplicationException with the message specified by the Maximo message group and key."
     },
@@ -373,7 +373,7 @@
             "service.error(group, key, params)"
         ],
         "body": [
-            "service.error(${2:group}, ${1:key}, ${0:params});"
+            "service.error(\"${2:group}\", \"${1:key}\", ${0:params});"
         ],
         "description": "Throws a MXApplicationException with the message specified by the Maximo message group and key and the message parameters filled from the provided params String array."
     },
@@ -382,7 +382,7 @@
             "service.setWarning(group, key, params)"
         ],
         "body": [
-            "service.setWarning(${2:group}, ${1:key}, ${0:params});"
+            "service.setWarning(\"${2:group}\", \"${1:key}\", ${0:params});"
         ],
         "description": "Adds a warning to the current MboSet if available, with the message specified by the Maximo message group and key and the message parameters filled from the provided params String array."
     },
@@ -391,7 +391,7 @@
             "service.invokeChannel(channelName)"
         ],
         "body": [
-            "service.invokeChannel(${0:channelName});"
+            "service.invokeChannel(\"${0:channelName}\");"
         ],
         "description": "Invokes an integration channel based on the name provided."
     },
@@ -400,7 +400,7 @@
             "service.invokeWorkflow(workflowName)"
         ],
         "body": [
-            "service.invokeWorkflow(${0:workflowName});"
+            "service.invokeWorkflow(\"${0:workflowName}\");"
         ],
         "description": "Invokes the named workflow for the current Mbo. Note this requires an Mbo to be available and will throw a NullPointerException if a current Mbo is not available."
     },
@@ -409,7 +409,7 @@
             "service.invokeScript(scriptName)"
         ],
         "body": [
-            "service.invokeScript(${0:scriptName});"
+            "service.invokeScript(\"${0:scriptName}\");"
         ],
         "description": "Invokes the named script and returns a Map with the script variables and functions bound to a new Map."
     },
@@ -418,7 +418,7 @@
             "service.invokeScript(scriptName, context)"
         ],
         "body": [
-            "service.invokeScript(${1:scriptName}, ${0:context});"
+            "service.invokeScript(\"${1:scriptName}\", ${0:context});"
         ],
         "description": "Invokes the named script and returns a Map with the script variables and functions bound to the provided context Map."
     },
@@ -427,7 +427,7 @@
             "service.invokeScript(scriptName, functionName, args)"
         ],
         "body": [
-            "service.invokeScript(${2:scriptName}, ${1:functionName}, ${0:args});"
+            "service.invokeScript(\"${2:scriptName}\", \"${1:functionName}\", ${0:args});"
         ],
         "description": "Invokes the named function on the named script with the array of arguments provided and returns the result of the function."
     },

@@ -291,6 +291,9 @@ There are also snippets for common functions such as a `close` function or the `
 
 ![Snippets in action](./images/snippets.gif)
 
+Pressing `ctrl+space` will bring up help information for each snippet, describing what the snippet does with information about the parameters.
+![Snippet information](./images/snippet_description.png)
+
 # Requirements
 
 - Maximo 7.6.0.8 or higher, Maximo Application Suite 8 is supported.
