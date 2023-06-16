@@ -2,19 +2,9 @@
 /* eslint-disable no-unused-vars */
 // @ts-nocheck
 
-MboConstants = Java.type('psdi.mbo.MboConstants');
-
-DBShortcut = Java.type('psdi.mbo.DBShortcut');
-
 SqlFormat = Java.type('psdi.mbo.SqlFormat');
 
 MXServer = Java.type('psdi.server.MXServer');
-
-MXSession = Java.type('psdi.util.MXSession');
-
-MXException = Java.type('psdi.util.MXException');
-
-RuntimeException = Java.type('java.lang.RuntimeException');
 
 /**
  * 
@@ -481,13 +471,22 @@ function removePropertyValue(propertyValue){
     service.debug("removePropertyValue function end");
 }
 
-/**
- * Close and clean up a MboSet.
- * @param {psdi.mbo.MboSet} mboSet The MboSet to close and cleanup.
- */
-function __close(mboSet) {
-    if (mboSet && mboSet instanceof MboSet) {        
-        mboSet.close();
-        mboSet.cleanup();
+// Cleans up the MboSet connections and closes the set.
+function __close(set) {
+    if (set) {
+        try {
+            set.cleanup();
+            set.close();
+            // eslint-disable-next-line no-empty
+        } catch (ignored) { }
     }
 }
+
+// eslint-disable-next-line no-unused-vars
+var scriptConfig = {
+    'autoscript': 'SHARPTREE.AUTOSCRIPT.LIBRARY',
+    'description': 'Library Script',
+    'version': '',
+    'active': true,
+    'logLevel': 'ERROR'
+};
