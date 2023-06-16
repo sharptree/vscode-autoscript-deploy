@@ -10,7 +10,7 @@ MXServer = Java.type('psdi.server.MXServer');
  * 
  * @param {*} messages JSON representation of messages to be added/updated
  */
-function addUpdateMessages(messages){
+function __addUpdateMessages(messages){
     /*
         assumed structure of messages variable:
         [
@@ -28,7 +28,7 @@ function addUpdateMessages(messages){
     */
    service.debug("Messages JSON: " + messages);
    messages.forEach(function(message){
-        addUpdateMessages(message);
+        __addUpdateMessages(message);
    });
 }
 
@@ -36,7 +36,7 @@ function addUpdateMessages(messages){
  * 
  * @param {*} message single message that will be added/updated
  */
-function addUpdateMessage(message){
+function __addUpdateMessage(message){
     service.debug("addUpdateMessage function called, passed message " + message + " argument");
     var messageSet;
     try {
@@ -109,7 +109,7 @@ function addUpdateMessage(message){
  * 
  * @param {*} messages JSON representation of messages to be deleted
  */
-function removeMessages(messages){
+function __removeMessages(messages){
     /*
         assumed structure of messages variable:
         [
@@ -127,7 +127,7 @@ function removeMessages(messages){
     */
    service.debug("Messages JSON: " + messages);
    messages.forEach(function(message){
-        removeMessage(message);
+        __removeMessage(message);
    });
 }
 
@@ -135,7 +135,7 @@ function removeMessages(messages){
  * 
  * @param {*} message single message that will be deleted
  */
-function removeMessage(message){
+function __removeMessage(message){
     service.debug("removeMessage function called, passed message " + message + " argument");
     var messageSet;
     try {
@@ -165,7 +165,7 @@ function removeMessage(message){
  * 
  * @param {*} properties JSON representation of properties to be added/updated
  */
-function addUpdateProperties(properties){
+function __addUpdateProperties(properties){
     /*
         assumed structure of properties variable:
         [
@@ -203,7 +203,7 @@ function addUpdateProperties(properties){
     */
    service.debug("Properties JSON: " + properties);
    properties.forEach(function(property){
-    addUpdateProperty(property);
+    __addUpdateProperty(property);
    });
 }
 
@@ -211,7 +211,7 @@ function addUpdateProperties(properties){
  * 
  * @param {*} property single property that will be added/updated
  */
-function addUpdateProperty(property){
+function __addUpdateProperty(property){
     service.debug("addUpdateProperty function called, passed message " + property + " argument");
     var propertySet;
     try {
@@ -268,7 +268,7 @@ function addUpdateProperty(property){
  * 
  * @param {*} propertyValues JSON representation of property values to be added/updated
  */
-function addUpdatePropertyValues(propertyValues){
+function __addUpdatePropertyValues(propertyValues){
     /*
         assumed structure of propertyValues variable:
         [
@@ -290,7 +290,7 @@ function addUpdatePropertyValues(propertyValues){
     */
     service.debug("Property values JSON: " + propertyValues);
     propertyValues.forEach(function(propertyValue){
-    addUpdatePropertyValue(propertyValue);
+    __addUpdatePropertyValue(propertyValue);
    });
 }
 
@@ -298,7 +298,7 @@ function addUpdatePropertyValues(propertyValues){
  * 
  * @param {*} propertyValue single property value that will be added/updated
  */
-function addUpdatePropertyValue(propertyValue){
+function __addUpdatePropertyValue(propertyValue){
     service.debug("addUpdatePropertyValue function called, passed message " + propertyValue + " argument");
     var propertyValueSet;
     try {
@@ -336,7 +336,7 @@ function addUpdatePropertyValue(propertyValue){
  * 
  * @param {*} properties JSON representation of properties to be deleted
  */
-function removeProperties(properties){
+function __removeProperties(properties){
     /*
         assumed structure of properties variable:
         [
@@ -374,7 +374,7 @@ function removeProperties(properties){
     */
     service.debug("Properties JSON: " + properties);
     properties.forEach(function(property){
-        removeProperty(property);
+        __removeProperty(property);
    });
 }
 
@@ -382,7 +382,7 @@ function removeProperties(properties){
  * 
  * @param {*} property single property that will be deleted
  */
-function removeProperty(property){
+function __removeProperty(property){
     service.debug("removeProperty function called, passed message " + property + " argument");
     var propertySet;
     try {
@@ -414,7 +414,7 @@ function removeProperty(property){
  * 
  * @param {*} propertyValues JSON representation of property values to be deleted
  */
-function removePropertyValues(propertyValues){
+function __removePropertyValues(propertyValues){
     /*
         assumed structure of propertyValues variable:
         [
@@ -436,7 +436,7 @@ function removePropertyValues(propertyValues){
     */
     service.debug("Property values JSON: " + propertyValues);
     propertyValues.forEach(function(propertyValue){
-    removePropertyValue(propertyValue);
+    __removePropertyValue(propertyValue);
    });
 }
 
@@ -444,7 +444,7 @@ function removePropertyValues(propertyValues){
  * 
  * @param {*} propertyValue single property value that will be deleted
  */
-function removePropertyValue(propertyValue){
+function __removePropertyValue(propertyValue){
     service.debug("removePropertyValue function called, passed message " + propertyValue + " argument");
     var propertyValueSet;
     try {
@@ -469,6 +469,231 @@ function removePropertyValue(propertyValue){
         __close(propertyValueSet);
     }
     service.debug("removePropertyValue function end");
+}
+
+
+/**
+ * Adds or updates a logger. This relies on the calling function calling save on the provided parent MboSet to save the changes.
+ * 
+ * @param {*} logger The logger to add.
+ * @param {*} level The log level to set the logger at.
+ * @param {*} parent The parent logger to add the child logger to.
+ */
+function __addLoggerIfDoesNotExist(logger, level, parent) {
+    service.log_info("Adding or updating the logger " + logger + " and setting the level to " + level + ".");
+    var loggerSet;
+    try {
+        loggerSet = MXServer.getMXServer().getMboSet("MAXLOGGER", MXServer.getMXServer().getSystemUserInfo());
+
+        // Query for the log key
+        var sqlFormat = new SqlFormat("logkey = :1");
+        sqlFormat.setObject(1, "MAXLOGGER", "LOGKEY", parent.getString("LOGKEY") + "." + logger);
+
+        loggerSet.setWhere(sqlFormat.format());
+        var child;
+        // if the logkey does not exist create it, otherwise get the existing logger and update its level.
+        if (loggerSet.isEmpty()) {
+            child = parent.getMboSet("CHILDLOGGERS").add();
+            child.setValue("LOGGER", logger);
+            child.setValue("LOGLEVEL", level);
+            service.log_info("Added the logger " + logger + " and set the level to " + level + ".");
+        }
+    } finally {
+        __close(loggerSet);
+    }
+}
+
+/**
+ * Add a menu item to the provided app.
+ * @param {String} app The application to add the menu item to.
+ * @param {String} optionName The option that the menu to should be added for.
+ * @param {String} below The option name for the menu that the new option will be added below.
+ * @param {boolean} visible Indicates if the menu option is visible.
+ * @param {String} tabDisplay The tabs tha the menu should be displays on.
+ */
+function __addMenu(app, optionName, below, visible, tabDisplay){
+    var maxMenuSet;
+    var maxMenu;
+    try{
+        maxMenuSet = MXServer.getMXServer().getMboSet("MAXMENU", MXServer.getMXServer().getSystemUserInfo());
+        
+
+        var position = 0;
+        var subPosition = 0;
+        if(below){
+            var sqlf = new SqlFormat("moduleapp = :1 and elementtype = :2 and keyvalue = :3");
+            sqlf.setObject(1, "MAXMENU", "MODULEAPP", app);
+            sqlf.setObject(2, "MAXMENU", "ELEMENTTYPE", "OPTION");
+            sqlf.setObject(3, "MAXMENU", "KEYVALUE", below);
+
+            maxMenuSet.setWhere(sqlf.format());
+            maxMenu = maxMenuSet.moveFirst();
+
+            if(maxMenu){
+                if(!maxMenu.isNull("SUBPOSITION")){
+                    position = maxMenu.getInt("POSITION");
+                    subPosition = maxMenu.getInt("SUBPOSITION") + 1;
+                }else{
+                    position = maxMenu.getInt("POSITION") + 1; 
+                }
+            }
+        }
+
+        if(position == 0){
+            sqlf = new SqlFormat("moduleapp = :1 and elementtype = :2");
+            sqlf.setObject(1, "MAXMENU", "MODULEAPP", app);
+            sqlf.setObject(2, "MAXMENU", "ELEMENTTYPE", "OPTION");
+
+            maxMenuSet.setWhere(sqlf.format());
+            maxMenuSet.setOrderBy("position desc");
+            maxMenuSet.reset();
+            maxMenu = maxMenuSet.moveFirst();
+            position = maxMenu.getInt("POSITION") + 1;        
+        }
+
+        sqlf = new SqlFormat("moduleapp = :1 and elementtype = :2 and keyvalue = :3");
+        sqlf.setObject(1, "MAXMENU", "MODULEAPP", app);
+        sqlf.setObject(2, "MAXMENU", "ELEMENTTYPE", "OPTION");
+        sqlf.setObject(3, "MAXMENU", "KEYVALUE", optionName);
+
+        maxMenuSet.setWhere(sqlf.format());
+        maxMenuSet.reset();
+        
+        if(maxMenuSet.isEmpty()){
+            maxMenu = maxMenuSet.add();
+            maxMenu.setValue("MENUTYPE", "APPMENU");
+            maxMenu.setValue("MODULEAPP", app);
+            maxMenu.setValue("POSITION", position);
+            maxMenu.setValue("SUBPOSITION", subPosition);
+            maxMenu.setValue("ELEMENTTYPE", "OPTION");
+            maxMenu.setValue("KEYVALUE", optionName);            
+        }else{
+            maxMenu = maxMenuSet.moveFirst();
+        }
+        maxMenu.setValue("VISIBLE", visible);   
+        maxMenu.setValue("TABDISPLAY", tabDisplay);   
+
+        maxMenuSet.save();
+    }finally{
+        __close(maxMenuSet);
+    }
+}
+
+/**
+ * Adds a signature option to the application.
+ * @param {String} app The application that the signature options should be added to.
+ * @param {String} optionName The signature option name.
+ * @param {String} description The description for the signature option.
+ * @param {boolean} esigEnabled Indicates that e-signature is enabled.
+ * @param {boolean} visible Indicates if the option is visible.
+ * @param {String} alsogrants Other options that this option grants.
+ * @param {boolean} uiOnly Should the UI be required.
+ */
+function __addAppOption(app, optionName, description, esigEnabled, visible, alsogrants, uiOnly){
+    var sigOptionSet;
+    
+    try{
+        sigOptionSet = MXServer.getMXServer().getMboSet("SIGOPTION", MXServer.getMXServer().getSystemUserInfo());
+        var sqlf = new SqlFormat("app = :1 and optionname = :2");
+        sqlf.setObject(1, "SIGOPTION", "APP", app);
+        sqlf.setObject(2, "SIGOPTION", "OPTIONNAME", optionName);
+        sigOptionSet.setWhere(sqlf.format());
+        
+        var sigOption = sigOptionSet.moveFirst();
+        if(!sigOption){
+            sigOption = sigOptionSet.add();
+            sigOption.setValue("APP", app);
+            sigOption.setValue("OPTIONNAME", optionName);
+        }
+
+        sigOption.setValue("DESCRIPTION", description);
+        sigOption.setValue("ESIGENABLED", esigEnabled);
+        sigOption.setValue("VISIBLE", visible);
+        sigOption.setValue("ALSOGRANTS", alsogrants);
+
+        if(uiOnly){
+            var sigOptFlagSet = sigOption.getMboSet("SIGOPTFLAG");
+            var sigOptFlag = sigOptFlagSet.moveFirst();
+            if(!sigOptFlag){
+                sigOptFlag = sigOptFlagSet.add();
+                sigOptFlag.setValue("APP", app);
+                sigOptFlag.setValue("OPTIONNAME", optionName);
+                sigOptFlag.setValue("FLAGNAME", "WFACTION");
+            }
+        }else{
+            var sigOptFlag = sigOption.getMboSet("SIGOPTFLAG").moveFirst();
+            if(sigOptFlag){
+                sigOptFlag.delete();
+            }
+        }
+        sigOptionSet.save();
+        
+    }finally{
+        __close(sigOptionSet);
+    }
+}
+
+function __grantOptionToGroup(group, app, option) {
+
+    var groupSet;
+    try {
+        var sqlf = new SqlFormat("groupname = :1");
+        sqlf.setObject(1, "MAXGROUP", "GROUPNAME", group);
+
+        groupSet = MXServer.getMXServer().getMboSet("MAXGROUP", MXServer.getMXServer().getSystemUserInfo());
+        groupSet.setWhere(sqlf.format());
+        var groupMbo;
+        if (!groupSet.isEmpty()) {
+            groupMbo = groupSet.moveFirst();
+            applicationAuthSet = groupMbo.getMboSet("APPLICATIONAUTH");
+            sqlf = new SqlFormat("app = :1 and optionname = :2");
+            sqlf.setObject(1, "APPLICATIONAUTH", "APP", app);
+            sqlf.setObject(2, "APPLICATIONAUTH", "OPTIONNAME", option);
+
+            applicationAuthSet.setWhere(sqlf.format());
+            if (applicationAuthSet.isEmpty()) {
+                applicationAuth = applicationAuthSet.add();
+                applicationAuth.setValue("APP", app, MboConstants.NOVALIDATION);
+                applicationAuth.setValue("OPTIONNAME", option);
+
+                groupSet.save();
+            }
+        }
+    } finally {
+        __close(groupSet);
+    }
+}
+
+/**
+ * 
+ * @param {String} name The name of the relationship
+ * @param {String} parent The parent of the relationship (source)
+ * @param {String} child The child of the relationship (target/destination)
+ * @param {String} whereclause Where clause to be used by the relationship
+ * @param {String} remarks Description of the relationship
+ */
+function __addRelationship(name, parent, child, whereclause, remarks){
+    var maxRelationshipSet;
+    try {
+        maxRelationshipSet = MXServer.getMXServer().getMboSet("MAXRELATIONSHIP", MXServer.getMXServer().getSystemUserInfo());
+        var sqlf = new SqlFormat("parent = :1 and child = :2 and name = :3");
+        sqlf.setObject(1, "MAXRELATIONSHIP", "PARENT", parent);
+        sqlf.setObject(2, "MAXRELATIONSHIP", "CHILD", child);
+        sqlf.setObject(3, "MAXRELATIONSHIP", "NAME", name);
+        maxRelationshipSet.setWhere(sqlf.format());
+
+        if(maxRelationshipSet.isEmpty()){
+            var maxRelationship = maxRelationshipSet.add();
+            maxRelationship.setValue("NAME", name);
+            maxRelationship.setValue("PARENT", parent);
+            maxRelationship.setValue("CHILD", child);
+            maxRelationship.setValue("WHERECLAUSE", whereclause);
+            maxRelationship.setValue("REMARKS", remarks);
+        }
+        maxRelationshipSet.save();
+    } finally {
+        __close(maxRelationshipSet);
+    }
 }
 
 // Cleans up the MboSet connections and closes the set.
