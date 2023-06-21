@@ -1223,12 +1223,12 @@
         "description": "Validates the Mbo values."
     },
     "functionClose": {
-        "prefix": "function close(set)",
+        "prefix": "function close(mboSet)",
         "body": [
-            "function close(set){",
+            "function close(mboSet){",
             "   if (mboSet && mboSet instanceof Java.type(\"psdi.mbo.MboSet\")) {",
-            "       set.cleanup();",
-            "       set.close();",
+            "       mboSet.cleanup();",
+            "       mboSet.close();",
             "   }",
             "}"
         ],

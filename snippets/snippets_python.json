@@ -1306,5 +1306,15 @@
             "responseBody = \"${0:response}\""
         ],
         "description": "Sets the body of the response as a String values."
-    }
+    },
+    "functionMain": {
+        "prefix": "function main",
+        "body": [
+            "def main():",
+            "   # Main script code starts here.",
+            "",
+            "main()"
+        ],
+        "description": "Creates a new main function for the script."
+    }    
 }
