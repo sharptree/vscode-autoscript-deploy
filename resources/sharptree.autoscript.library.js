@@ -3,8 +3,150 @@
 // @ts-nocheck
 
 SqlFormat = Java.type('psdi.mbo.SqlFormat');
+MboConstants = Java.type("psdi.mbo.MboConstants");
+System = Java.type("java.lang.System");
 
+MXLoggerFactory = Java.type("psdi.util.logging.MXLoggerFactory");
 MXServer = Java.type('psdi.server.MXServer');
+var logger = MXLoggerFactory.getLogger("maximo.script.SHAPRTREE.AUTOSCRIPT.LIBRARY");
+
+
+main();
+
+function main(){
+    var messages = [
+        {
+            "msggroup":"dstest",
+            "msgkey":"dstestmessage1",
+            "value":"This is the first message being added"
+        },
+        {
+            "msggroup":"dstest",
+            "msgkey":"dstestmessage4",
+            "value":"This is the second message being added update"
+        }
+    ];
+
+    var properties = [
+        {
+            "propname":"dstestprop1",
+            "description":"This is the first test property",
+            "domainid": null,
+            "encrypted": false,
+            "globalonly": false,
+            "instanceonly": false,
+            "liverefresh":true,
+            "masked": false,
+            "maxtype": "ALN",
+            "nullsallowed": true,
+            "onlinechanges": true,
+            "securelevel": "PUBLIC"
+        },
+        {
+            "propname":"dstestprop2",
+            "description":"This is the second test property2",
+            "domainid": null,
+            "encrypted": false,
+            "globalonly": false,
+            "instanceonly": false,
+            "liverefresh":true,
+            "masked": false,
+            "maxtype": "ALN",
+            "nullsallowed": true,
+            "onlinechanges": true,
+            "securelevel": "PUBLIC"
+        }
+    ];
+
+    var propertyValues = [
+        {
+            "propname":"dstestprop1",
+            "servername":"COMMON",
+            "serverhost":null,
+            "propvalue":"hello",
+            "encryptedvalue":null,
+        },
+        {
+            "propname":"dstestprop2",
+            "servername":"COMMON",
+            "serverhost":null,
+            "propvalue":"world!!",
+            "encryptedvalue":null,
+        }
+    ];
+
+    __addUpdateMessages(messages);
+    /*
+    messages = [
+        {
+            "msggroup":"dstest",
+            "msgkey":"dstestmessage4",
+            "value":"This is the second message being added update"
+        }
+    ];
+    */
+    //__removeMessages(messages);
+
+    //__addUpdateProperties(properties);
+    /*
+    properties = [{
+        "propname":"dstestprop2",
+        "description":"This is the second test property2",
+        "domainid": null,
+        "encrypted": false,
+        "globalonly": false,
+        "instanceonly": false,
+        "liverefresh":true,
+        "masked": false,
+        "maxtype": "ALN",
+        "nullsallowed": true,
+        "onlinechanges": true,
+        "securelevel": "PUBLIC"
+    }];
+    */
+    //__removeProperties(properties);
+
+    //__addUpdatePropertyValues(propertyValues);
+    /*
+    propertyValues = [
+        {
+            "propname":"dstestprop2",
+            "servername":"COMMON",
+            "serverhost":null,
+            "propvalue":"world",
+            "encryptedvalue":null,
+        }
+    ];
+    */
+    //__removePropertyValues(propertyValues);
+    //__addUpdatePropertyValues(propertyValues);
+
+
+    /*
+    var loggerSet;
+
+    try {
+        loggerSet = MXServer.getMXServer().getMboSet("MAXLOGGER", MXServer.getMXServer().getSystemUserInfo());
+
+        var sqlFormat = new SqlFormat("logger = :1");
+        sqlFormat.setObject(1, "MAXLOGGER", "LOGGER", 'autoscript');
+
+        loggerSet.setWhere(sqlFormat.format());
+
+        // if the out of the box root logger is missing, abort.
+        if (!loggerSet.isEmpty()) {
+            var scriptLogger = loggerSet.getMbo(0);
+            __addLoggerIfDoesNotExist("dstest","DEBUG",scriptLogger);
+        }
+        loggerSet.save();
+    }finally{
+        __close(loggerSet);
+    }
+    */
+
+
+    
+}
 
 /**
  * 
@@ -15,21 +157,22 @@ function __addUpdateMessages(messages){
         assumed structure of messages variable:
         [
             {
-                "msggroup":"msggroup",
-                "msgkey":"msgkey",
-                "value":"value"
+                "msggroup":"test",
+                "msgkey":"testmessage1",
+                "value":"This is the first message being added"
             },
             {
-                "msggroup":"msggroup",
-                "msgkey":"msgkey",
-                "value":"value"
+                "msggroup":"test1",
+                "msgkey":"testmessage2",
+                "value":"This is the second message being added"
             }
         ]
     */
-   service.debug("Messages JSON: " + messages);
+   logger.debug("Messages JSON: " + JSON.stringify(messages));
    messages.forEach(function(message){
-        __addUpdateMessages(message);
+    __addUpdateMessage(message);
    });
+
 }
 
 /**
@@ -37,72 +180,66 @@ function __addUpdateMessages(messages){
  * @param {*} message single message that will be added/updated
  */
 function __addUpdateMessage(message){
-    service.debug("addUpdateMessage function called, passed message " + message + " argument");
+    logger.debug("addUpdateMessage function called");
+    var group = message.msggroup;
+    var key = message.msgkey;
+    var value = message.value;
+    logger.debug("message group: " + group);
+    logger.debug("message key:   " + key);
+    logger.debug("message value: " + value);
     var messageSet;
     try {
+        //search for updates for the messages
+        //search for matching key and group, but not value. Update value
+        logger.debug("Searching for messages matching the group and key, but not the value");
         messageSet = MXServer.getMXServer().getMboSet("MAXMESSAGES", MXServer.getMXServer().getSystemUserInfo());
-        var sqlf = new SqlFormat("msggroup = :1 and msgkey = :2 and value = :3");
-        sqlf.setObject(1, "MAXMESSAGES", "MSGGROUP", message.msggroup);
-        sqlf.setObject(2, "MAXMESSAGES", "MSGKEY", message.msgkey);
-        sqlf.setObject(3, "MAXMESSAGES", "VALUE", message.value);
+        var sqlf = new SqlFormat("msggroup = :1 and msgkey = :2 and value != :3");
+        sqlf.setObject(1, "MAXMESSAGES", "MSGGROUP", group);
+        sqlf.setObject(2, "MAXMESSAGES", "MSGKEY", key);
+        sqlf.setObject(3, "MAXMESSAGES", "VALUE", value);
         messageSet.setWhere(sqlf.format());
-
-        if(messageSet.isEmpty()){
-            //new message
-            service.debug("The message set returned 0 results when searching for the passed message. Adding new message.");
-            var message = messageSet.add();
-            message.setValue("MSGGROUP", message.msggroup);
-            message.setValue("MSGKEY", message.msgkey);
-            message.setValue("VALUE", message.value);
+        logger.debug("messages set returned " + messageSet.count() + " records");
+        if(!messageSet.isEmpty() && messageSet.count() == 1){
+            logger.debug("A message record was found matching the MSGGROUP and MSGKEY of the passed record. Updating the VALUE of the record.");
+            var messageMbo = messageSet.getMbo(0);
+            messageMbo.setValue("VALUE", value);
         }
-        else{
-            //update message
-            service.debug("The message set returned a result when searching for the passed message. Updating a message record");
-            messageSet.reset();
-            //search for matching key and group, but not value. Update value
-            sqlf = new SqlFormat("msggroup = :1 and msgkey = :2 and value != :3");
-            sqlf.setObject(1, "MAXMESSAGES", "MSGGROUP", message.msggroup);
-            sqlf.setObject(2, "MAXMESSAGES", "MSGKEY", message.msgkey);
-            sqlf.setObject(3, "MAXMESSAGES", "VALUE", message.value);
-            messageSet.setWhere(sqlf.format());
-            if(messageSet.isEmpty() && messageSet.count() == 1){
-                service.debug("A message record was found matching the MSGGROUP and MSGKEY of the passed record. Updating the VALUE of the record.");
-                var message = messageSet.getMbo(0);
-                message.setValue("VALUE", message.value);
-            }
-            messageSet.save();
-            //search for matching key and value, but not group. Update group
-            messageSet = MXServer.getMXServer().getMboSet("MAXMESSAGES", MXServer.getMXServer().getSystemUserInfo());
-            sqlf = new SqlFormat("msggroup != :1 and msgkey = :2 and value = :3");
-            sqlf.setObject(1, "MAXMESSAGES", "MSGGROUP", message.msggroup);
-            sqlf.setObject(2, "MAXMESSAGES", "MSGKEY", message.msgkey);
-            sqlf.setObject(3, "MAXMESSAGES", "VALUE", message.value);
-            messageSet.setWhere(sqlf.format());
-            if(messageSet.isEmpty() && messageSet.count() == 1){
-                service.debug("A message record was found matching the MSGKEY and VALUE of the passed record. Updating the MSGGROUP of the record.");
-                var message = messageSet.moveFirst();
-                message.setValue("MSGROUP", message.msggroup);
-            }
-            messageSet.save();
-            //search for matching group and value, but not key. Update key
-            messageSet = MXServer.getMXServer().getMboSet("MAXMESSAGES", MXServer.getMXServer().getSystemUserInfo());
-            sqlf = new SqlFormat("msggroup = :1 and msgkey != :2 and value = :3");
-            sqlf.setObject(1, "MAXMESSAGES", "MSGGROUP", message.msggroup);
-            sqlf.setObject(2, "MAXMESSAGES", "MSGKEY", message.msgkey);
-            sqlf.setObject(3, "MAXMESSAGES", "VALUE", message.value);
-            messageSet.setWhere(sqlf.format());
-            if(messageSet.isEmpty() && messageSet.count() == 1){
-                service.debug("A message record was found matching the MSGGROUP and VALUE of the passed record. Updating the MSGKEY of the record.");
-                var message = messageSet.moveFirst();
-                message.setValue("MSGKEY", message.msgkey);
-            }
+        messageSet.save();
 
+        //add the message if it doesn't exist
+        logger.debug("Update check complete. Determining if message should be added.");
+        messageSet = MXServer.getMXServer().getMboSet("MAXMESSAGES", MXServer.getMXServer().getSystemUserInfo());
+        sqlf = new SqlFormat("msggroup = :1 and msgkey = :2 and value = :3");
+        sqlf.setObject(1, "MAXMESSAGES", "MSGGROUP",group);
+        sqlf.setObject(2, "MAXMESSAGES", "MSGKEY", key);
+        sqlf.setObject(3, "MAXMESSAGES", "VALUE", value);
+        messageSet.setWhere(sqlf.format());
+        if(messageSet.isEmpty()){
+            logger.debug("The message set returned 0 results when searching for the passed message. Adding new message.");
+            //new message
+            //get the record with the highest msgid
+            messageSet = MXServer.getMXServer().getMboSet("MAXMESSAGES", MXServer.getMXServer().getSystemUserInfo());
+            var sqlf = new SqlFormat("msgid like 'BMXZZ%'");
+            messageSet.setWhere(sqlf.format());
+            messageSet.setOrderBy("MAXMESSAGESID desc");
+            var maxMSGIDmessage = messageSet.moveFirst();
+            var maxMSGID = maxMSGIDmessage.getString("MSGID");
+            logger.debug("Max message ID before formatting is " + maxMSGID);
+            maxMSGID = maxMSGID.substring(5,maxMSGID.length-1);
+            logger.debug("Max message ID is " + maxMSGID);
+            var messageMbo = messageSet.add();
+            messageMbo.setValue("MSGGROUP", group);
+            messageMbo.setValue("MSGKEY", key);
+            messageMbo.setValue("VALUE", value);
+            messageMbo.setValue("MSGID", "BMXZZ" + (parseInt(maxMSGID)+1) + "E");
+            messageMbo.setValue("DISPLAYMETHOD", "MSGBOX");
+            messageMbo.setValue("OPTIONS", 2);
         }
         messageSet.save();
     } finally {
         __close(messageSet);
     }
-    service.debug("addUpdateMessage function end");
+    logger.debug("addUpdateMessage function end");
 }
 
 /**
@@ -114,20 +251,20 @@ function __removeMessages(messages){
         assumed structure of messages variable:
         [
             {
-                "msggroup":"msggroup",
-                "msgkey":"msgkey",
-                "value":"value"
+                "msggroup":"test",
+                "msgkey":"testmessage1",
+                "value":"This is the first message being added"
             },
             {
-                "msggroup":"msggroup",
-                "msgkey":"msgkey",
-                "value":"value"
+                "msggroup":"test1",
+                "msgkey":"testmessage2",
+                "value":"This is the second message being added"
             }
         ]
     */
-   service.debug("Messages JSON: " + messages);
+   logger.debug("Messages JSON: " + JSON.stringify(messages));
    messages.forEach(function(message){
-        __removeMessage(message);
+    __removeMessage(message);
    });
 }
 
@@ -136,7 +273,7 @@ function __removeMessages(messages){
  * @param {*} message single message that will be deleted
  */
 function __removeMessage(message){
-    service.debug("removeMessage function called, passed message " + message + " argument");
+    logger.debug("removeMessage function called, passed message " + message + " argument");
     var messageSet;
     try {
         messageSet = MXServer.getMXServer().getMboSet("MAXMESSAGES", MXServer.getMXServer().getSystemUserInfo());
@@ -145,20 +282,21 @@ function __removeMessage(message){
         sqlf.setObject(2, "MAXMESSAGES", "MSGKEY", message.msgkey);
         sqlf.setObject(3, "MAXMESSAGES", "VALUE", message.value);
         messageSet.setWhere(sqlf.format());
-
-        if(!messageSet.isEmpty()){
-            var message = messageSet.moveFirst();
-            message.delete();
+        logger.debug("removeMessage messageSet contains " + messageSet.count() + " records");
+        if(!messageSet.isEmpty() && messageSet.count() == 1){
+            var messageMbo = messageSet.moveFirst();
+            logger.debug("Removing message with group=" + messageMbo.getString("MSGGROUP") + ", key=" + messageMbo.getString("MSGKEY") + ", value=" + messageMbo.getString("VALUE"));
+            messageMbo.delete();
         }
         else{
-            service.debug("removeMessage function found no matching messages. No action taken.");
+            logger.debug("removeMessage function found no matching messages. No action taken.");
         }
         messageSet.save();
     }
     finally{
         __close(messageSet);
     }
-    service.debug("removeMessage function end");
+    logger.debug("removeMessage function end");
 }
 
 /**
@@ -170,38 +308,36 @@ function __addUpdateProperties(properties){
         assumed structure of properties variable:
         [
             {
-                "propname":"propname",
-                "description":"description",
-                "domainid":"domainid",
-                "encrypted":"encrypted",
-                "fileoverride":"fileoverride",
-                "globalonly":"globalonly",
-                "instanceonly":"instanceonly",
-                "liverefresh":"liverefresh",
-                "masked":"masked",
-                "maxtype":"maxtype",
-                "nullsallowed":"nullsallowed",
-                "onlinechanges":"onlinechanges",
-                "securelevel":"securelevel"
+                "propname":"prop1",
+                "description":"first test property",
+                "domainid": null,
+                "encrypted": false,
+                "globalonly": false,
+                "instanceonly": false,
+                "liverefresh":true,
+                "masked": false,
+                "maxtype": "ALN",
+                "nullsallowed": true,
+                "onlinechanges": true,
+                "securelevel": "PUBLIC"
             },
             {
-                "propname":"propname",
-                "description":"description",
-                "domainid":"domainid",
-                "encrypted":"encrypted",
-                "fileoverride":"fileoverride",
-                "globalonly":"globalonly",
-                "instanceonly":"instanceonly",
-                "liverefresh":"liverefresh",
-                "masked":"masked",
-                "maxtype":"maxtype",
-                "nullsallowed":"nullsallowed",
-                "onlinechanges":"onlinechanges",
-                "securelevel":"securelevel"
+                "propname":"prop2",
+                "description":"second test property",
+                "domainid": null,
+                "encrypted": false,
+                "globalonly": false,
+                "instanceonly": false,
+                "liverefresh":true,
+                "masked": false,
+                "maxtype": "ALN",
+                "nullsallowed": true,
+                "onlinechanges": true,
+                "securelevel": "PUBLIC"
             }
         ]
     */
-   service.debug("Properties JSON: " + properties);
+   logger.debug("Properties JSON: " + JSON.stringify(properties));
    properties.forEach(function(property){
     __addUpdateProperty(property);
    });
@@ -212,48 +348,58 @@ function __addUpdateProperties(properties){
  * @param {*} property single property that will be added/updated
  */
 function __addUpdateProperty(property){
-    service.debug("addUpdateProperty function called, passed message " + property + " argument");
+    logger.debug("addUpdateProperty function called");
+    var propName = property.propname;
+    var description = property.description;
+    var domainid = property.domainid;
+    var encrypted = property.encrypted;
+    var globalOnly = property.globalonly;
+    var instanceOnly = property.instanceonly;
+    var liveRefresh = property.liverefresh;
+    var masked = property.masked;
+    var maxtype = property.maxtype;
+    var nullsAllowed = property.nullsallowed;
+    var onlineChanges = property.onlinechanges;
+    var secureLevel = property.securelevel;
     var propertySet;
     try {
         propertySet = MXServer.getMXServer().getMboSet("MAXPROP", MXServer.getMXServer().getSystemUserInfo());
         var sqlf = new SqlFormat("propname = :1");
         sqlf.setObject(1, "MAXPROP", "PROPNAME", property.propname);
         propertySet.setWhere(sqlf.format());
-
+        logger.debug("Property set contains " + propertySet.count() + " records");
         if(propertySet.isEmpty()){
             //property does not exist, add
-            service.debug("Property " + property.propname + " does not exist. Adding the property.");
+            logger.debug("Property " + property.propname + " does not exist. Adding the property.");
             var property = propertySet.add();
-            property.setValue("PROPNAME", property.propname);
-            property.setValue("DESCRIPTION", property.description);
-            property.setValue("DOMAINID", property.domainid);
-            property.setValue("ENCRYPTED", property.encrypted);
-            property.setValue("FILEOVERRIDE", property.fileoverride);
-            property.setValue("GLOBALONLY", property.globalonly);
-            property.setValue("INSTANCEONLY", property.instanceonly);
-            property.setValue("LIVEREFRESH", property.liverefresh);
-            property.setValue("MASKED", property.masked);
-            property.setValue("MAXTYPE", property.maxtype);
-            property.setValue("NULLSALLOWED", property.nullsallowed);
-            property.setValue("ONLINECHANGES", property.onlinechanges);
-            property.setValue("SECURELEVEL", property.securelevel);
+            property.setValue("PROPNAME", propName);
+            if(description==null?property.setValueNull("DESCRIPTION"):property.setValue("DESCRIPTION", description));
+            if(domainid==null?property.setValueNull("DOMAINID"):property.setValue("DOMAINID", domainid));
+            if(encrypted==null?property.setValue("ENCRYPTED",false):property.setValue("ENCRYPTED", encrypted));
+            if(globalOnly==null?property.setValue("GLOBALONLY",false):property.setValue("GLOBALONLY", globalOnly));
+            if(instanceOnly==null?property.setValue("INSTANCEONLY",false):property.setValue("INSTANCEONLY", instanceOnly));
+            if(liveRefresh==null?property.setValue("LIVEREFRESH",true):property.setValue("LIVEREFRESH", liveRefresh));
+            if(masked==null?property.setValue("MASKED",false):property.setValue("MASKED", masked));
+            if(maxtype==null?property.setValue("MAXTYPE","ALN"):property.setValue("MAXTYPE", maxtype));
+            if(nullsAllowed==null?property.setValue("NULLSALLOWED",true):property.setValue("NULLSALLOWED", nullsAllowed));
+            if(onlineChanges==null?property.setValue("ONLINECHANGES",true):property.setValue("ONLINECHANGES", onlineChanges));
+            if(secureLevel==null?property.setValue("SECURELEVEL","PUBLIC"):property.setValue("SECURELEVEL", secureLevel));
         }
         else{
             //property exists, update
-            service.debug("Property " + property.propname + " exists. Updating the property.");
+            logger.debug("Property " + property.propname + " exists. Updating the property.");
             var property = propertySet.moveFirst();
-            property.setValue("DESCRIPTION", property.description);
-            property.setValue("DOMAINID", property.domainid);
-            property.setValue("ENCRYPTED", property.encrypted);
-            property.setValue("FILEOVERRIDE", property.fileoverride);
-            property.setValue("GLOBALONLY", property.globalonly);
-            property.setValue("INSTANCEONLY", property.instanceonly);
-            property.setValue("LIVEREFRESH", property.liverefresh);
-            property.setValue("MASKED", property.masked);
-            property.setValue("MAXTYPE", property.maxtype);
-            property.setValue("NULLSALLOWED", property.nullsallowed);
-            property.setValue("ONLINECHANGES", property.onlinechanges);
-            property.setValue("SECURELEVEL", property.securelevel);
+            if(description==null?logger.debug("Skipping DESCRIPTION set"):property.setValue("DESCRIPTION", description));
+            if(domainid==null?logger.debug("Skipping DOMAINID set"):property.setValue("DOMAINID", domainid));
+            if(encrypted==null?logger.debug("Skipping ENCRYPTED set"):property.setValue("ENCRYPTED", encrypted));
+            if(globalOnly==null?logger.debug("Skipping GLOBALONLY set"):property.setValue("GLOBALONLY", globalOnly));
+            if(instanceOnly==null?logger.debug("Skipping INSTANCEONLY set"):property.setValue("INSTANCEONLY", instanceOnly));
+            if(liveRefresh==null?logger.debug("Skipping LIVEREFRESH set"):property.setValue("LIVEREFRESH", liveRefresh));
+            if(masked==null?logger.debug("Skipping MASKED set"):property.setValue("MASKED", masked));
+            if(maxtype==null?logger.debug("Skipping MAXTYPE set"):property.setValue("MAXTYPE", maxtype));
+            if(nullsAllowed==null?logger.debug("Skipping NULLSALLOWED set"):property.setValue("NULLSALLOWED", nullsAllowed));
+            if(onlineChanges==null?logger.debug("Skipping ONLINECHANGES set"):property.setValue("ONLINECHANGES", onlineChanges));
+            if(secureLevel==null?logger.debug("Skipping SECURELEVEL set"):property.setValue("SECURELEVEL", secureLevel));
         }
         
         propertySet.save();
@@ -261,7 +407,7 @@ function __addUpdateProperty(property){
     finally{
         __close(propertySet);
     }
-    service.debug("addUpdateProperty function end");
+    logger.debug("addUpdateProperty function end");
 }
 
 /**
@@ -273,22 +419,22 @@ function __addUpdatePropertyValues(propertyValues){
         assumed structure of propertyValues variable:
         [
             {
-                "propname":"propname",
-                "servername":"servername",
-                "serverhost":"serverhost",
-                "propvalue":"propvalue",
-                "encryptedvalue":"encryptedvalue",
+                "propname":"prop1",
+                "servername":"COMMON",
+                "serverhost":null,
+                "propvalue":"hello",
+                "encryptedvalue":null,
             },
             {
-                "propname":"propname",
-                "servername":"servername",
-                "serverhost":"serverhost",
-                "propvalue":"propvalue",
-                "encryptedvalue":"encryptedvalue",
+                "propname":"prop2",
+                "servername":"COMMON",
+                "serverhost":null,
+                "propvalue":"world",
+                "encryptedvalue":null,
             }
         ]
     */
-    service.debug("Property values JSON: " + propertyValues);
+    logger.debug("Property values JSON: " + JSON.stringify(propertyValues));
     propertyValues.forEach(function(propertyValue){
     __addUpdatePropertyValue(propertyValue);
    });
@@ -299,37 +445,41 @@ function __addUpdatePropertyValues(propertyValues){
  * @param {*} propertyValue single property value that will be added/updated
  */
 function __addUpdatePropertyValue(propertyValue){
-    service.debug("addUpdatePropertyValue function called, passed message " + propertyValue + " argument");
+    logger.debug("addUpdatePropertyValue function called");
+    var propName = propertyValue.propname;
+    var serverName = propertyValue.servername;
+    var serverHost = propertyValue.serverhost;
+    var propValue = propertyValue.propvalue;
+    var encryptedValue = propertyValue.encryptedvalue;
     var propertyValueSet;
     try {
         propertyValueSet = MXServer.getMXServer().getMboSet("MAXPROPVALUE", MXServer.getMXServer().getSystemUserInfo());
         var sqlf = new SqlFormat("propname = :1");
-        sqlf.setObject(1, "MAXPROPVALUE", "PROPNAME", property.propname);
+        sqlf.setObject(1, "MAXPROPVALUE", "PROPNAME", propertyValue.propname);
         propertyValueSet.setWhere(sqlf.format());
-
+        logger.debug("propertyValueSet contains " + propertyValueSet.count() + " records");
         if(propertyValueSet.isEmpty()){
             //property value does not exist, add
-            service.debug("Property value for property" + propertyValue.propname + " does not exist. Adding the property value.");
+            logger.debug("Property value for property" + propertyValue.propname + " does not exist. Adding the property value.");
             var propertyValue = propertyValueSet.add();
-            propertyValue.setValue("PROPNAME", propertyValue.propname);
-            propertyValue.setValue("SERVERNAME", propertyValue.servername);
-            propertyValue.setValue("SERVERHOST", propertyValue.serverhost);
-            propertyValue.setValue("PROPVALUE", propertyValue.propvalue);
-            propertyValue.setValue("ENCRYPTEDVALUE", propertyValue.encryptedvalue);
+            propertyValue.setValue("PROPNAME", propName);
+            propertyValue.setValue("SERVERNAME", serverName);
+            if(serverHost==null?propertyValue.setValueNull("SERVERHOST"):propertyValue.setValue("SERVERHOST", serverHost));
+            if(propValue==null?propertyValue.setValueNull("PROPVALUE"):propertyValue.setValue("PROPVALUE", propValue));
+            if(encryptedValue==null?propertyValue.setValueNull("ENCRYPTEDVALUE"):propertyValue.setValue("ENCRYPTEDVALUE", encryptedValue));
         }
         else{
             //property value exists, update
-            service.debug("Property value for property " + propertyValue.propname + " exists. Updating the property.");
-            var propertyValue = propertyValueSet.moveFirst();
-            propertyValue.setValue("PROPVALUE", propertyValue.propvalue);
-            propertyValue.setValue("ENCRYPTEDVALUE", propertyValue.encryptedvalue);
+            logger.debug("Property value for property " + propertyValue.propname + " exists. Updating the property.");
+            __removePropertyValue(propertyValue);
+            __addUpdatePropertyValue(propertyValue);
         }
         propertyValueSet.save();
     }
     finally{
         __close(propertyValueSet);
     }
-    service.debug("addUpdatePropertyValue function end");
+    logger.debug("addUpdatePropertyValue function end");
 }
 
 /**
@@ -341,38 +491,36 @@ function __removeProperties(properties){
         assumed structure of properties variable:
         [
             {
-                "propname":"propname",
-                "description":"description",
-                "domainid":"domainid",
-                "encrypted":"encrypted",
-                "fileoverride":"fileoverride",
-                "globalonly":"globalonly",
-                "instanceonly":"instanceonly",
-                "liverefresh":"liverefresh",
-                "masked":"masked",
-                "maxtype":"maxtype",
-                "nullsallowed":"nullsallowed",
-                "onlinechanges":"onlinechanges",
-                "securelevel":"securelevel"
+                "propname":"prop1",
+                "description":"first test property",
+                "domainid": null,
+                "encrypted": false,
+                "globalonly": false,
+                "instanceonly": false,
+                "liverefresh":true,
+                "masked": false,
+                "maxtype": "ALN",
+                "nullsallowed": true,
+                "onlinechanges": true,
+                "securelevel": "PUBLIC"
             },
             {
-                "propname":"propname",
-                "description":"description",
-                "domainid":"domainid",
-                "encrypted":"encrypted",
-                "fileoverride":"fileoverride",
-                "globalonly":"globalonly",
-                "instanceonly":"instanceonly",
-                "liverefresh":"liverefresh",
-                "masked":"masked",
-                "maxtype":"maxtype",
-                "nullsallowed":"nullsallowed",
-                "onlinechanges":"onlinechanges",
-                "securelevel":"securelevel"
+                "propname":"prop2",
+                "description":"second test property",
+                "domainid": null,
+                "encrypted": false,
+                "globalonly": false,
+                "instanceonly": false,
+                "liverefresh":true,
+                "masked": false,
+                "maxtype": "ALN",
+                "nullsallowed": true,
+                "onlinechanges": true,
+                "securelevel": "PUBLIC"
             }
         ]
     */
-    service.debug("Properties JSON: " + properties);
+    logger.debug("Properties JSON: " + JSON.stringify(properties));
     properties.forEach(function(property){
         __removeProperty(property);
    });
@@ -383,7 +531,7 @@ function __removeProperties(properties){
  * @param {*} property single property that will be deleted
  */
 function __removeProperty(property){
-    service.debug("removeProperty function called, passed message " + property + " argument");
+    logger.debug("removeProperty function called");
     var propertySet;
     try {
         propertySet = MXServer.getMXServer().getMboSet("MAXPROP", MXServer.getMXServer().getSystemUserInfo());
@@ -393,13 +541,13 @@ function __removeProperty(property){
 
         if(!propertySet.isEmpty()){
             //property exists, delete
-            service.debug("Property " + property.propname + " exists. Deleting the property.");
+            logger.debug("Property " + property.propname + " exists. Deleting the property.");
             var property = propertySet.moveFirst();
             property.delete();
         }
         else{
             //property does not exist
-            service.debug("Property " + property.propname + " does not exist. Taking no action.");
+            logger.debug("Property " + property.propname + " does not exist. Taking no action.");
         }
         
         propertySet.save();
@@ -407,7 +555,7 @@ function __removeProperty(property){
     finally{
         __close(propertySet);
     }
-    service.debug("removeProperty function end");
+    logger.debug("removeProperty function end");
 }
 
 /**
@@ -419,22 +567,22 @@ function __removePropertyValues(propertyValues){
         assumed structure of propertyValues variable:
         [
             {
-                "propname":"propname",
-                "servername":"servername",
-                "serverhost":"serverhost",
-                "propvalue":"propvalue",
-                "encryptedvalue":"encryptedvalue",
+                "propname":"prop1",
+                "servername":"COMMON",
+                "serverhost":null,
+                "propvalue":"hello",
+                "encryptedvalue":null,
             },
             {
-                "propname":"propname",
-                "servername":"servername",
-                "serverhost":"serverhost",
-                "propvalue":"propvalue",
-                "encryptedvalue":"encryptedvalue",
+                "propname":"prop2",
+                "servername":"COMMON",
+                "serverhost":null,
+                "propvalue":"world",
+                "encryptedvalue":null,
             }
         ]
     */
-    service.debug("Property values JSON: " + propertyValues);
+    logger.debug("Property values JSON: " + JSON.stringify(propertyValues));
     propertyValues.forEach(function(propertyValue){
     __removePropertyValue(propertyValue);
    });
@@ -445,58 +593,58 @@ function __removePropertyValues(propertyValues){
  * @param {*} propertyValue single property value that will be deleted
  */
 function __removePropertyValue(propertyValue){
-    service.debug("removePropertyValue function called, passed message " + propertyValue + " argument");
+    logger.debug("removePropertyValue function called");
     var propertyValueSet;
     try {
         propertyValueSet = MXServer.getMXServer().getMboSet("MAXPROPVALUE", MXServer.getMXServer().getSystemUserInfo());
         var sqlf = new SqlFormat("propname = :1");
-        sqlf.setObject(1, "MAXPROPVALUE", "PROPNAME", property.propname);
+        sqlf.setObject(1, "MAXPROPVALUE", "PROPNAME", propertyValue.propname);
         propertyValueSet.setWhere(sqlf.format());
-
+        logger.debug("propertyValueSet contains " + propertyValueSet.count() + " records");
         if(!propertyValueSet.isEmpty()){
             //property value exists, delete
-            service.debug("Property value for property" + propertyValue.propname + " exists. Deleting the property value.");
+            logger.debug("Property value for property" + propertyValue.propname + " exists. Deleting the property value.");
             var propertyValue = propertyValueSet.moveFirst();
             propertyValue.delete();
         }
         else{
             //property value does not exist, do nothing
-            service.debug("Property value for property " + propertyValue.propname + " does not exist. Taking no action.");
+            logger.debug("Property value for property " + propertyValue.propname + " does not exist. Taking no action.");
         }
         propertyValueSet.save();
     }
     finally{
         __close(propertyValueSet);
     }
-    service.debug("removePropertyValue function end");
+    logger.debug("removePropertyValue function end");
 }
 
 
 /**
  * Adds or updates a logger. This relies on the calling function calling save on the provided parent MboSet to save the changes.
  * 
- * @param {*} logger The logger to add.
+ * @param {*} loggerName The logger to add.
  * @param {*} level The log level to set the logger at.
  * @param {*} parent The parent logger to add the child logger to.
  */
-function __addLoggerIfDoesNotExist(logger, level, parent) {
-    service.log_info("Adding or updating the logger " + logger + " and setting the level to " + level + ".");
+function __addLoggerIfDoesNotExist(loggerName, level, parent) {
+    logger.debug("Adding or updating the logger " + loggerName + " and setting the level to " + level + ".");
     var loggerSet;
     try {
         loggerSet = MXServer.getMXServer().getMboSet("MAXLOGGER", MXServer.getMXServer().getSystemUserInfo());
 
         // Query for the log key
         var sqlFormat = new SqlFormat("logkey = :1");
-        sqlFormat.setObject(1, "MAXLOGGER", "LOGKEY", parent.getString("LOGKEY") + "." + logger);
+        sqlFormat.setObject(1, "MAXLOGGER", "LOGKEY", parent.getString("LOGKEY") + "." + loggerName);
 
         loggerSet.setWhere(sqlFormat.format());
         var child;
         // if the logkey does not exist create it, otherwise get the existing logger and update its level.
         if (loggerSet.isEmpty()) {
             child = parent.getMboSet("CHILDLOGGERS").add();
-            child.setValue("LOGGER", logger);
+            child.setValue("LOGGER", loggerName);
             child.setValue("LOGLEVEL", level);
-            service.log_info("Added the logger " + logger + " and set the level to " + level + ".");
+            logger.debug("Added the logger " + loggerName + " and set the level to " + level + ".");
         }
     } finally {
         __close(loggerSet);
