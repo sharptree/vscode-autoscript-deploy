@@ -77,6 +77,81 @@ Message.prototype.setMboValues = function (mbo) {
     });
 };
 
+function Property(property){
+    if (typeof property.propName === 'undefined') {
+        throw new Error("The propName property is required and must a Maximo Property Name field value.");
+    }
+    this.propName = property.propName;
+    this.description = typeof property.description === 'undefined' ? null : property.description;
+    this.domainId = typeof property.domainId === 'undefined' ? null : property.domainId;
+    this.encrypted = typeof property.encrypted === 'undefined' ? false : property.encrypted;
+    this.globalOnly = typeof property.globalOnly === 'undefined' ? false : property.globalOnly;
+    this.instanceOnly = typeof property.instanceOnly === 'undefined' ? false : property.instanceOnly;
+    this.liveRefresh = typeof property.liveRefresh === 'undefined' ? true : property.liveRefresh;
+    this.masked = typeof property.masked === 'undefined' ? false : property.masked;
+    this.maxType = typeof property.maxType === 'undefined' ? "ALN" : property.maxType;
+    this.nullsAllowed = typeof property.nullsAllowed === 'undefined' ? true : property.nullsAllowed;
+    this.onlineChanges = typeof property.onlineChanges === 'undefined' ? true : property.onlineChanges;
+    this.secureLevel = typeof property.secureLevel === 'undefined' ? "PUBLIC" : property.secureLevel;
+    this.propValue = typeof property.propValue === 'undefined' ? null : property.propValue;
+    this.encryptedValue = typeof property.encryptedValue === 'undefined' ? null : property.encryptedValue;
+}
+
+Property.prototype.constructor = Property;
+Property.prototype.setMboValues = function (mbo){
+    if (!mbo) {
+        throw new Error('A Mbo is required to set values from the Properties object.');
+    } else if (!(mbo instanceof Java.type('psdi.mbo.Mbo'))) {
+        throw new Error('The mbo parameter must be an instance of psdi.mbo.Mbo.');
+    } else if (!mbo.isBasedOn('MAXPROP')) {
+        throw new Error('The mbo parameter must be based on the MAXPROP Maximo object.');
+    }
+
+    //maxprop
+    mbo.setValue('PROPNAME', this.propName);
+    if(this.description ? mbo.setValue('DESCRIPTION', this.description) : mbo.setValueNull('DESCRIPTION'));
+    if(this.domainId ? mbo.setValue('DOMAINID', this.domainId) : mbo.setValueNull('DOMAINID'));
+    mbo.setValue('ENCRYPTED', this.encrypted);
+    mbo.setValue('GLOBALONLY', this.globalOnly);
+    mbo.setValue('INSTANCEONLY', this.instanceOnly);
+    mbo.setValue('LIVEREFRESH', this.liveRefresh);
+    mbo.setValue('MASKED', this.masked);
+    mbo.setValue('MAXTYPE', this.maxType);
+    mbo.setValue('NULLSALLOWED', this.nullsAllowed);
+    mbo.setValue('ONLINECHANGES', this.onlineChanges);
+    mbo.setValue('SECURELEVEL', this.secureLevel);
+    //maxpropvalue
+    var maxPropValueSet = mbo.getMboSet("MAXPROPVALUE");
+    maxPropValueSet.deleteAll();
+    var maxPropValueMbo = maxPropValueSet.add();
+    
+    if(propValue){
+        maxPropValueMbo.setValue("PROPVALUE", propValue);
+        maxPropValueMbo.setValueNull("ENCRYPTEDVALUE");
+    }
+    else if (this.encryptedValue){
+        maxPropValueMbo.setValue("ENCRYPTEDVALUE");
+        maxPropValueMbo.setValueNull("PROPVALUE");
+    }
+    maxPropValueMbo.setValue("SERVERNAME", "COMMON");
+    maxPropValueSet.save();
+
+}
+
+/**
+ * Deploys the array of messages, properties, or other items.
+ * @param {*} config A JSON array of messages, properties, and other items to be added, updated, or deleted.
+ */
+function deploy(config){
+    logger.debug('Configs: \n' + JSON.stringify(config, null, 4));
+    if(config.messages !== 'undefined'){
+        deployMessages(config.messages);
+    }
+    if(config.properties !== 'undefined'){
+        deployProperties(config.properties);
+    }
+}
+
 /**
  * Deploys the array of messages provided. If a message has the property of delete set to true, that message 
  * will be deleted based on the message's msgId or msgGroup and msgKey.
@@ -84,7 +159,7 @@ Message.prototype.setMboValues = function (mbo) {
  * @param {*} messages A JSON array of messages to be added, updated or deleted
  */
 function deployMessages(messages) {
-    if (!message || !Array.isArray(message)) {
+    if (!messages || !Array.isArray(messages)) {
         throw new Error('The messages parameter is required and must be an array of message objects.');
     }
 
@@ -178,210 +253,51 @@ function deleteMessage(message) {
 }
 
 /**
- *
+ * Deploys the array of properties provided. If a property has the value of delete set to true, that property 
+ * will be deleted based on the property's propName.
  * @param {*} properties JSON representation of properties to be added/updated
  */
-function addUpdateProperties(properties) {
-    /*
-          assumed structure of properties variable:
-          [
-              {
-                  "propname":"prop1",
-                  "description":"first test property",
-                  "domainid": null,
-                  "encrypted": false,
-                  "globalonly": false,
-                  "instanceonly": false,
-                  "liverefresh":true,
-                  "masked": false,
-                  "maxtype": "ALN",
-                  "nullsallowed": true,
-                  "onlinechanges": true,
-                  "securelevel": "PUBLIC"
-              },
-              {
-                  "propname":"prop2",
-                  "description":"second test property",
-                  "domainid": null,
-                  "encrypted": false,
-                  "globalonly": false,
-                  "instanceonly": false,
-                  "liverefresh":true,
-                  "masked": false,
-                  "maxtype": "ALN",
-                  "nullsallowed": true,
-                  "onlinechanges": true,
-                  "securelevel": "PUBLIC"
-              }
-          ]
-      */
-    if (
-        Array.isArray(properties) &&
-        properties !== undefined &&
-        properties.length > 0
-    ) {
-        logger.debug('Properties JSON: ' + JSON.stringify(properties, null, 4));
-        properties.forEach(function (property) {
-            __addUpdateProperty(property);
-        });
+function deployProperties(properties) {
+    if (!properties || !Array.isArray(properties)) {
+        throw new Error('The properties parameter is required and must be an array of property objects.');
     }
+
+    logger.debug('Properties: \n' + JSON.stringify(properties, null, 4));
+
+    properties.forEach(function (property) {
+        if (typeof property.delete !== 'undefined' && property.delete) {
+            deleteProperty(property);
+        } else {
+            addOrUpdateProperty(property);
+        }
+    });
 }
 
 /**
- *
+ * Adds a property if it does not exist or updates it to match the described state if the property exists.
  * @param {*} property single property that will be added/updated
  */
-function __addUpdateProperty(property) {
+function addOrUpdateProperty(property) {
     logger.debug('addUpdateProperty function called');
-    var propName = property.propname;
-    var description = property.description;
-    var domainid = property.domainid;
-    var encrypted = property.encrypted;
-    var globalOnly = property.globalonly;
-    var instanceOnly = property.instanceonly;
-    var liveRefresh = property.liverefresh;
-    var masked = property.masked;
-    var maxtype = property.maxtype;
-    var nullsAllowed = property.nullsallowed;
-    var onlineChanges = property.onlinechanges;
-    var secureLevel = property.securelevel;
-    var propertySet;
+
     try {
         propertySet = MXServer.getMXServer().getMboSet(
             'MAXPROP',
             MXServer.getMXServer().getSystemUserInfo()
         );
+        var prop = new Property(property);
         var sqlf = new SqlFormat('propname = :1');
         sqlf.setObject(1, 'MAXPROP', 'PROPNAME', property.propname);
         propertySet.setWhere(sqlf.format());
         logger.debug('Property set contains ' + propertySet.count() + ' records');
-        if (propertySet.isEmpty()) {
-            //property does not exist, add
-            logger.debug(
-                'Property ' +
-                property.propname +
-                ' does not exist. Adding the property.'
-            );
-            var property = propertySet.add();
-            property.setValue('PROPNAME', propName);
-            if (
-                description
-                    ? property.setValueNull('DESCRIPTION')
-                    : property.setValue('DESCRIPTION', description)
-            );
-            if (
-                domainid
-                    ? property.setValueNull('DOMAINID')
-                    : property.setValue('DOMAINID', domainid)
-            );
-            if (
-                encrypted
-                    ? property.setValue('ENCRYPTED', false)
-                    : property.setValue('ENCRYPTED', encrypted)
-            );
-            if (
-                globalOnly
-                    ? property.setValue('GLOBALONLY', false)
-                    : property.setValue('GLOBALONLY', globalOnly)
-            );
-            if (
-                instanceOnly
-                    ? property.setValue('INSTANCEONLY', false)
-                    : property.setValue('INSTANCEONLY', instanceOnly)
-            );
-            if (
-                liveRefresh
-                    ? property.setValue('LIVEREFRESH', true)
-                    : property.setValue('LIVEREFRESH', liveRefresh)
-            );
-            if (
-                masked
-                    ? property.setValue('MASKED', false)
-                    : property.setValue('MASKED', masked)
-            );
-            if (
-                maxtype
-                    ? property.setValue('MAXTYPE', 'ALN')
-                    : property.setValue('MAXTYPE', maxtype)
-            );
-            if (
-                nullsAllowed
-                    ? property.setValue('NULLSALLOWED', true)
-                    : property.setValue('NULLSALLOWED', nullsAllowed)
-            );
-            if (
-                onlineChanges
-                    ? property.setValue('ONLINECHANGES', true)
-                    : property.setValue('ONLINECHANGES', onlineChanges)
-            );
-            if (
-                secureLevel
-                    ? property.setValue('SECURELEVEL', 'PUBLIC')
-                    : property.setValue('SECURELEVEL', secureLevel)
-            );
-        } else {
-            //property exists, update
-            logger.debug(
-                'Property ' + property.propname + ' exists. Updating the property.'
-            );
-            var property = propertySet.moveFirst();
-            if (
-                description
-                    ? logger.debug('Skipping DESCRIPTION set')
-                    : property.setValue('DESCRIPTION', description)
-            );
-            if (
-                domainid
-                    ? logger.debug('Skipping DOMAINID set')
-                    : property.setValue('DOMAINID', domainid)
-            );
-            if (
-                encrypted
-                    ? logger.debug('Skipping ENCRYPTED set')
-                    : property.setValue('ENCRYPTED', encrypted)
-            );
-            if (
-                globalOnly
-                    ? logger.debug('Skipping GLOBALONLY set')
-                    : property.setValue('GLOBALONLY', globalOnly)
-            );
-            if (
-                instanceOnly
-                    ? logger.debug('Skipping INSTANCEONLY set')
-                    : property.setValue('INSTANCEONLY', instanceOnly)
-            );
-            if (
-                liveRefresh
-                    ? logger.debug('Skipping LIVEREFRESH set')
-                    : property.setValue('LIVEREFRESH', liveRefresh)
-            );
-            if (
-                masked
-                    ? logger.debug('Skipping MASKED set')
-                    : property.setValue('MASKED', masked)
-            );
-            if (
-                maxtype
-                    ? logger.debug('Skipping MAXTYPE set')
-                    : property.setValue('MAXTYPE', maxtype)
-            );
-            if (
-                nullsAllowed
-                    ? logger.debug('Skipping NULLSALLOWED set')
-                    : property.setValue('NULLSALLOWED', nullsAllowed)
-            );
-            if (
-                onlineChanges
-                    ? logger.debug('Skipping ONLINECHANGES set')
-                    : property.setValue('ONLINECHANGES', onlineChanges)
-            );
-            if (
-                secureLevel
-                    ? logger.debug('Skipping SECURELEVEL set')
-                    : property.setValue('SECURELEVEL', secureLevel)
-            );
+        if (!propertySet.isEmpty()) {
+            propertySet.getMbo(0).delete();
+            propertySet.save();
+            propertySet.reset();
         }
 
+        prop.setMboValues(propertySet.add());
+        propertySet.save();
         propertySet.save();
     } finally {
         __libraryClose(propertySet);
@@ -389,275 +305,51 @@ function __addUpdateProperty(property) {
     logger.debug('addUpdateProperty function end');
 }
 
-/**
- *
- * @param {*} propertyValues JSON representation of property values to be added/updated
- */
-function addUpdatePropertyValues(propertyValues) {
-    /*
-          assumed structure of propertyValues variable:
-          [
-              {
-                  "propname":"prop1",
-                  "servername":"COMMON",
-                  "serverhost":null,
-                  "propvalue":"hello",
-                  "encryptedvalue":null,
-              },
-              {
-                  "propname":"prop2",
-                  "servername":"COMMON",
-                  "serverhost":null,
-                  "propvalue":"world",
-                  "encryptedvalue":null,
-              }
-          ]
-      */
-    if (
-        Array.isArray(propertyValues) &&
-        propertyValues !== undefined &&
-        propertyValues.length > 0
-    ) {
-        logger.debug(
-            'Property values JSON: ' + JSON.stringify(propertyValues, null, 4)
-        );
-        propertyValues.forEach(function (propertyValue) {
-            __addUpdatePropertyValue(propertyValue);
-        });
-    }
-}
 
 /**
- *
- * @param {*} propertyValue single property value that will be added/updated
- */
-function __addUpdatePropertyValue(propertyValue) {
-    logger.debug('addUpdatePropertyValue function called');
-    var propName = propertyValue.propname;
-    var serverName = propertyValue.servername;
-    var serverHost = propertyValue.serverhost;
-    var propValue = propertyValue.propvalue;
-    var encryptedValue = propertyValue.encryptedvalue;
-    var propertyValueSet;
-    try {
-        propertyValueSet = MXServer.getMXServer().getMboSet(
-            'MAXPROPVALUE',
-            MXServer.getMXServer().getSystemUserInfo()
-        );
-        var sqlf = new SqlFormat('propname = :1');
-        sqlf.setObject(1, 'MAXPROPVALUE', 'PROPNAME', propertyValue.propname);
-        propertyValueSet.setWhere(sqlf.format());
-        logger.debug(
-            'propertyValueSet contains ' + propertyValueSet.count() + ' records'
-        );
-        if (propertyValueSet.isEmpty()) {
-            //property value does not exist, add
-            logger.debug(
-                'Property value for property' +
-                propertyValue.propname +
-                ' does not exist. Adding the property value.'
-            );
-            var propertyValue = propertyValueSet.add();
-            propertyValue.setValue('PROPNAME', propName);
-            propertyValue.setValue('SERVERNAME', serverName);
-            if (
-                serverHost
-                    ? propertyValue.setValueNull('SERVERHOST')
-                    : propertyValue.setValue('SERVERHOST', serverHost)
-            );
-            if (
-                propValue
-                    ? propertyValue.setValueNull('PROPVALUE')
-                    : propertyValue.setValue('PROPVALUE', propValue)
-            );
-            if (
-                encryptedValue
-                    ? propertyValue.setValueNull('ENCRYPTEDVALUE')
-                    : propertyValue.setValue('ENCRYPTEDVALUE', encryptedValue)
-            );
-        } else {
-            //property value exists, update
-            logger.debug(
-                'Property value for property ' +
-                propertyValue.propname +
-                ' exists. Updating the property.'
-            );
-            __removePropertyValue(propertyValue);
-            __addUpdatePropertyValue(propertyValue);
-        }
-        propertyValueSet.save();
-    } finally {
-        __libraryClose(propertyValueSet);
-    }
-    logger.debug('addUpdatePropertyValue function end');
-}
-
-/**
- *
- * @param {*} properties JSON representation of properties to be deleted
- */
-function removeProperties(properties) {
-    /*
-          assumed structure of properties variable:
-          [
-              {
-                  "propname":"prop1",
-                  "description":"first test property",
-                  "domainid": null,
-                  "encrypted": false,
-                  "globalonly": false,
-                  "instanceonly": false,
-                  "liverefresh":true,
-                  "masked": false,
-                  "maxtype": "ALN",
-                  "nullsallowed": true,
-                  "onlinechanges": true,
-                  "securelevel": "PUBLIC"
-              },
-              {
-                  "propname":"prop2",
-                  "description":"second test property",
-                  "domainid": null,
-                  "encrypted": false,
-                  "globalonly": false,
-                  "instanceonly": false,
-                  "liverefresh":true,
-                  "masked": false,
-                  "maxtype": "ALN",
-                  "nullsallowed": true,
-                  "onlinechanges": true,
-                  "securelevel": "PUBLIC"
-              }
-          ]
-      */
-    if (
-        Array.isArray(properties) &&
-        properties !== undefined &&
-        properties.length > 0
-    ) {
-        logger.debug('Properties JSON: ' + JSON.stringify(properties, null, 4));
-        properties.forEach(function (property) {
-            __removeProperty(property);
-        });
-    }
-}
-
-/**
- *
+ * Removes the provided property by matching the propName property.
  * @param {*} property single property that will be deleted
  */
-function __removeProperty(property) {
-    logger.debug('removeProperty function called');
-    var propertySet;
+function deleteProperty(property) {
+
+    logger.debug(
+        'deleteProperty function called, passed property ' + property + ' argument'
+    );
+
+    if (!property) {
+        throw new Error('The property parameter is required for the deleteProperty function.');
+    }
+
+    var maxPropSet;
     try {
-        propertySet = MXServer.getMXServer().getMboSet(
+        maxPropSet = MXServer.getMXServer().getMboSet(
             'MAXPROP',
             MXServer.getMXServer().getSystemUserInfo()
         );
         var sqlf = new SqlFormat('propname = :1');
-        sqlf.setObject(1, 'MAXPROP', 'PROPNAME', property.propname);
-        propertySet.setWhere(sqlf.format());
+        sqlf.setObject(1, 'MAXPROP', 'PROPNAME', property.propName);
+        maxPropSet.setWhere(sqlf.format());
 
-        if (!propertySet.isEmpty()) {
+        if (!maxPropSet.isEmpty()) {
             //property exists, delete
             logger.debug(
-                'Property ' + property.propname + ' exists. Deleting the property.'
+                'Property ' + property.propName + ' exists. Deleting the property.'
             );
-            var property = propertySet.moveFirst();
-            property.delete();
+            maxPropSet.deleteAll();
         } else {
             //property does not exist
             logger.debug(
-                'Property ' + property.propname + ' does not exist. Taking no action.'
+                'Property ' + property.propName + ' does not exist. Taking no action.'
             );
         }
 
-        propertySet.save();
+        maxPropSet.save();
     } finally {
-        __libraryClose(propertySet);
+        __libraryClose(maxPropSet);
     }
     logger.debug('removeProperty function end');
 }
 
-/**
- *
- * @param {*} propertyValues JSON representation of property values to be deleted
- */
-function removePropertyValues(propertyValues) {
-    /*
-          assumed structure of propertyValues variable:
-          [
-              {
-                  "propname":"prop1",
-                  "servername":"COMMON",
-                  "serverhost":null,
-                  "propvalue":"hello",
-                  "encryptedvalue":null,
-              },
-              {
-                  "propname":"prop2",
-                  "servername":"COMMON",
-                  "serverhost":null,
-                  "propvalue":"world",
-                  "encryptedvalue":null,
-              }
-          ]
-      */
-    if (
-        Array.isArray(propertyValues) &&
-        propertyValues !== undefined &&
-        propertyValues.length > 0
-    ) {
-        logger.debug(
-            'Property values JSON: ' + JSON.stringify(propertyValues, null, 4)
-        );
-        propertyValues.forEach(function (propertyValue) {
-            __removePropertyValue(propertyValue);
-        });
-    }
-}
-
-/**
- *
- * @param {*} propertyValue single property value that will be deleted
- */
-function __removePropertyValue(propertyValue) {
-    logger.debug('removePropertyValue function called');
-    var propertyValueSet;
-    try {
-        propertyValueSet = MXServer.getMXServer().getMboSet(
-            'MAXPROPVALUE',
-            MXServer.getMXServer().getSystemUserInfo()
-        );
-        var sqlf = new SqlFormat('propname = :1');
-        sqlf.setObject(1, 'MAXPROPVALUE', 'PROPNAME', propertyValue.propname);
-        propertyValueSet.setWhere(sqlf.format());
-        logger.debug(
-            'propertyValueSet contains ' + propertyValueSet.count() + ' records'
-        );
-        if (!propertyValueSet.isEmpty()) {
-            //property value exists, delete
-            logger.debug(
-                'Property value for property' +
-                propertyValue.propname +
-                ' exists. Deleting the property value.'
-            );
-            var propertyValue = propertyValueSet.moveFirst();
-            propertyValue.delete();
-        } else {
-            //property value does not exist, do nothing
-            logger.debug(
-                'Property value for property ' +
-                propertyValue.propname +
-                ' does not exist. Taking no action.'
-            );
-        }
-        propertyValueSet.save();
-    } finally {
-        __libraryClose(propertyValueSet);
-    }
-    logger.debug('removePropertyValue function end');
-}
 
 /**
  * Adds or updates a logger. This relies on the calling function calling save on the provided parent MboSet to save the changes.
