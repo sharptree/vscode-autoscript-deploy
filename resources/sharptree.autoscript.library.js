@@ -39,11 +39,17 @@ if (typeof Array.prototype.find != 'function') {
 function CronTask(cronTask) {
 
     if (!cronTask) {
-        throw new Error('A integration object JSON is required to create the CronTask object.');
+        throw new Error(
+            'A integration object JSON is required to create the CronTask object.'
+        );
     } else if (typeof cronTask.cronTaskName === 'undefined') {
-        throw new Error('The cronTaskName property is required and must a Maximo CronTask field value.');
+        throw new Error(
+            'The cronTaskName property is required and must a Maximo CronTask field value.'
+        );
     } else if (typeof cronTask.className === 'undefined') {
-        throw new Error('The className property is required and must a Maximo CronTask field value.');
+        throw new Error(
+            'The className property is required and must a Maximo CronTask field value.'
+        );
     }
 
     this.cronTaskName = cronTask.cronTaskName;
@@ -51,9 +57,9 @@ function CronTask(cronTask) {
     this.className = cronTask.className;
     this.accessLevel = typeof cronTask.accessLevel === 'undefined' || !cronTask.accessLevel ? 'FULL' : cronTask.accessLevel;
 
-
     if (typeof cronTask.cronTaskInstance !== 'undefined' && Array.isArray(cronTask.cronTaskInstance)) {
         cronTask.cronTaskInstance.forEach(function (instance) {
+
             if (typeof instance.instanceName === 'undefined' || !instance.instanceName) {
                 throw new Error('The CronTask object ' + cronTask.cronTaskName + ' instance is missing a name property for the instance name.');
             }
@@ -77,7 +83,9 @@ function CronTask(cronTask) {
                 instance.cronTaskParam = [];
             }
         });
+
         this.cronTaskInstance = cronTask.cronTaskInstance;
+
     } else {
         this.cronTaskInstance = [];
     }
@@ -86,11 +94,17 @@ function CronTask(cronTask) {
 CronTask.prototype.constructor = CronTask;
 CronTask.prototype.setMboValues = function (mbo) {
     if (!mbo) {
-        throw new Error('A Mbo is required to set values from the CronTask object.');
+        throw new Error(
+            'A Mbo is required to set values from the CronTask object.'
+        );
     } else if (!(mbo instanceof Java.type('psdi.mbo.Mbo'))) {
-        throw new Error('The mbo parameter must be an instance of psdi.mbo.Mbo.');
+        throw new Error(
+            'The mbo parameter must be an instance of psdi.mbo.Mbo.'
+        );
     } else if (!mbo.isBasedOn('CRONTASKDEF')) {
-        throw new Error('The mbo parameter must be based on the CRONTASKDEF Maximo object.');
+        throw new Error(
+            'The mbo parameter must be based on the CRONTASKDEF Maximo object.'
+        );
     }
 
     if (mbo.toBeAdded()) {
@@ -132,7 +146,9 @@ CronTask.prototype.setMboValues = function (mbo) {
 
 function Message(message) {
     if (!message) {
-        throw new Error('A message JSON is required to create the Message object.');
+        throw new Error(
+            'A message JSON is required to create the Message object.'
+        );
     } else if (typeof message.msgGroup === 'undefined') {
         throw new Error(
             'The msgGroup property is required and must a Maximo Message Group field value.'
@@ -151,25 +167,22 @@ function Message(message) {
     this.msgKey = message.msgKey;
     this.value = message.value;
     this.msgId = typeof message.msgId === 'undefined' ? null : message.msgId;
-    this.displayMethod =
-        typeof message.displayMethod === 'undefined'
-            ? 'MSGBOX'
-            : message.displayMethod;
-    this.options =
-        typeof message.options === 'undefined' || !Array.isArray(message.options)
-            ? ['ok']
-            : message.options;
-    this.prefix =
-        typeof message.prefix === 'undefined' ? 'BMXZZ' : message.prefix;
+    this.displayMethod = typeof message.displayMethod === 'undefined' ? 'MSGBOX' : message.displayMethod;
+    this.options = typeof message.options === 'undefined' || !Array.isArray(message.options) ? ['ok'] : message.options;
+    this.prefix = typeof message.prefix === 'undefined' ? 'BMXZZ' : message.prefix;
     this.suffix = typeof message.suffix === 'undefined' ? 'E' : message.suffix;
 }
 
 Message.prototype.constructor = Message;
 Message.prototype.setMboValues = function (mbo) {
     if (!mbo) {
-        throw new Error('A Mbo is required to set values from the Message object.');
+        throw new Error(
+            'A Mbo is required to set values from the Message object.'
+        );
     } else if (!(mbo instanceof Java.type('psdi.mbo.Mbo'))) {
-        throw new Error('The mbo parameter must be an instance of psdi.mbo.Mbo.');
+        throw new Error(
+            'The mbo parameter must be an instance of psdi.mbo.Mbo.'
+        );
     } else if (!mbo.isBasedOn('MAXMESSAGES')) {
         throw new Error(
             'The mbo parameter must be based on the MAXMESSAGES Maximo object.'
@@ -219,41 +232,45 @@ function Property(property) {
             'The propName property is required and must be a Maximo Property Name field value.'
         );
     }
+
     this.propName = property.propName;
-    this.description =
-        typeof property.description === 'undefined' ? null : property.description;
-    this.domainId =
-        typeof property.domainId === 'undefined' ? null : property.domainId;
-    this.encrypted =
-        typeof property.encrypted === 'undefined' ? false : property.encrypted;
-    this.globalOnly =
-        typeof property.globalOnly === 'undefined' ? false : property.globalOnly;
-    this.instanceOnly =
-        typeof property.instanceOnly === 'undefined'
-            ? false
-            : property.instanceOnly;
-    this.liveRefresh =
-        typeof property.liveRefresh === 'undefined' ? true : property.liveRefresh;
-    this.masked =
-        typeof property.masked === 'undefined' ? false : property.masked;
-    this.maxType =
-        typeof property.maxType === 'undefined' ? 'ALN' : property.maxType;
-    this.nullsAllowed =
-        typeof property.nullsAllowed === 'undefined' ? true : property.nullsAllowed;
-    this.onlineChanges =
-        typeof property.onlineChanges === 'undefined'
-            ? true
-            : property.onlineChanges;
-    this.secureLevel =
-        typeof property.secureLevel === 'undefined'
-            ? 'PUBLIC'
-            : property.secureLevel;
-    this.propValue =
-        typeof property.propValue === 'undefined' ? null : property.propValue;
-    this.encryptedValue =
-        typeof property.encryptedValue === 'undefined'
-            ? null
-            : property.encryptedValue;
+    this.description = typeof property.description === 'undefined' ? '' : property.description;
+    this.domainId = typeof property.domainId === 'undefined' ? '' : property.domainId;
+    this.encrypted = typeof property.encrypted === 'undefined' ? false : property.encrypted == true;
+    this.globalOnly = typeof property.globalOnly === 'undefined' ? false : property.globalOnly == true;
+    this.instanceOnly = typeof property.instanceOnly === 'undefined' ? false : property.instanceOnly == true;
+    this.liveRefresh = typeof property.liveRefresh === 'undefined' ? true : property.liveRefresh == true;
+    this.masked = typeof property.masked === 'undefined' ? false : property.masked == true;
+    this.maxType = typeof property.maxType === 'undefined' ? 'ALN' : property.maxType;
+    this.nullsAllowed = typeof property.nullsAllowed === 'undefined' ? true : property.nullsAllowed == true;
+    this.onlineChanges = typeof property.onlineChanges === 'undefined' ? true : property.onlineChanges == true;
+    this.secureLevel = typeof property.secureLevel === 'undefined' ? 'PUBLIC' : property.secureLevel;
+    this.propValue = typeof property.propValue === 'undefined' ? '' : property.propValue;
+    this.encryptedValue = typeof property.encryptedValue === 'undefined' ? '' : property.encryptedValue;
+    this.maximoDefault = typeof property.maximoDefault === 'undefined' ? '' : property.maximoDefault;
+    if (property.maxPropInstance && Array.isArray(property.maxPropInstance)) {
+        property.maxPropInstance.forEach(function (instance) {
+
+            if (typeof instance.serverName === 'undefined' || !instance.serverName) {
+                throw new Error(
+                    'A property instance for property ' + property.propName + ' is missing or has an empty value for the required serverName property.'
+                );
+            }
+
+            if (instance.serverName.toLowerCase() == 'common') {
+                throw new Error(
+                    'A property instance for property ' + property.propName + ' has a value of COMMON for the serverName property, define COMMON property values using the dispPropValue property on the root property object.'
+                );
+            }
+
+            instance.propValue = typeof instance.propValue === 'undefined' ? '' : instance.propValue;
+            instance.serverHost = typeof instance.serverHost === 'undefined' ? '' : instance.serverHost;
+        });
+
+        this.maxPropInstance = property.maxPropInstance;
+    } else {
+        this.maxPropInstance = [];
+    }
 }
 
 Property.prototype.constructor = Property;
@@ -263,34 +280,55 @@ Property.prototype.setMboValues = function (mbo) {
             'A Mbo is required to set values from the Properties object.'
         );
     } else if (!(mbo instanceof Java.type('psdi.mbo.Mbo'))) {
-        throw new Error('The mbo parameter must be an instance of psdi.mbo.Mbo.');
+        throw new Error(
+            'The mbo parameter must be an instance of psdi.mbo.Mbo.'
+        );
     } else if (!mbo.isBasedOn('MAXPROP')) {
         throw new Error(
             'The mbo parameter must be based on the MAXPROP Maximo object.'
         );
     }
 
-    //maxprop
-    mbo.setValue('PROPNAME', this.propName);
-    if (
-        this.description
-            ? mbo.setValue('DESCRIPTION', this.description)
-            : mbo.setValueNull('DESCRIPTION')
-    );
-    if (
-        this.domainId
-            ? mbo.setValue('DOMAINID', this.domainId)
-            : mbo.setValueNull('DOMAINID')
-    );
-    mbo.setValue('ENCRYPTED', this.encrypted);
-    mbo.setValue('GLOBALONLY', this.globalOnly);
-    mbo.setValue('INSTANCEONLY', this.instanceOnly);
-    mbo.setValue('LIVEREFRESH', this.liveRefresh);
-    mbo.setValue('MASKED', this.masked);
-    mbo.setValue('MAXTYPE', this.maxType);
-    mbo.setValue('NULLSALLOWED', this.nullsAllowed);
-    mbo.setValue('ONLINECHANGES', this.onlineChanges);
-    mbo.setValue('SECURELEVEL', this.secureLevel);
+    // if this is a system only a select few things can be altered and the property can't be deleted.
+    if (mbo.isSystemProperty()) {
+        mbo.setValue('DESCRIPTION', this.description);
+        mbo.setValue('ENCRYPTED', this.encrypted);
+        mbo.setValue('MASKED', this.masked);
+        mbo.setValue('DISPPROPVALUE', this.propValue);
+    } else {
+        if (mbo.toBeAdded()) {
+            mbo.setValue('PROPNAME', this.propName);
+        }
+        mbo.setValue('MAXIMODEFAULT', this.maximoDefault, MboConstants.NOACCESSCHECK);
+        mbo.setValue('DESCRIPTION', this.description);
+        mbo.setValue('DOMAINID', this.domainId);
+        mbo.setValue('ENCRYPTED', this.encrypted);
+        mbo.setValue('GLOBALONLY', this.globalOnly);
+        mbo.setValue('INSTANCEONLY', this.instanceOnly);
+        mbo.setValue('LIVEREFRESH', this.liveRefresh);
+        mbo.setValue('MASKED', this.masked);
+        mbo.setValue('MAXTYPE', this.maxType);
+        mbo.setValue('NULLSALLOWED', this.nullsAllowed);
+        mbo.setValue('ONLINECHANGES', this.onlineChanges);
+        mbo.setValue('SECURELEVEL', this.secureLevel);
+
+        if (!this.instanceOnly) {
+            mbo.setValue('DISPPROPVALUE', this.propValue);
+        }
+    }
+    
+    var maxPropInstanceSet = mbo.getMboSet('MAXPROPINSTANCE');
+    maxPropInstanceSet.deleteAll();
+
+    if (!this.globalOnly) {        
+        this.maxPropInstance.forEach(function (instance) {
+            maxPropInstance = maxPropInstanceSet.add();
+            maxPropInstance.setValue('DISPPROPVALUE', instance.propValue);
+            maxPropInstance.setValue('SERVERNAME', instance.serverName);
+            maxPropInstance.setValue('SERVERHOST', instance.serverHost);
+        });
+    }
+    return;
 };
 
 function IntegrationObject(intObject) {
@@ -320,11 +358,15 @@ function IntegrationObject(intObject) {
 
 
     if (intObject.maxIntObjDetails.find(function (maxIntObjDetail) { return typeof maxIntObjDetail.objectName === 'undefined' || !maxIntObjDetail.objectName; })) {
-        throw new Error('The integration object ' + this.intObjectName + ' contains a object detail record that does not contain an object name.');
+        throw new Error(
+            'The integration object ' + this.intObjectName + ' contains a object detail record that does not contain an object name.'
+        );
     }
 
     if (intObject.maxIntObjDetails.find(function (maxIntObjDetail) { return typeof maxIntObjDetail.parentObjName !== 'undefined' && maxIntObjDetail.parentObjName && (typeof maxIntObjDetail.relation === 'undefined' || !maxIntObjDetail.relation); })) {
-        throw new Error('The integration object ' + this.intObjectName + ' contains a child object detail record that does not contain a relation name.');
+        throw new Error(
+            'The integration object ' + this.intObjectName + ' contains a child object detail record that does not contain a relation name.'
+        );
     }
 
     var parents = intObject.maxIntObjDetails.filter(function (maxIntObjDetail) {
@@ -332,11 +374,15 @@ function IntegrationObject(intObject) {
     });
 
     if (parents.length == 0) {
-        throw new Error('The integration object ' + this.intObjectName + ' does not have a top level object detail record, a top level parent must be defined for an integration object.');
+        throw new Error(
+            'The integration object ' + this.intObjectName + ' does not have a top level object detail record, a top level parent must be defined for an integration object.'
+        );
     }
 
     if (parents.length > 1) {
-        throw new Error('The integration object ' + this.intObjectName + ' has more than one top level object detail record, only one top level parent can be defined for an integration object.');
+        throw new Error(
+            'The integration object ' + this.intObjectName + ' has more than one top level object detail record, only one top level parent can be defined for an integration object.'
+        );
     }
 
     intObject.maxIntObjDetails.forEach(function (maxIntObjDetail) {
@@ -1063,7 +1109,7 @@ function deployMessages(messages) {
 
 /**
  * Adds a message if it does not exist or updates it to match the described state if the message exists.
- * @param {*} message single message that will be added/updated
+ * @param {Message} message single message that will be added/updated
  */
 function addOrUpdateMessage(message) {
     logger.debug('addUpdateMessage function called');
@@ -1100,40 +1146,24 @@ function addOrUpdateMessage(message) {
 }
 
 /**
- * Removes the provided message by either matching the msgId or if not available, matching the msgGroup and msgKey properties.
+ * Removes the provided message by matching the msgGroup and msgKey properties.
  *
- * @param {*} message single message that will be deleted
+ * @param {Message} message single message that will be deleted.
  */
 function deleteMessage(message) {
-    logger.debug(
-        'removeMessage function called, passed message ' + message + ' argument'
-    );
-
     if (!message) {
-        throw new Error(
-            'The message parameter is required for the removeMessage function.'
-        );
+        throw new Error('The message parameter is required for the removeMessage function.');
     }
 
-    var sqlf;
+    var messageObj = new Message(message);
 
-    if (typeof message.msgId !== 'undefined') {
-        sqlf = new SqlFormat('msgid = :1');
-        sqlf.setObject(1, 'MAXMESSAGES', 'MSGID', message.msgId);
-    } else if (
-        typeof message.msgGroup !== 'undefined' &&
-        typeof message.msgKey !== 'undefined'
-    ) {
-        sqlf = new SqlFormat('msggroup = :1 and msgkey = :2');
-        sqlf.setObject(1, 'MAXMESSAGES', 'MSGGROUP', message.msgGroup);
-        sqlf.setObject(2, 'MAXMESSAGES', 'MSGKEY', message.msgKey);
-    }
+    var sqlf = new SqlFormat('msggroup = :1 and msgkey = :2');
+    sqlf.setObject(1, 'MAXMESSAGES', 'MSGGROUP', messageObj.msgGroup);
+    sqlf.setObject(2, 'MAXMESSAGES', 'MSGKEY', messageObj.msgKey);
+
     var messageSet;
     try {
-        messageSet = MXServer.getMXServer().getMboSet(
-            'MAXMESSAGES',
-            MXServer.getMXServer().getSystemUserInfo()
-        );
+        messageSet = MXServer.getMXServer().getMboSet('MAXMESSAGES', MXServer.getMXServer().getSystemUserInfo());
 
         messageSet.setWhere(sqlf.format());
 
@@ -1143,23 +1173,18 @@ function deleteMessage(message) {
     } finally {
         __libraryClose(messageSet);
     }
-    logger.debug('removeMessage function end');
 }
 
 /**
  * Deploys the array of properties provided. If a property has the value of delete set to true, that property
  * will be deleted based on the property's propName.
  * 
- * @param {*} properties JSON representation of properties to be added/updated
+ * @param {Property[]} properties a JSON array of properties to be added, updated or deleted.
  */
 function deployProperties(properties) {
     if (!properties || !Array.isArray(properties)) {
-        throw new Error(
-            'The properties parameter is required and must be an array of property objects.'
-        );
+        throw new Error('The properties parameter is required and must be an array of property objects.');
     }
-
-    logger.debug('Deploying Properties: \n' + JSON.stringify(properties, null, 4));
 
     properties.forEach(function (property) {
         if (typeof property.delete !== 'undefined' && property.delete == true) {
@@ -1173,59 +1198,35 @@ function deployProperties(properties) {
 /**
  * Adds a property if it does not exist or updates it to match the described state if the property exists.
  * 
- * @param {*} property single property that will be added/updated
+ * @param {Property} property single property that will be added or updated if it already exists.
  */
 function addOrUpdateProperty(property) {
-    logger.debug('addUpdateProperty function called');
-
+    var maxPropertySet;
     try {
-        propertySet = MXServer.getMXServer().getMboSet(
-            'MAXPROP',
-            MXServer.getMXServer().getSystemUserInfo()
-        );
-        var prop = new Property(property);
+        var propertyObj = new Property(property);
+
+        maxPropertySet = MXServer.getMXServer().getMboSet('MAXPROP', MXServer.getMXServer().getSystemUserInfo());
+
         var sqlf = new SqlFormat('propname = :1');
-        sqlf.setObject(1, 'MAXPROP', 'PROPNAME', property.propName);
-        propertySet.setWhere(sqlf.format());
-        logger.debug('Property set contains ' + propertySet.count() + ' records');
-        var maxPropValueSet;
-        if (!propertySet.isEmpty()) {
-            var tempProp = propertySet.getMbo(0);
-            maxPropValueSet = tempProp.getMboSet('MAXPROPVALUE');
-            maxPropValueSet.deleteAll();
-            tempProp.delete();
-            propertySet.save();
-            propertySet.reset();
+        sqlf.setObject(1, 'MAXPROP', 'PROPNAME', propertyObj.propName);
+        maxPropertySet.setWhere(sqlf.format());
+
+        var maxProperty = maxPropertySet.moveFirst();
+        if (!maxProperty) {
+            maxProperty = maxPropertySet.add();
         }
 
-        prop.setMboValues(propertySet.add());
-        propertySet.save();
-        //maxpropvalue
-        maxPropValueSet = (propertySet = MXServer.getMXServer().getMboSet(
-            'MAXPROPVALUE',
-            MXServer.getMXServer().getSystemUserInfo()
-        ));
-        sqlf = new SqlFormat('propname = :1');
-        sqlf.setObject(1, 'MAXPROPVALUE', 'PROPNAME', property.propName);
-        maxPropValueSet.setWhere(sqlf.format());
-        maxPropValueSet.deleteAll();
+        propertyObj.setMboValues(maxProperty);
 
-        var maxPropValueMbo = maxPropValueSet.add();
+        maxPropertySet.save();
 
-        maxPropValueMbo.setValue('PROPNAME', prop.propName);
-        if (prop.propValue) {
-            maxPropValueMbo.setValue('PROPVALUE', prop.propValue);
-            maxPropValueMbo.setValueNull('ENCRYPTEDVALUE');
-        } else if (prop.encryptedValue) {
-            maxPropValueMbo.setValue('ENCRYPTEDVALUE', prop.encryptedValue);
-            maxPropValueMbo.setValueNull('PROPVALUE');
+        if (maxProperty.getBoolean('LIVEREFRESH')) {
+            // refresh the properties so the current value is available.
+            maxPropertySet.liveRefresh();
         }
-        maxPropValueMbo.setValue('SERVERNAME', 'COMMON');
-        maxPropValueSet.save();
     } finally {
-        __libraryClose(propertySet);
+        __libraryClose(maxPropertySet);
     }
-    logger.debug('addUpdateProperty function end');
 }
 
 /**
@@ -1508,20 +1509,17 @@ function __grantOptionToGroup(group, app, option) {
 }
 
 /**
- *
+ * 
  * @param {String} name The name of the relationship
  * @param {String} parent The parent of the relationship (source)
  * @param {String} child The child of the relationship (target/destination)
  * @param {String} whereclause Where clause to be used by the relationship
  * @param {String} remarks Description of the relationship
  */
-function __addRelationship(name, parent, child, whereclause, remarks) {
+function addOrReplaceRelationship(name, parent, child, whereclause, remarks) {
     var maxRelationshipSet;
     try {
-        maxRelationshipSet = MXServer.getMXServer().getMboSet(
-            'MAXRELATIONSHIP',
-            MXServer.getMXServer().getSystemUserInfo()
-        );
+        maxRelationshipSet = MXServer.getMXServer().getMboSet('MAXRELATIONSHIP', MXServer.getMXServer().getSystemUserInfo());
         var sqlf = new SqlFormat('parent = :1 and child = :2 and name = :3');
         sqlf.setObject(1, 'MAXRELATIONSHIP', 'PARENT', parent);
         sqlf.setObject(2, 'MAXRELATIONSHIP', 'CHILD', child);
@@ -1550,7 +1548,7 @@ function __libraryClose(set) {
     if (set && set instanceof Java.type('psdi.mbo.MboSet')) {
         try {
             set.cleanup();
-            set.close();            
+            set.close();
         } catch (ignored) { /* ignored */ }
     }
 }
