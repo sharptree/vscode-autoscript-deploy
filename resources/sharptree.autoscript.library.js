@@ -36,6 +36,100 @@ if (typeof Array.prototype.find != 'function') {
     };
 }
 
+function CronTask(cronTask) {
+
+    if (!cronTask) {
+        throw new Error('A integration object JSON is required to create the CronTask object.');
+    } else if (typeof cronTask.cronTaskName === 'undefined') {
+        throw new Error('The cronTaskName property is required and must a Maximo CronTask field value.');
+    } else if (typeof cronTask.className === 'undefined') {
+        throw new Error('The className property is required and must a Maximo CronTask field value.');
+    }
+
+    this.cronTaskName = cronTask.cronTaskName;
+    this.description = typeof cronTask.description === 'undefined' ? '' : cronTask.description;
+    this.className = cronTask.className;
+    this.accessLevel = typeof cronTask.accessLevel === 'undefined' || !cronTask.accessLevel ? 'FULL' : cronTask.accessLevel;
+
+
+    if (typeof cronTask.cronTaskInstance !== 'undefined' && Array.isArray(cronTask.cronTaskInstance)) {
+        cronTask.cronTaskInstance.forEach(function (instance) {
+            if (typeof instance.instanceName === 'undefined' || !instance.instanceName) {
+                throw new Error('The CronTask object ' + cronTask.cronTaskName + ' instance is missing a name property for the instance name.');
+            }
+
+            instance.description = typeof instance.description === 'undefined' ? '' : instance.description;
+            instance.schedule = typeof instance.schedule === 'undefined' ? '1h,*,0,*,*,*,*,*,*,*' : instance.schedule;
+            instance.active = typeof instance.active === 'undefined' ? false : instance.active == true;
+            instance.keepHistory = typeof instance.keepHistory === 'undefined' ? true : instance.keepHistory == true;
+            instance.runAsUserId = typeof instance.runAsUserId === 'undefined' ? 'MAXADMIN' : instance.runAsUserId;
+            instance.maxHistory = typeof instance.maxHistory === 'undefined' ? 1000 : instance.maxHistory;
+
+            if (typeof instance.cronTaskParam !== 'undefined' && Array.isArray(instance.cronTaskParam)) {
+                instance.cronTaskParam.forEach(function (cronTaskParam) {
+                    if (typeof cronTaskParam.parameter === 'undefined' || !cronTaskParam.parameter) {
+                        throw new Error('A CronTask object ' + cronTask.cronTaskName + ' instance ' + instance.instanceName + ' parameter is missing a parameter property.');
+                    }
+
+                    cronTaskParam.value = typeof cronTaskParam.value === 'undefined' ? '' : cronTaskParam.value;
+                });
+            } else {
+                instance.cronTaskParam = [];
+            }
+        });
+        this.cronTaskInstance = cronTask.cronTaskInstance;
+    } else {
+        this.cronTaskInstance = [];
+    }
+}
+
+CronTask.prototype.constructor = CronTask;
+CronTask.prototype.setMboValues = function (mbo) {
+    if (!mbo) {
+        throw new Error('A Mbo is required to set values from the CronTask object.');
+    } else if (!(mbo instanceof Java.type('psdi.mbo.Mbo'))) {
+        throw new Error('The mbo parameter must be an instance of psdi.mbo.Mbo.');
+    } else if (!mbo.isBasedOn('CRONTASKDEF')) {
+        throw new Error('The mbo parameter must be based on the CRONTASKDEF Maximo object.');
+    }
+
+    if (mbo.toBeAdded()) {
+        mbo.setValue('CRONTASKNAME', this.cronTaskName);
+        mbo.setValue('CLASSNAME', this.className);
+        mbo.setValue('ACCESSLEVEL', this.accessLevel);
+    }
+
+    mbo.setValue('DESCRIPTION', this.description);
+
+    var cronTaskInstanceSet = mbo.getMboSet('CRONTASKINSTANCE');
+    // remove all the current instances
+    cronTaskInstanceSet.deleteAll();
+
+    this.cronTaskInstance.forEach(function (instance) {
+        var cronTaskInstanceMbo = cronTaskInstanceSet.add();
+        cronTaskInstanceMbo.setValue('INSTANCENAME', instance.instanceName);
+        cronTaskInstanceMbo.setValue('DESCRIPTION', instance.description);
+        cronTaskInstanceMbo.setValue('SCHEDULE', instance.schedule);
+        cronTaskInstanceMbo.setValue('RUNASUSERID', instance.runAsUserId);
+        cronTaskInstanceMbo.setValue('KEEPHISTORY', instance.keepHistory);
+        cronTaskInstanceMbo.setValue('ACTIVE', instance.active);
+        cronTaskInstanceMbo.setValue('MAXHISTORY', instance.maxHistory);
+
+        var cronTaskParamSet = cronTaskInstanceMbo.getMboSet('PARAMETER');
+
+        instance.cronTaskParam.forEach(function (param) {
+            var cronTaskParam = cronTaskParamSet.moveFirst();
+
+            while (cronTaskParam) {
+                if (cronTaskParam.getString('PARAMETER') == param.parameter) {
+                    cronTaskParam.setValue('VALUE', param.value);
+                }
+                cronTaskParam = cronTaskParamSet.moveNext();
+            }
+        });
+    });
+};
+
 function Message(message) {
     if (!message) {
         throw new Error('A message JSON is required to create the Message object.');
@@ -486,7 +580,7 @@ function IntegrationObject(intObject) {
 IntegrationObject.prototype.constructor = IntegrationObject;
 IntegrationObject.prototype.setMboValues = function (mbo) {
     if (!mbo) {
-        throw new Error('A Mbo is required to set values from the Message object.');
+        throw new Error('A Mbo is required to set values from the IntegrationObject object.');
     } else if (!(mbo instanceof Java.type('psdi.mbo.Mbo'))) {
         throw new Error('The mbo parameter must be an instance of psdi.mbo.Mbo.');
     } else if (!mbo.isBasedOn('MAXINTOBJECT')) {
@@ -660,20 +754,130 @@ IntegrationObject.prototype.setMboValues = function (mbo) {
     });
 };
 
+// Main function that is called when the script is invoked.
+main();
+
+function main() {
+    // if the script is being invoked from the web then parse the requestBody and proces.
+    if (typeof request !== 'undefined' && typeof requestBody !== 'undefined' && requestBody) {
+        var config = JSON.parse(requestBody);
+        deploy(config);
+        responseBody = JSON.stringify({
+            'status': 'success',
+            'message': 'Sucessfully deploy the configuration changes.'
+        }, null, 4);
+    }
+}
+
 /**
  * Deploys the array of messages, properties, or other items.
- * @param {*} config A JSON array of messages, properties, and other items to be added, updated, or deleted.
+ * 
+ * @param {*} config A parsed JSON array of messages, properties, and other items to be added, updated, or deleted.
  */
 function deploy(config) {
-    logger.debug('Configs: \n' + JSON.stringify(config, null, 4));
+    logger.debug('Deploying Configuration: \n' + JSON.stringify(config, null, 4));
     if (typeof config.messages !== 'undefined') {
         deployMessages(config.messages);
     }
     if (typeof config.properties !== 'undefined') {
         deployProperties(config.properties);
-    }    
-    if(typeof config.integrationObjects !== 'undefined'){
+    }
+    if (typeof config.integrationObjects !== 'undefined') {
         deployIntegrationObjects(config.integrationObjects);
+    }
+    if (typeof config.cronTasks !== 'undefined') {
+        deployCronTasks(config.cronTasks);
+    }
+}
+
+function deployCronTasks(cronTasks) {
+    if (!cronTasks || !Array.isArray(cronTasks)) {
+        throw new Error(
+            'The cronTasks parameter is required and must be an array of CronTask objects.'
+        );
+    }
+
+    cronTasks.forEach(function (cronTask) {
+        if (typeof cronTask.delete !== 'undefined' && cronTask.delete == true) {
+            deleteCronTask(cronTask);
+        } else {
+            addOrUpdateCronTask(cronTask);
+        }
+    });
+}
+
+function deleteCronTask(cronTask) {
+    var set;
+
+    try {
+        var cronTaskObj = new CronTask(cronTask);
+
+        set = MXServer.getMXServer().getMboSet('CRONTASKDEF', userInfo);
+        var sqlFormat = new SqlFormat('crontaskname = :1');
+        sqlFormat.setObject(1, 'CRONTASKDEF', 'CRONTASKNAME', cronTaskObj.cronTaskName);
+        set.setWhere(sqlFormat.format());
+        var obj = set.moveFirst();
+        if (obj) {
+            var cronTaskInstanceSet = obj.getMboSet('CRONTASKINSTANCE');
+            var cronTaskInstance = cronTaskInstanceSet.moveFirst();
+
+            while (cronTaskInstance) {
+                cronTaskInstance.setValue('ACTIVE', false);
+                cronTaskInstance = cronTaskInstanceSet.moveNext();
+            }
+
+            cronTaskInstanceSet.deleteAll();
+
+            // set access to full to ensure we can delete the cron task.
+            obj.setValue('ACCESSLEVEL', 'FULL', MboConstants.NOACCESSCHECK);
+            set.save();
+            set.setWhere(sqlFormat.format());
+            set.reset();
+            set.deleteAll();
+            set.save();
+        }
+
+    } finally {
+        __libraryClose(set);
+    }
+}
+
+function addOrUpdateCronTask(cronTask) {
+    var set;
+
+    try {
+        var cronTaskObj = new CronTask(cronTask);
+        set = MXServer.getMXServer().getMboSet('CRONTASKDEF', userInfo);
+        var sqlFormat = new SqlFormat('crontaskname = :1');
+        sqlFormat.setObject(1, 'CRONTASKDEF', 'CRONTASKNAME', 'TESTCRON');
+
+        var obj;
+        set.setWhere(sqlFormat.format());
+        obj = set.moveFirst();
+
+        if (obj) {
+            var cronTaskInstanceSet = obj.getMboSet('CRONTASKINSTANCE');
+            var cronTaskInstance = cronTaskInstanceSet.moveFirst();
+
+            while (cronTaskInstance) {
+                cronTaskInstance.setValue('ACTIVE', false);
+                cronTaskInstance = cronTaskInstanceSet.moveNext();
+            }
+            cronTaskInstanceSet.deleteAll();
+            obj.setValue('ACCESSLEVEL', 'FULL', MboConstants.NOACCESSCHECK);
+            set.save();
+            set.setWhere(sqlFormat.format());
+            set.reset();
+            set.deleteAll();
+        }
+
+        obj = set.add();
+        cronTaskObj.setMboValues(obj);
+
+        set.save();
+
+    } finally {
+        __libraryClose(set);
     }
 }
 
@@ -687,7 +891,7 @@ function deployIntegrationObjects(integrationObjects) {
     logger.debug('Integration Objects: \n' + JSON.stringify(integrationObjects, null, 4));
 
     integrationObjects.forEach(function (integrationObject) {
-        if (typeof integrationObject.delete !== 'undefined' && integrationObject.delete) {
+        if (typeof integrationObject.delete !== 'undefined' && integrationObject.delete == true) {
             deleteIntegrationObject(integrationObject);
         } else {
             addOrUpdateIntegrationObject(integrationObject);
@@ -695,27 +899,29 @@ function deployIntegrationObjects(integrationObjects) {
     });
 }
 
-function deleteIntegrationObject(integrationObject){
+function deleteIntegrationObject(integrationObject) {
 
     var set;
 
-    try {    
+    try {
+        var intObj = new IntegrationObject(integrationObject);
+
         set = MXServer.getMXServer().getMboSet('MAXINTOBJECT', userInfo);
         var sqlFormat = new SqlFormat('intobjectname = :1');
-        sqlFormat.setObject(1, 'MAXINTOBJECT', 'INTOBJECTNAME', integrationObject.intObjectName);
+        sqlFormat.setObject(1, 'MAXINTOBJECT', 'INTOBJECTNAME', intObj.intObjectName);
         set.setWhere(sqlFormat.format());
         var obj = set.moveFirst();
 
-        if(obj){
+        if (obj) {
             // manually delete the olscquery and querytemplate objects because they are not automatically removed.
             obj.getMboSet('OSLCQUERY').deleteAll();
             obj.getMboSet('QUERYTEMPLATE').deleteAll();
             obj.delete();
             set.save();
         }
-    }finally{
+    } finally {
         __libraryClose(set);
-    } 
+    }
 }
 
 function addOrUpdateIntegrationObject(integrationObject) {
@@ -726,8 +932,8 @@ function addOrUpdateIntegrationObject(integrationObject) {
 
         set = MXServer.getMXServer().getMboSet('MAXINTOBJECT', userInfo);
         var sqlFormat = new SqlFormat('intobjectname = :1');
-        sqlFormat.setObject(1, 'MAXINTOBJECT', 'INTOBJECTNAME', integrationObject.intObjectName);
-        
+        sqlFormat.setObject(1, 'MAXINTOBJECT', 'INTOBJECTNAME', intObj.intObjectName);
+
         set.setWhere(sqlFormat.format());
         var obj = set.moveFirst();
 
@@ -844,10 +1050,10 @@ function deployMessages(messages) {
         );
     }
 
-    logger.debug('Messages: \n' + JSON.stringify(messages, null, 4));
+    logger.debug('Deploying Messages: \n' + JSON.stringify(messages, null, 4));
 
     messages.forEach(function (message) {
-        if (typeof message.delete !== 'undefined' && message.delete) {
+        if (typeof message.delete !== 'undefined' && message.delete == true) {
             deleteMessage(message);
         } else {
             addOrUpdateMessage(message);
@@ -875,15 +1081,16 @@ function addOrUpdateMessage(message) {
         sqlf.setObject(2, 'MAXMESSAGES', 'MSGKEY', msg.msgKey);
 
         maxMessageSet.setWhere(sqlf.format());
+
         // remove the current message if it exists
         if (!maxMessageSet.isEmpty()) {
             maxMessageSet.getMbo(0).delete();
             maxMessageSet.save();
             maxMessageSet.reset();
         }
-        logger.debug(JSON.stringify(msg, null, 4));
-        logger.debug(typeof new Message(message).setMboValues);
+
         msg.setMboValues(maxMessageSet.add());
+
         maxMessageSet.save();
     } finally {
         __libraryClose(maxMessageSet);
@@ -930,11 +1137,8 @@ function deleteMessage(message) {
 
         messageSet.setWhere(sqlf.format());
 
-        logger.debug(
-            'removeMessage messageSet contains ' + messageSet.count() + ' records'
-        );
-
         messageSet.deleteAll();
+
         messageSet.save();
     } finally {
         __libraryClose(messageSet);
@@ -945,6 +1149,7 @@ function deleteMessage(message) {
 /**
  * Deploys the array of properties provided. If a property has the value of delete set to true, that property
  * will be deleted based on the property's propName.
+ * 
  * @param {*} properties JSON representation of properties to be added/updated
  */
 function deployProperties(properties) {
@@ -954,10 +1159,10 @@ function deployProperties(properties) {
         );
     }
 
-    logger.debug('Properties: \n' + JSON.stringify(properties, null, 4));
+    logger.debug('Deploying Properties: \n' + JSON.stringify(properties, null, 4));
 
     properties.forEach(function (property) {
-        if (typeof property.delete !== 'undefined' && property.delete) {
+        if (typeof property.delete !== 'undefined' && property.delete == true) {
             deleteProperty(property);
         } else {
             addOrUpdateProperty(property);
@@ -967,6 +1172,7 @@ function deployProperties(properties) {
 
 /**
  * Adds a property if it does not exist or updates it to match the described state if the property exists.
+ * 
  * @param {*} property single property that will be added/updated
  */
 function addOrUpdateProperty(property) {
@@ -982,9 +1188,10 @@ function addOrUpdateProperty(property) {
         sqlf.setObject(1, 'MAXPROP', 'PROPNAME', property.propName);
         propertySet.setWhere(sqlf.format());
         logger.debug('Property set contains ' + propertySet.count() + ' records');
+        var maxPropValueSet;
         if (!propertySet.isEmpty()) {
             var tempProp = propertySet.getMbo(0);
-            var maxPropValueSet = tempProp.getMboSet('MAXPROPVALUE');
+            maxPropValueSet = tempProp.getMboSet('MAXPROPVALUE');
             maxPropValueSet.deleteAll();
             tempProp.delete();
             propertySet.save();
@@ -994,7 +1201,7 @@ function addOrUpdateProperty(property) {
         prop.setMboValues(propertySet.add());
         propertySet.save();
         //maxpropvalue
-        var maxPropValueSet = (propertySet = MXServer.getMXServer().getMboSet(
+        maxPropValueSet = (propertySet = MXServer.getMXServer().getMboSet(
             'MAXPROPVALUE',
             MXServer.getMXServer().getSystemUserInfo()
         ));
@@ -1119,6 +1326,7 @@ function __addLoggerIfDoesNotExist(loggerName, level, parent) {
 
 /**
  * Add a menu item to the provided app.
+ * 
  * @param {String} app The application to add the menu item to.
  * @param {String} optionName The option that the menu to should be added for.
  * @param {String} below The option name for the menu that the new option will be added below.
@@ -1241,9 +1449,10 @@ function __addAppOption(
         sigOption.setValue('ESIGENABLED', esigEnabled);
         sigOption.setValue('VISIBLE', visible);
         sigOption.setValue('ALSOGRANTS', alsogrants);
+        var sigOptFlagSet;
 
         if (uiOnly) {
-            var sigOptFlagSet = sigOption.getMboSet('SIGOPTFLAG');
+            sigOptFlagSet = sigOption.getMboSet('SIGOPTFLAG');
             var sigOptFlag = sigOptFlagSet.moveFirst();
             if (!sigOptFlag) {
                 sigOptFlag = sigOptFlagSet.add();
@@ -1252,12 +1461,14 @@ function __addAppOption(
                 sigOptFlag.setValue('FLAGNAME', 'WFACTION');
             }
         } else {
-            var sigOptFlag = sigOption.getMboSet('SIGOPTFLAG').moveFirst();
+            sigOptFlag = sigOption.getMboSet('SIGOPTFLAG').moveFirst();
             if (sigOptFlag) {
                 sigOptFlag.delete();
             }
         }
+
         sigOptionSet.save();
+
     } finally {
         __libraryClose(sigOptionSet);
     }
@@ -1331,22 +1542,23 @@ function __addRelationship(name, parent, child, whereclause, remarks) {
     }
 }
 
-// Cleans up the MboSet connections and closes the set.
+/**
+ * Cleans up the MboSet connections and closes the set.
+ * @param {psdi.mbo.MboSet} set the psdi.mbo.MboSet object to close.
+ */
 function __libraryClose(set) {
-    if (set) {
+    if (set && set instanceof Java.type('psdi.mbo.MboSet')) {
         try {
             set.cleanup();
-            set.close();
-            // eslint-disable-next-line no-empty
-        } catch (ignored) { }
+            set.close();            
+        } catch (ignored) { /* ignored */ }
     }
 }
 
-// eslint-disable-next-line no-unused-vars
 var scriptConfig = {
-    autoscript: 'SHARPTREE.AUTOSCRIPT.LIBRARY',
-    description: 'Library Script',
-    version: '',
-    active: true,
-    logLevel: 'ERROR',
+    'autoscript': 'SHARPTREE.AUTOSCRIPT.LIBRARY',
+    'description': 'Library Script',
+    'version': '',
+    'active': true,
+    'logLevel': 'ERROR',
 };
