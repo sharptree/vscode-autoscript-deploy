@@ -36,6 +36,100 @@ if (typeof Array.prototype.find != 'function') {
     };
 }
 
+function MaxLogger(maxLogger) {
+
+    if (!maxLogger) {
+        throw new Error(
+            'A integration object JSON is required to create the maxLogger object.'
+        );
+    } else if (typeof maxLogger.logger === 'undefined') {
+        throw new Error(
+            'The logger property is required and must a Maximo MaxLogger field value.'
+        );
+    }
+
+    this.logger = maxLogger.logger;
+
+    this.parentLogKey = typeof maxLogger.parentLogKey === 'undefined' ? '' : maxLogger.parentLogKey;
+    this.logKey = typeof maxLogger.logKey === 'undefined' ? (this.parentLogKey ? this.parentLogKey + '.' : 'log4j.logger.maximo.') + maxLogger.logger : maxLogger.logKey;
+    this.logLevel = typeof maxLogger.logLevel === 'undefined' ? 'ERROR' : maxLogger.logLevel;
+    this.active = typeof maxLogger.active === 'undefined' ? false : maxLogger.active == true;
+    this.appenders = typeof maxLogger.appenders === 'undefined' ? '' : maxLogger.appenders;
+
+    if (this.parentLogKey && !this.logKey.startsWith(this.parentLogKey)) {
+        this.logKey = this.parentLogKey + '.' + this.logger;
+    }
+}
+
+MaxLogger.prototype.constructor = MaxLogger;
+MaxLogger.prototype.apply = function (mboSet) {
+    if (!mboSet) {
+        throw new Error(
+            'A MboSet is required to set values from the MaxLogger object.'
+        );
+    } else if (!(mboSet instanceof Java.type('psdi.mbo.MboSet'))) {
+        throw new Error(
+            'The mboSet parameter must be an instance of psdi.mbo.Mbo.'
+        );
+    } else if (!mboSet.isBasedOn('MAXLOGGER')) {
+        throw new Error(
+            'The mboSet parameter must be based on the MAXLOGGER Maximo object.'
+        );
+    }
+
+
+    var sqlFormat;
+    var maxLogger;
+    if (this.parentLogKey) {
+        sqlFormat = new SqlFormat('logkey = :1');
+        sqlFormat.setObject(1, 'MAXLOGGER', 'LOGKEY', this.parentLogKey);
+        mboSet.setWhere(sqlFormat.format());
+        if (mboSet.isEmpty()) {
+            throw new Error(
+                'The parent logger key value ' + this.parentLogKey + ' does not exist in the target system, cannot add child logger ' + this.logger
+            );
+        }else{
+            var parent = mboSet.moveFirst();
+            var children = parent.getMboSet('CHILDLOGGERS');
+            var child = children.moveFirst();
+
+            while(child){
+                if(child.getString('LOGGER').toLowerCase() == this.logger.toLowerCase()){
+                    child.setValue('ACTIVE', false);
+                    child.delete();
+                    break;
+                }
+                child = children.moveNext();
+            }
+
+            maxLogger = children.add();   
+            maxLogger.setValue('LOGGER', this.logger);     
+        }
+    } else {
+        sqlFormat = new SqlFormat('logger = :1');
+        sqlFormat.setObject(1, 'MAXLOGGER', 'LOGGER', this.logger);
+        mboSet.setWhere(sqlFormat.format());
+        if(!mboSet.isEmpty()){
+            maxLogger = mboSet.moveFirst();
+            maxLogger.setValue('ACTIVE', false);
+            maxLogger.delete();
+        }
+        maxLogger = mboSet.add();
+        maxLogger.setValue('LOGGER', this.logger);
+        maxLogger.setValue('LOGKEY', this.logKey);
+
+    }
+
+    maxLogger.setValue('LOGLEVEL', this.logLevel);
+    maxLogger.setValue('ACTIVE', this.active);
+    maxLogger.setValue('APPENDERS', this.appenders);
+    mboSet.save();
+
+    // apply the logging settings
+    MXServer.getMXServer().lookup('LOGGING').applySettings(false);
+
+};
+
 function CronTask(cronTask) {
 
     if (!cronTask) {
@@ -360,11 +454,11 @@ Property.prototype.setMboValues = function (mbo) {
             mbo.setValue('DISPPROPVALUE', this.propValue);
         }
     }
-    
+
     var maxPropInstanceSet = mbo.getMboSet('MAXPROPINSTANCE');
     maxPropInstanceSet.deleteAll();
 
-    if (!this.globalOnly) {        
+    if (!this.globalOnly) {
         this.maxPropInstance.forEach(function (instance) {
             maxPropInstance = maxPropInstanceSet.add();
             maxPropInstance.setValue('DISPPROPVALUE', instance.propValue);
@@ -878,8 +972,62 @@ function deploy(config) {
     if (typeof config.cronTasks !== 'undefined') {
         deployCronTasks(config.cronTasks);
     }
+    if(typeof config.loggers !== 'undefined'){
+        deployLoggers(config.loggers);
+    }
     if (typeof config.ExternalSystem !== 'undefined') {
         deployExternalSystems(config.externalSystems);
+    }
+}
+
+
+function deployLoggers(loggers) {
+    if (!loggers || !Array.isArray(loggers)) {
+        throw new Error(
+            'The loggers parameter is required and must be an array of MaxLogger objects.'
+        );
+    }
+
+    loggers.forEach(function (logger) {
+        if (typeof logger.delete !== 'undefined' && logger.delete == true) {
+            deleteLogger(logger);
+        } else {
+            addOrUpdateLogger(logger);
+        }
+    });
+}
+
+function addOrUpdateLogger(logger){
+    var set;
+
+    try {
+        var loggerObj = new MaxLogger(logger);
+        set = MXServer.getMXServer().getMboSet('MAXLOGGER', userInfo);
+        loggerObj.apply(set);    
+    } finally {
+        __libraryClose(set);
+    }
+}
+
+function deleteLogger(logger){
+    var set;
+
+    try {
+        var loggerObj = new MaxLogger(logger);
+
+        set = MXServer.getMXServer().getMboSet('MAXLOGGER', userInfo);
+        var sqlFormat = new SqlFormat('logger = :1');
+        sqlFormat.setObject(1, 'MAXLOGGER', 'LOGGER', loggerObj.logger);
+        set.setWhere(sqlFormat.format());
+        var obj = set.moveFirst();
+        if (obj) {
+            obj.setValue('ACTIVE', false);
+            obj.delete();         
+            set.save();
+        }
+
+    } finally {
+        __libraryClose(set);
     }
 }
 
