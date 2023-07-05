@@ -144,6 +144,50 @@ CronTask.prototype.setMboValues = function (mbo) {
     });
 };
 
+function ExternalSystem(externalSystem) {
+
+    if (!externalSystem) {
+        throw new Error('A integration object JSON is required to create the ExternalSystem object.');
+    } else if (typeof externalSystem.extSysName === 'undefined') {
+        throw new Error('The extSysName property is required and must a Maximo External System field value.');
+    }
+  
+    this.extSysName = externalSystem.extSysName;
+    this.description =
+          typeof externalSystem.description === 'undefined' ? '' : externalSystem.description;
+    this.endPointName = typeof externalSystem.endPointName === 'undefined' ? '' : externalSystem.endPointName;
+    this.bidiConfig = typeof externalSystem.bidiConfig === 'undefined' ? '' : externalSystem.bidiConfig;
+    this.jmsMsgEncoding = typeof externalSystem.jmsMsgEncoding === 'undefined' ? '' : externalSystem.jmsMsgEncoding;
+    this.enabled = typeof externalSystem.enabled === 'undefined' ? false : externalSystem.enabled == true;
+    this.outSeqQueueName = typeof externalSystem.outSeqQueueName === 'undefined' ? '' : externalSystem.outSeqQueueName;
+    this.inSeqQueueName = typeof externalSystem.inSeqQueueName === 'undefined' ? '' : externalSystem.inSeqQueueName;
+    this.inContQueueName = typeof externalSystem.inContQueueName === 'undefined' ? '' : externalSystem.inContQueueName;
+  }
+  ExternalSystem.prototype.constructor = ExternalSystem;
+  ExternalSystem.prototype.setMboValues = function (mbo) {
+      if (!mbo) {
+          throw new Error(
+              'A Mbo is required to set values from the External System object.'
+          );
+      } else if (!(mbo instanceof Java.type('psdi.mbo.Mbo'))) {
+          throw new Error('The mbo parameter must be an instance of psdi.mbo.Mbo.');
+      } else if (!mbo.isBasedOn('MAXEXTSYSTEM')) {
+          throw new Error(
+              'The mbo parameter must be based on the MAXEXTSYSTEM Maximo object.'
+          );
+      }
+      mbo.setValue("EXTSYSNAME", this.extSysName);
+      mbo.setValue("DESCRIPTION", this.description);
+      mbo.setValue("ENDPOINTNAME", this.endPointName);
+      mbo.setValue("JMSMSGENCODING", this.jmsMsgEncoding);
+      mbo.setValue("ENABLED", this.enabled);
+      mbo.setValue("OUTSEQQUEUENAME", this.outSeqQueueName);
+      mbo.setValue("INSEQQUEUENAME", this.inSeqQueueName);
+      mbo.setValue("INCONTQUEUENAME", this.inContQueueName);
+  }
+  
+  
+
 function Message(message) {
     if (!message) {
         throw new Error(
@@ -834,6 +878,9 @@ function deploy(config) {
     if (typeof config.cronTasks !== 'undefined') {
         deployCronTasks(config.cronTasks);
     }
+    if (typeof config.ExternalSystem !== 'undefined') {
+        deployExternalSystems(config.externalSystems);
+    }
 }
 
 function deployCronTasks(cronTasks) {
@@ -925,6 +972,80 @@ function addOrUpdateCronTask(cronTask) {
     } finally {
         __libraryClose(set);
     }
+}
+
+/**
+ * Deploys the array of external systems provided. If an external system has the value of delete set to true, that external system
+ * will be deleted based on the external system's extSysName.
+ * 
+ * @param {ExternalSystem[]} externalSystems a JSON array of external systems to be added, updated or deleted.
+ */
+function deployExternalSystems(externalSystems) {
+if (!externalSystems || !Array.isArray(externalSystems)) {
+    throw new Error('The externalSystems parameter is required and must be an array of external system objects.');
+}
+
+externalSystems.forEach(function (externalSystem) {
+    if (typeof externalSystem.delete !== 'undefined' && externalSystem.delete == true) {
+        deleteExternalSystem(externalSystem);
+    } else {
+        addOrUpdateExternalSystem(externalSystem);
+    }
+});
+}
+
+/**
+ * Adds an external system if it does not exist or updates it to match the described state if the external exists.
+ * @param {ExternalSystem} externalSystem single external system that will be added/updated
+ */
+function addOrUpdateExternalSystem(externalSystem) {
+logger.debug("Setting up the " + externalSystem.extSysName + " external sytsem.");
+var maxExtSystemSet;
+try {
+    maxExtSystemSet = MXServer.getMXServer().getMboSet("MAXEXTSYSTEM", MXServer.getMXServer().getSystemUserInfo());
+    var extSys = new ExternalSystem(externalSystem);
+    var sqlf = new SqlFormat("extsysname = :1");
+    sqlf.setObject(1, "MAXEXTSYSTEM", "EXTSYSNAME", externalSystem.extSysName);
+    maxExtSystemSet.setWhere(sqlf.format());
+
+    if (!maxExtSystemSet.isEmpty()) {
+        maxExtSystemSet.deleteAll();
+        maxExtSystemSet.save();
+    }
+    extSys.setMboValues(maxExtSystemSet.add());
+    maxExtSystemSet.save();
+    
+} finally {
+    __libraryClose(maxExtSystemSet);
+}
+logger.debug("Setup up the " + this.extSysName + " external sytsem.");
+}
+
+/**
+ * Removes the provided external system by matching the extSysName properties.
+ * @param {ExternalSystem} externalSystem single external system that will be deleted.
+ */
+function deleteExternalSystem(externalSystem){
+logger.debug("Deleting the " + externalSystem.extSysName + " external sytsem.");
+var maxExtSystemSet;
+try {
+    maxExtSystemSet = MXServer.getMXServer().getMboSet("MAXEXTSYSTEM", MXServer.getMXServer().getSystemUserInfo());
+    var extSys = new ExternalSystem(externalSystem);
+    var sqlf = new SqlFormat("extsysname = :1");
+    sqlf.setObject(1, "MAXEXTSYSTEM", "EXTSYSNAME", externalSystem.extSysName);
+    maxExtSystemSet.setWhere(sqlf.format());
+
+    if (!maxExtSystemSet.isEmpty()) {
+        var maxExtSystem = maxExtSystemSet.moveFirst();
+        maxExtSystem.setValue("ENABLED", false);
+        maxExtSystemSet.deleteAll();
+        maxExtSystemSet.save();
+    }
+    
+} finally {
+    __libraryClose(maxExtSystemSet);
+}
+logger.debug("Deleted the " + this.extSysName + " external sytsem.");
 }
 
 function deployIntegrationObjects(integrationObjects) {
