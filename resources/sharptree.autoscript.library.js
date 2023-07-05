@@ -975,7 +975,7 @@ function deploy(config) {
     if(typeof config.loggers !== 'undefined'){
         deployLoggers(config.loggers);
     }
-    if (typeof config.ExternalSystem !== 'undefined') {
+    if (typeof config.externalSystem !== 'undefined') {
         deployExternalSystems(config.externalSystems);
     }
 }
