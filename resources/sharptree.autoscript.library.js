@@ -36,83 +36,6 @@ if (typeof Array.prototype.find != 'function') {
     };
 }
 
-function MaxEndPoint(maxEndPoint) {
-    if (!maxEndPoint) {
-        throw new Error(
-            'An maxEndPoint JSON is required to create the EndPoint object.'
-        );
-    } else if (typeof maxEndPoint.endPointName === 'undefined') {
-        throw new Error(
-            'The endPointName property is required.'
-        );
-    } else if (typeof maxEndPoint.handlerName === 'undefined') {
-        throw new Error(
-            'The handlerName property is required and must a valid Maximo handler.'
-        );
-    }
-
-    this.endPointName = maxEndPoint.endPointName;
-    this.handlerName = maxEndPoint.handlerName;
-    this.description = typeof maxEndPoint.description === 'undefined' ? '' : maxEndPoint.description;
-    this.maxEndPointDtl = typeof maxEndPoint.maxEndPointDtl === 'undefined' ? [] : maxEndPoint.maxEndPointDtl;
-    if (!Array.isArray(this.maxEndPointDtl)) {
-        throw new Error(
-            'The maxEndPointDtl property must be an array of maxEndPointDtl objects'
-        );
-    } else {
-        this.maxEndPointDtl.forEach(function (maxEndPointDtl) {
-            if (typeof maxEndPointDtl.property === 'undefined' || !maxEndPointDtl.property) {
-                throw new Error(
-                    'The property property is required for the maxEndPointDtl object'
-                );
-            }
-
-            maxEndPointDtl.value = typeof maxEndPointDtl.value === 'undefined' ? '' : maxEndPointDtl.value;
-            maxEndPointDtl.allowOverride = typeof maxEndPointDtl.allowOverride === 'undefined' ? false : maxEndPointDtl.allowOverride == true;
-        });
-    }
-
-}
-
-MaxEndPoint.prototype.constructor = MaxEndPoint;
-MaxEndPoint.prototype.setMboValues = function (mbo) {
-    if (!mbo) {
-        throw new Error(
-            'A Mbo is required to set values from the MaxEndPoint object.'
-        );
-    } else if (!(mbo instanceof Java.type('psdi.mbo.Mbo'))) {
-        throw new Error(
-            'The mbo parameter must be an instance of psdi.mbo.Mbo.'
-        );
-    } else if (!mbo.isBasedOn('MAXENDPOINT')) {
-        throw new Error(
-            'The mbo parameter must be based on the MAXENDPOINT Maximo object.'
-        );
-    }
-
-    if (mbo.toBeAdded()) {
-        mbo.setValue('ENDPOINTNAME', this.endPointName);
-    }
-
-    mbo.setValue('DESCRIPTION', this.description);
-    mbo.setValue('HANDLERNAME', this.handlerName);
-
-    var maxEndPointDtlSet = mbo.getMboSet('MAXENDPOINTDTL');
-
-    this.maxEndPointDtl.forEach(function (maxEndPointDtl) {
-
-        var maxEndPointDtlMbo = maxEndPointDtlSet.moveFirst();
-        while (maxEndPointDtlMbo) {
-            if (maxEndPointDtlMbo.getString('PROPERTY') == maxEndPointDtl.property.toUpperCase()) {
-                maxEndPointDtlMbo.setValue('VALUE', maxEndPointDtl.value);
-                maxEndPointDtlMbo.setValue('ALLOWOVERRIDE', maxEndPointDtl.allowOverride);
-                break;
-            }
-            maxEndPointDtlMbo = maxEndPointDtlSet.moveNext();
-        }
-    });
-};
-
 function MaxLogger(maxLogger) {
 
     if (!maxLogger) {
@@ -324,200 +247,220 @@ CronTask.prototype.setMboValues = function (mbo) {
 
 function EndPoint(endPoint) {
     if (!endPoint) {
-      throw new Error(
-        'A integration object JSON is required to create the endPoint object.'
-      );
+        throw new Error(
+            'A integration object JSON is required to create the endPoint object.'
+        );
     } else if (typeof endPoint.endPointName === 'undefined') {
-      throw new Error(
-        'The endPointName property is required and must a Maximo End Point field value.'
-      );
+        throw new Error(
+            'The endPointName property is required.'
+        );
     } else if (typeof endPoint.handlerName === 'undefined') {
-      throw new Error(
-        'The handler property is required and must a Maximo End Point field value.'
-      );
+        throw new Error(
+            'The handler property is required and must a valid Maximo handler.'
+        );
     }
-  
+
     this.endPointName = endPoint.endPointName;
     this.description =
-      typeof endPoint.description === 'undefined' ? '' : endPoint.description;
+        typeof endPoint.description === 'undefined' ? '' : endPoint.description;
     this.handlerName = endPoint.handlerName;
-    if (endPoint.endPointDtl && Array.isArray(endPoint.endPointDtl)) {
-      endPoint.endPointDtl.forEach(function (detail) {
-        if (typeof detail.property === 'undefined' || !detail.property) {
-          throw new Error(
-            'Property ' +
-              detail.property +
-              ' is missing or has an empty value for the required Property name.'
-          );
-        }
-  
-        detail.value = typeof detail.value === 'undefined' ? '' : detail.value;
-        detail.allowOverride =
-          typeof detail.allowOverride === 'undefined'
-            ? false
-            : detail.allowOverride == true;
-      });
-  
-      this.endPointDtl = endPoint.endPointDtl;
+    this.maxEndPointDtl =
+        typeof maxEndPoint.maxEndPointDtl === 'undefined'
+            ? []
+            : maxEndPoint.maxEndPointDtl;
+    if (!Array.isArray(this.maxEndPointDtl)) {
+        endPoint.endPointDtl.forEach(function (detail) {
+            if (typeof detail.property === 'undefined' || !detail.property) {
+                throw new Error(
+                    'Property ' +
+                        detail.property +
+                        ' is missing or has an empty value for the required Property name.'
+                );
+            }
+
+            detail.value =
+                typeof detail.value === 'undefined' ? '' : detail.value;
+            detail.allowOverride =
+                typeof detail.allowOverride === 'undefined'
+                    ? false
+                    : detail.allowOverride == true;
+        });
+
+        this.endPointDtl = endPoint.endPointDtl;
     } else {
-      this.endPointDtl = [];
+        this.endPointDtl = [];
     }
-  }
-  
-  EndPoint.prototype.constructor = EndPoint;
-  EndPoint.prototype.setMboValues = function (mbo) {
+}
+
+EndPoint.prototype.constructor = EndPoint;
+EndPoint.prototype.setMboValues = function (mbo) {
     if (!mbo) {
-      throw new Error(
-        'A Mbo is required to set values from the End Point object.'
-      );
+        throw new Error(
+            'A Mbo is required to set values from the End Point object.'
+        );
     } else if (!(mbo instanceof Java.type('psdi.mbo.Mbo'))) {
-      throw new Error('The mbo parameter must be an instance of psdi.mbo.Mbo.');
+        throw new Error(
+            'The mbo parameter must be an instance of psdi.mbo.Mbo.'
+        );
     } else if (!mbo.isBasedOn('MAXENDPOINT')) {
-      throw new Error(
-        'The mbo parameter must be based on the MAXENDPOINT Maximo object.'
-      );
+        throw new Error(
+            'The mbo parameter must be based on the MAXENDPOINT Maximo object.'
+        );
     }
-    mbo.setValue('ENDPOINTNAME', this.endPointName);
+    if (mbo.toBeAdded()) {
+        mbo.setValue('ENDPOINTNAME', this.endPointName);
+    }
     mbo.setValue('DESCRIPTION', this.description);
     mbo.setValue('HANDLERNAME', this.handlerName);
     var endPointNameTemp = this.endPointName; //used to pass end point name to detail function
     this.endPointDtl.forEach(function (detail) {
-      var maxEndPointDtlSet;
-      try {
-        maxEndPointDtlSet = mbo.getMboSet("MAXENDPOINTDTL");
-        var sqlf = new SqlFormat("endpointname = :1");
-        sqlf.setObject(1, "MAXENDPOINTDTL", "ENDPOINTNAME", endPointNameTemp);
-        maxEndPointDtlSet.setWhere(sqlf.format());
-        var maxEndPointDtl = maxEndPointDtlSet.moveFirst();
-        while (maxEndPointDtl) {
-          if (maxEndPointDtl.getString("PROPERTY") == detail.property) {
-            maxEndPointDtl.setValue("VALUE", detail.value);
-            maxEndPointDtl.setValue("ALLOWOVERRIDE", detail.allowOverride);
-          }
-          maxEndPointDtl = maxEndPointDtlSet.moveNext();
+        var maxEndPointDtlSet;
+        try {
+            maxEndPointDtlSet = mbo.getMboSet('MAXENDPOINTDTL');
+            var maxEndPointDtl = maxEndPointDtlSet.moveFirst();
+            while (maxEndPointDtl) {
+                if (
+                    maxEndPointDtl.getString('PROPERTY') ==
+                    detail.property.toUpperCase()
+                ) {
+                    maxEndPointDtl.setValue('VALUE', detail.value);
+                    maxEndPointDtl.setValue(
+                        'ALLOWOVERRIDE',
+                        detail.allowOverride
+                    );
+                    break;
+                }
+                maxEndPointDtl = maxEndPointDtlSet.moveNext();
+            }
+        } finally {
+            __libraryClose(maxEndPointDtlSet);
         }
-      } finally {
-        __libraryClose(maxEndPointDtlSet);
-      }
     });
-  }
-  
-  
-  function ExternalSystem(externalSystem) {
+};
+
+function ExternalSystem(externalSystem) {
     if (!externalSystem) {
-      throw new Error(
-        'A integration object JSON is required to create the ExternalSystem object.'
-      );
+        throw new Error(
+            'A integration object JSON is required to create the ExternalSystem object.'
+        );
     } else if (typeof externalSystem.extSysName === 'undefined') {
-      throw new Error(
-        'The extSysName property is required and must a Maximo External System field value.'
-      );
+        throw new Error(
+            'The extSysName property is required and must a Maximo External System field value.'
+        );
     }
 
     this.extSysName = externalSystem.extSysName;
     this.description =
-      typeof externalSystem.description === 'undefined'
-        ? ''
-        : externalSystem.description;
+        typeof externalSystem.description === 'undefined'
+            ? ''
+            : externalSystem.description;
     this.endPointName =
-      typeof externalSystem.endPointName === 'undefined'
-        ? ''
-        : externalSystem.endPointName;
+        typeof externalSystem.endPointName === 'undefined'
+            ? ''
+            : externalSystem.endPointName;
     this.bidiConfig =
-      typeof externalSystem.bidiConfig === 'undefined'
-        ? ''
-        : externalSystem.bidiConfig;
+        typeof externalSystem.bidiConfig === 'undefined'
+            ? ''
+            : externalSystem.bidiConfig;
     this.jmsMsgEncoding =
-      typeof externalSystem.jmsMsgEncoding === 'undefined'
-        ? ''
-        : externalSystem.jmsMsgEncoding;
+        typeof externalSystem.jmsMsgEncoding === 'undefined'
+            ? ''
+            : externalSystem.jmsMsgEncoding;
     this.enabled =
-      typeof externalSystem.enabled === 'undefined'
-        ? false
-        : externalSystem.enabled == true;
+        typeof externalSystem.enabled === 'undefined'
+            ? false
+            : externalSystem.enabled == true;
     this.outSeqQueueName =
-      typeof externalSystem.outSeqQueueName === 'undefined'
-        ? ''
-        : externalSystem.outSeqQueueName;
+        typeof externalSystem.outSeqQueueName === 'undefined'
+            ? ''
+            : externalSystem.outSeqQueueName;
     this.inSeqQueueName =
-      typeof externalSystem.inSeqQueueName === 'undefined'
-        ? ''
-        : externalSystem.inSeqQueueName;
+        typeof externalSystem.inSeqQueueName === 'undefined'
+            ? ''
+            : externalSystem.inSeqQueueName;
     this.inContQueueName =
-      typeof externalSystem.inContQueueName === 'undefined'
-        ? ''
-        : externalSystem.inContQueueName;
-  
+        typeof externalSystem.inContQueueName === 'undefined'
+            ? ''
+            : externalSystem.inContQueueName;
+
     //associated publish channels
     if (
-      externalSystem.maxExtIfaceOut &&
-      Array.isArray(externalSystem.maxExtIfaceOut)
+        externalSystem.maxExtIfaceOut &&
+        Array.isArray(externalSystem.maxExtIfaceOut)
     ) {
-      externalSystem.maxExtIfaceOut.forEach(function (ifaceOut) {
-        if (typeof ifaceOut.ifaceName === 'undefined' || !ifaceOut.ifaceName) {
-          throw new Error(
-            'An interface name for external system ' +
-              externalSystem.extSysName +
-              ' is missing or has an empty value for the required ifaceName property.'
-          );
-        }
-  
-        ifaceOut.endPointName =
-          typeof ifaceOut.endPointName === 'undefined'
-            ? ''
-            : ifaceOut.endPointName;
-        ifaceOut.enabled =
-          typeof ifaceOut.enabled === 'undefined'
-            ? false
-            : ifaceOut.enabled == true;
-      });
-  
-      this.maxExtIfaceOut = externalSystem.maxExtIfaceOut;
+        externalSystem.maxExtIfaceOut.forEach(function (ifaceOut) {
+            if (
+                typeof ifaceOut.ifaceName === 'undefined' ||
+                !ifaceOut.ifaceName
+            ) {
+                throw new Error(
+                    'An interface name for external system ' +
+                        externalSystem.extSysName +
+                        ' is missing or has an empty value for the required ifaceName property.'
+                );
+            }
+
+            ifaceOut.endPointName =
+                typeof ifaceOut.endPointName === 'undefined'
+                    ? ''
+                    : ifaceOut.endPointName;
+            ifaceOut.enabled =
+                typeof ifaceOut.enabled === 'undefined'
+                    ? false
+                    : ifaceOut.enabled == true;
+        });
+
+        this.maxExtIfaceOut = externalSystem.maxExtIfaceOut;
     } else {
-      this.maxExtIfaceOut = [];
+        this.maxExtIfaceOut = [];
     }
-  
+
     //associated enterprise services
     if (
-      externalSystem.maxExtIfaceIn &&
-      Array.isArray(externalSystem.maxExtIfaceIn)
+        externalSystem.maxExtIfaceIn &&
+        Array.isArray(externalSystem.maxExtIfaceIn)
     ) {
-      externalSystem.maxExtIfaceIn.forEach(function (ifaceIn) {
-        if (typeof ifaceIn.ifaceName === 'undefined' || !ifaceIn.ifaceName) {
-          throw new Error(
-            'An interface name for external system ' +
-              externalSystem.extSysName +
-              ' is missing or has an empty value for the required ifaceName property.'
-          );
-        }
-  
-        ifaceIn.isContinuousQueue =
-          typeof ifaceIn.isContinuousQueue === 'undefined'
-            ? true
-            : ifaceIn.isContinuousQueue == true;
-        ifaceIn.enabled =
-          typeof ifaceIn.enabled === 'undefined'
-            ? false
-            : ifaceIn.enabled == true;
-      });
-  
-      this.maxExtIfaceIn = externalSystem.maxExtIfaceIn;
+        externalSystem.maxExtIfaceIn.forEach(function (ifaceIn) {
+            if (
+                typeof ifaceIn.ifaceName === 'undefined' ||
+                !ifaceIn.ifaceName
+            ) {
+                throw new Error(
+                    'An interface name for external system ' +
+                        externalSystem.extSysName +
+                        ' is missing or has an empty value for the required ifaceName property.'
+                );
+            }
+
+            ifaceIn.isContinuousQueue =
+                typeof ifaceIn.isContinuousQueue === 'undefined'
+                    ? true
+                    : ifaceIn.isContinuousQueue == true;
+            ifaceIn.enabled =
+                typeof ifaceIn.enabled === 'undefined'
+                    ? false
+                    : ifaceIn.enabled == true;
+        });
+
+        this.maxExtIfaceIn = externalSystem.maxExtIfaceIn;
     } else {
-      this.maxExtIfaceIn = [];
+        this.maxExtIfaceIn = [];
     }
-  }
-  ExternalSystem.prototype.constructor = ExternalSystem;
-  ExternalSystem.prototype.setMboValues = function (mbo) {
+}
+ExternalSystem.prototype.constructor = ExternalSystem;
+ExternalSystem.prototype.setMboValues = function (mbo) {
     if (!mbo) {
-      throw new Error(
-        'A Mbo is required to set values from the External System object.'
-      );
+        throw new Error(
+            'A Mbo is required to set values from the External System object.'
+        );
     } else if (!(mbo instanceof Java.type('psdi.mbo.Mbo'))) {
-      throw new Error('The mbo parameter must be an instance of psdi.mbo.Mbo.');
+        throw new Error(
+            'The mbo parameter must be an instance of psdi.mbo.Mbo.'
+        );
     } else if (!mbo.isBasedOn('MAXEXTSYSTEM')) {
-      throw new Error(
-        'The mbo parameter must be based on the MAXEXTSYSTEM Maximo object.'
-      );
+        throw new Error(
+            'The mbo parameter must be based on the MAXEXTSYSTEM Maximo object.'
+        );
     }
     mbo.setValue('EXTSYSNAME', this.extSysName);
     mbo.setValue('DESCRIPTION', this.description);
@@ -527,27 +470,27 @@ function EndPoint(endPoint) {
     mbo.setValue('OUTSEQQUEUENAME', this.outSeqQueueName);
     mbo.setValue('INSEQQUEUENAME', this.inSeqQueueName);
     mbo.setValue('INCONTQUEUENAME', this.inContQueueName);
-  
+
     var maxExtIfaceOutSet = mbo.getMboSet('MAXEXTIFACEOUT');
     maxExtIfaceOutSet.deleteAll();
-  
+
     this.maxExtIfaceOut.forEach(function (ifaceOut) {
-      maxExtIfaceOut = maxExtIfaceOutSet.add();
-      maxExtIfaceOut.setValue('IFACENAME', ifaceOut.ifaceName);
-      maxExtIfaceOut.setValue('ENDPOINTNAME', ifaceOut.endPointName);
-      maxExtIfaceOut.setValue('ENABLED', ifaceOut.enabled);
+        maxExtIfaceOut = maxExtIfaceOutSet.add();
+        maxExtIfaceOut.setValue('IFACENAME', ifaceOut.ifaceName);
+        maxExtIfaceOut.setValue('ENDPOINTNAME', ifaceOut.endPointName);
+        maxExtIfaceOut.setValue('ENABLED', ifaceOut.enabled);
     });
-  
+
     var maxExtIfaceInSet = mbo.getMboSet('MAXEXTIFACEIN');
     maxExtIfaceInSet.deleteAll();
-  
+
     this.maxExtIfaceIn.forEach(function (ifaceOut) {
-      maxExtIfaceIn = maxExtIfaceInSet.add();
-      maxExtIfaceIn.setValue('IFACENAME', ifaceOut.ifaceName);
-      maxExtIfaceIn.setValue('ISCONTINUOUSQUEUE', ifaceOut.isContinuousQueue);
-      maxExtIfaceIn.setValue('ENABLED', ifaceOut.enabled);
+        maxExtIfaceIn = maxExtIfaceInSet.add();
+        maxExtIfaceIn.setValue('IFACENAME', ifaceOut.ifaceName);
+        maxExtIfaceIn.setValue('ISCONTINUOUSQUEUE', ifaceOut.isContinuousQueue);
+        maxExtIfaceIn.setValue('ENABLED', ifaceOut.enabled);
     });
-  };
+};
   
   
 
