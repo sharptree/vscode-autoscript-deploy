@@ -321,36 +321,203 @@ CronTask.prototype.setMboValues = function (mbo) {
     });
 };
 
-function ExternalSystem(externalSystem) {
 
+function EndPoint(endPoint) {
+    if (!endPoint) {
+      throw new Error(
+        'A integration object JSON is required to create the endPoint object.'
+      );
+    } else if (typeof endPoint.endPointName === 'undefined') {
+      throw new Error(
+        'The endPointName property is required and must a Maximo End Point field value.'
+      );
+    } else if (typeof endPoint.handlerName === 'undefined') {
+      throw new Error(
+        'The handler property is required and must a Maximo End Point field value.'
+      );
+    }
+  
+    this.endPointName = endPoint.endPointName;
+    this.description =
+      typeof endPoint.description === 'undefined' ? '' : endPoint.description;
+    this.handlerName = endPoint.handlerName;
+    if (endPoint.endPointDtl && Array.isArray(endPoint.endPointDtl)) {
+      endPoint.endPointDtl.forEach(function (detail) {
+        if (typeof detail.property === 'undefined' || !detail.property) {
+          throw new Error(
+            'Property ' +
+              detail.property +
+              ' is missing or has an empty value for the required Property name.'
+          );
+        }
+  
+        detail.value = typeof detail.value === 'undefined' ? '' : detail.value;
+        detail.allowOverride =
+          typeof detail.allowOverride === 'undefined'
+            ? false
+            : detail.allowOverride == true;
+      });
+  
+      this.endPointDtl = endPoint.endPointDtl;
+    } else {
+      this.endPointDtl = [];
+    }
+  }
+  
+  EndPoint.prototype.constructor = EndPoint;
+  EndPoint.prototype.setMboValues = function (mbo) {
+    if (!mbo) {
+      throw new Error(
+        'A Mbo is required to set values from the End Point object.'
+      );
+    } else if (!(mbo instanceof Java.type('psdi.mbo.Mbo'))) {
+      throw new Error('The mbo parameter must be an instance of psdi.mbo.Mbo.');
+    } else if (!mbo.isBasedOn('MAXENDPOINT')) {
+      throw new Error(
+        'The mbo parameter must be based on the MAXENDPOINT Maximo object.'
+      );
+    }
+    mbo.setValue('ENDPOINTNAME', this.endPointName);
+    mbo.setValue('DESCRIPTION', this.description);
+    mbo.setValue('HANDLERNAME', this.handlerName);
+    var endPointNameTemp = this.endPointName; //used to pass end point name to detail function
+    this.endPointDtl.forEach(function (detail) {
+      var maxEndPointDtlSet;
+      try {
+        maxEndPointDtlSet = mbo.getMboSet("MAXENDPOINTDTL");
+        var sqlf = new SqlFormat("endpointname = :1");
+        sqlf.setObject(1, "MAXENDPOINTDTL", "ENDPOINTNAME", endPointNameTemp);
+        maxEndPointDtlSet.setWhere(sqlf.format());
+        var maxEndPointDtl = maxEndPointDtlSet.moveFirst();
+        while (maxEndPointDtl) {
+          if (maxEndPointDtl.getString("PROPERTY") == detail.property) {
+            maxEndPointDtl.setValue("VALUE", detail.value);
+            maxEndPointDtl.setValue("ALLOWOVERRIDE", detail.allowOverride);
+          }
+          maxEndPointDtl = maxEndPointDtlSet.moveNext();
+        }
+      } finally {
+        __libraryClose(maxEndPointDtlSet);
+      }
+    });
+  }
+  
+  
+  function ExternalSystem(externalSystem) {
     if (!externalSystem) {
-        throw new Error('A integration object JSON is required to create the ExternalSystem object.');
+      throw new Error(
+        'A integration object JSON is required to create the ExternalSystem object.'
+      );
     } else if (typeof externalSystem.extSysName === 'undefined') {
-        throw new Error('The extSysName property is required and must a Maximo External System field value.');
+      throw new Error(
+        'The extSysName property is required and must a Maximo External System field value.'
+      );
     }
 
     this.extSysName = externalSystem.extSysName;
-    this.description = typeof externalSystem.description === 'undefined' ? '' : externalSystem.description;
-    this.endPointName = typeof externalSystem.endPointName === 'undefined' ? '' : externalSystem.endPointName;
-    this.bidiConfig = typeof externalSystem.bidiConfig === 'undefined' ? '' : externalSystem.bidiConfig;
-    this.jmsMsgEncoding = typeof externalSystem.jmsMsgEncoding === 'undefined' ? '' : externalSystem.jmsMsgEncoding;
-    this.enabled = typeof externalSystem.enabled === 'undefined' ? false : externalSystem.enabled == true;
-    this.outSeqQueueName = typeof externalSystem.outSeqQueueName === 'undefined' ? '' : externalSystem.outSeqQueueName;
-    this.inSeqQueueName = typeof externalSystem.inSeqQueueName === 'undefined' ? '' : externalSystem.inSeqQueueName;
-    this.inContQueueName = typeof externalSystem.inContQueueName === 'undefined' ? '' : externalSystem.inContQueueName;
-}
-ExternalSystem.prototype.constructor = ExternalSystem;
-ExternalSystem.prototype.setMboValues = function (mbo) {
+    this.description =
+      typeof externalSystem.description === 'undefined'
+        ? ''
+        : externalSystem.description;
+    this.endPointName =
+      typeof externalSystem.endPointName === 'undefined'
+        ? ''
+        : externalSystem.endPointName;
+    this.bidiConfig =
+      typeof externalSystem.bidiConfig === 'undefined'
+        ? ''
+        : externalSystem.bidiConfig;
+    this.jmsMsgEncoding =
+      typeof externalSystem.jmsMsgEncoding === 'undefined'
+        ? ''
+        : externalSystem.jmsMsgEncoding;
+    this.enabled =
+      typeof externalSystem.enabled === 'undefined'
+        ? false
+        : externalSystem.enabled == true;
+    this.outSeqQueueName =
+      typeof externalSystem.outSeqQueueName === 'undefined'
+        ? ''
+        : externalSystem.outSeqQueueName;
+    this.inSeqQueueName =
+      typeof externalSystem.inSeqQueueName === 'undefined'
+        ? ''
+        : externalSystem.inSeqQueueName;
+    this.inContQueueName =
+      typeof externalSystem.inContQueueName === 'undefined'
+        ? ''
+        : externalSystem.inContQueueName;
+  
+    //associated publish channels
+    if (
+      externalSystem.maxExtIfaceOut &&
+      Array.isArray(externalSystem.maxExtIfaceOut)
+    ) {
+      externalSystem.maxExtIfaceOut.forEach(function (ifaceOut) {
+        if (typeof ifaceOut.ifaceName === 'undefined' || !ifaceOut.ifaceName) {
+          throw new Error(
+            'An interface name for external system ' +
+              externalSystem.extSysName +
+              ' is missing or has an empty value for the required ifaceName property.'
+          );
+        }
+  
+        ifaceOut.endPointName =
+          typeof ifaceOut.endPointName === 'undefined'
+            ? ''
+            : ifaceOut.endPointName;
+        ifaceOut.enabled =
+          typeof ifaceOut.enabled === 'undefined'
+            ? false
+            : ifaceOut.enabled == true;
+      });
+  
+      this.maxExtIfaceOut = externalSystem.maxExtIfaceOut;
+    } else {
+      this.maxExtIfaceOut = [];
+    }
+  
+    //associated enterprise services
+    if (
+      externalSystem.maxExtIfaceIn &&
+      Array.isArray(externalSystem.maxExtIfaceIn)
+    ) {
+      externalSystem.maxExtIfaceIn.forEach(function (ifaceIn) {
+        if (typeof ifaceIn.ifaceName === 'undefined' || !ifaceIn.ifaceName) {
+          throw new Error(
+            'An interface name for external system ' +
+              externalSystem.extSysName +
+              ' is missing or has an empty value for the required ifaceName property.'
+          );
+        }
+  
+        ifaceIn.isContinuousQueue =
+          typeof ifaceIn.isContinuousQueue === 'undefined'
+            ? true
+            : ifaceIn.isContinuousQueue == true;
+        ifaceIn.enabled =
+          typeof ifaceIn.enabled === 'undefined'
+            ? false
+            : ifaceIn.enabled == true;
+      });
+  
+      this.maxExtIfaceIn = externalSystem.maxExtIfaceIn;
+    } else {
+      this.maxExtIfaceIn = [];
+    }
+  }
+  ExternalSystem.prototype.constructor = ExternalSystem;
+  ExternalSystem.prototype.setMboValues = function (mbo) {
     if (!mbo) {
-        throw new Error(
-            'A Mbo is required to set values from the External System object.'
-        );
+      throw new Error(
+        'A Mbo is required to set values from the External System object.'
+      );
     } else if (!(mbo instanceof Java.type('psdi.mbo.Mbo'))) {
-        throw new Error('The mbo parameter must be an instance of psdi.mbo.Mbo.');
+      throw new Error('The mbo parameter must be an instance of psdi.mbo.Mbo.');
     } else if (!mbo.isBasedOn('MAXEXTSYSTEM')) {
-        throw new Error(
-            'The mbo parameter must be based on the MAXEXTSYSTEM Maximo object.'
-        );
+      throw new Error(
+        'The mbo parameter must be based on the MAXEXTSYSTEM Maximo object.'
+      );
     }
     mbo.setValue('EXTSYSNAME', this.extSysName);
     mbo.setValue('DESCRIPTION', this.description);
@@ -360,7 +527,29 @@ ExternalSystem.prototype.setMboValues = function (mbo) {
     mbo.setValue('OUTSEQQUEUENAME', this.outSeqQueueName);
     mbo.setValue('INSEQQUEUENAME', this.inSeqQueueName);
     mbo.setValue('INCONTQUEUENAME', this.inContQueueName);
-};
+  
+    var maxExtIfaceOutSet = mbo.getMboSet('MAXEXTIFACEOUT');
+    maxExtIfaceOutSet.deleteAll();
+  
+    this.maxExtIfaceOut.forEach(function (ifaceOut) {
+      maxExtIfaceOut = maxExtIfaceOutSet.add();
+      maxExtIfaceOut.setValue('IFACENAME', ifaceOut.ifaceName);
+      maxExtIfaceOut.setValue('ENDPOINTNAME', ifaceOut.endPointName);
+      maxExtIfaceOut.setValue('ENABLED', ifaceOut.enabled);
+    });
+  
+    var maxExtIfaceInSet = mbo.getMboSet('MAXEXTIFACEIN');
+    maxExtIfaceInSet.deleteAll();
+  
+    this.maxExtIfaceIn.forEach(function (ifaceOut) {
+      maxExtIfaceIn = maxExtIfaceInSet.add();
+      maxExtIfaceIn.setValue('IFACENAME', ifaceOut.ifaceName);
+      maxExtIfaceIn.setValue('ISCONTINUOUSQUEUE', ifaceOut.isContinuousQueue);
+      maxExtIfaceIn.setValue('ENABLED', ifaceOut.enabled);
+    });
+  };
+  
+  
 
 function Message(message) {
     if (!message) {
@@ -1041,24 +1230,27 @@ function main() {
 function deploy(config) {
     logger.debug('Deploying Configuration: \n' + JSON.stringify(config, null, 4));
     if (typeof config.messages !== 'undefined') {
-        deployMessages(config.messages);
+      deployMessages(config.messages);
     }
     if (typeof config.properties !== 'undefined') {
-        deployProperties(config.properties);
+      deployProperties(config.properties);
     }
     if (typeof config.integrationObjects !== 'undefined') {
-        deployIntegrationObjects(config.integrationObjects);
+      deployIntegrationObjects(config.integrationObjects);
     }
     if (typeof config.cronTasks !== 'undefined') {
-        deployCronTasks(config.cronTasks);
+      deployCronTasks(config.cronTasks);
+    }
+    if (typeof config.EndPoints !== 'undefined') {
+      deployEndPoints(config.endPoints);
+    if (typeof config.ExternalSystem !== 'undefined') {
+      deployExternalSystems(config.externalSystems);
     }
     if (typeof config.loggers !== 'undefined') {
         deployLoggers(config.loggers);
     }
-    if (typeof config.externalSystems !== 'undefined') {
-        deployExternalSystems(config.externalSystems);
     }
-}
+  }
 
 
 function deployLoggers(loggers) {
@@ -1203,78 +1395,171 @@ function addOrUpdateCronTask(cronTask) {
 }
 
 /**
+ * Deploys the array of end points provided. If an end point has the value of delete set to true, that end point
+ * will be deleted based on the end point's endPointName.
+ *
+ * @param {EndPoint[]} endPoints a JSON array of end points to be added, updated or deleted.
+ */
+function deployEndPoints(endPoints) {
+    if (!endPoints || !Array.isArray(endPoints)) {
+      throw new Error(
+        'The endPoints parameter is required and must be an array of external system objects.'
+      );
+    }
+  
+    endPoints.forEach(function (endPoint) {
+      if (typeof endPoint.delete !== 'undefined' && endPoint.delete == true) {
+        deleteEndPoint(endPoint);
+      } else {
+        addOrUpdateEndPoint(endPoint);
+      }
+    });
+  }
+  
+  /**
+   * Adds an end point if it does not exist or updates it to match the described state if the end point exists.
+   * @param {EndPoint} endPoint single end point that will be added/updated
+   */
+  function addOrUpdateEndPoint(endPoint) {
+    logger.debug('Setting up the ' + endPoint.endPointName + ' end point.');
+    var maxEndPointSet;
+    try {
+      maxEndPointSet = MXServer.getMXServer().getMboSet(
+        'MAXENDPOINT',
+        MXServer.getMXServer().getSystemUserInfo()
+      );
+      var endPnt = new EndPoint(endPoint);
+      var sqlf = new SqlFormat('endpointname = :1');
+      sqlf.setObject(1, 'MAXENDPOINT', 'ENDPOINTNAME', endPoint.endPointName);
+      maxEndPointSet.setWhere(sqlf.format());
+  
+      if (!maxEndPointSet.isEmpty()) {
+        maxEndPointSet.deleteAll();
+        maxEndPointSet.save();
+      }
+      endPnt.setMboValues(maxEndPointSet.add());
+      maxEndPointSet.save();
+    } finally {
+      __libraryClose(maxEndPointSet);
+    }
+    logger.debug('Setup up the ' + endPoint.endPointName + ' end point.');
+  }
+  
+  /**
+   * Removes the provided end point by matching the endPointName property.
+   * @param {EndPoint} endPoint single end point that will be deleted.
+   */
+  function deleteEndPoint(endPoint) {
+    logger.debug('Deleting the ' + endPoint.endPointName + ' end point.');
+    var maxEndPointSet;
+    try {
+      maxEndPointSet = MXServer.getMXServer().getMboSet(
+        'MAXENDPOINT',
+        MXServer.getMXServer().getSystemUserInfo()
+      );
+      var endPnt = new EndPoint(endPoint);
+      var sqlf = new SqlFormat('endpointname = :1');
+      sqlf.setObject(1, 'MAXENDPOINT', 'ENDPOINTNAME', endPoint.endPointName);
+      maxEndPointSet.setWhere(sqlf.format());
+  
+      if (!maxEndPointSet.isEmpty()) {
+        maxEndPointSet.deleteAll();
+        maxEndPointSet.save();
+      }
+    } finally {
+      __libraryClose(maxEndPointSet);
+    }
+    logger.debug('Deleted the ' + endPoint.endPointName + ' end point.');
+  }
+
+/**
  * Deploys the array of external systems provided. If an external system has the value of delete set to true, that external system
  * will be deleted based on the external system's extSysName.
- * 
+ *
  * @param {ExternalSystem[]} externalSystems a JSON array of external systems to be added, updated or deleted.
  */
 function deployExternalSystems(externalSystems) {
     if (!externalSystems || !Array.isArray(externalSystems)) {
-        throw new Error('The externalSystems parameter is required and must be an array of external system objects.');
+      throw new Error(
+        'The externalSystems parameter is required and must be an array of external system objects.'
+      );
     }
-
+  
     externalSystems.forEach(function (externalSystem) {
-        if (typeof externalSystem.delete !== 'undefined' && externalSystem.delete == true) {
-            deleteExternalSystem(externalSystem);
-        } else {
-            addOrUpdateExternalSystem(externalSystem);
-        }
+      if (
+        typeof externalSystem.delete !== 'undefined' &&
+        externalSystem.delete == true
+      ) {
+        deleteExternalSystem(externalSystem);
+      } else {
+        addOrUpdateExternalSystem(externalSystem);
+      }
     });
-}
-
-/**
- * Adds an external system if it does not exist or updates it to match the described state if the external exists.
- * @param {ExternalSystem} externalSystem single external system that will be added/updated
- */
-function addOrUpdateExternalSystem(externalSystem) {
-    logger.debug('Setting up the ' + externalSystem.extSysName + ' external sytsem.');
+  }
+  
+  /**
+   * Adds an external system if it does not exist or updates it to match the described state if the external system exists.
+   * @param {ExternalSystem} externalSystem single external system that will be added/updated
+   */
+  function addOrUpdateExternalSystem(externalSystem) {
+    logger.debug(
+      'Setting up the ' + externalSystem.extSysName + ' external sytsem.'
+    );
     var maxExtSystemSet;
     try {
-        maxExtSystemSet = MXServer.getMXServer().getMboSet('MAXEXTSYSTEM', MXServer.getMXServer().getSystemUserInfo());
-        var extSys = new ExternalSystem(externalSystem);
-        var sqlf = new SqlFormat('extsysname = :1');
-        sqlf.setObject(1, 'MAXEXTSYSTEM', 'EXTSYSNAME', externalSystem.extSysName);
-        maxExtSystemSet.setWhere(sqlf.format());
-
-        if (!maxExtSystemSet.isEmpty()) {
-            maxExtSystemSet.deleteAll();
-            maxExtSystemSet.save();
-        }
-        extSys.setMboValues(maxExtSystemSet.add());
+      maxExtSystemSet = MXServer.getMXServer().getMboSet(
+        'MAXEXTSYSTEM',
+        MXServer.getMXServer().getSystemUserInfo()
+      );
+      var extSys = new ExternalSystem(externalSystem);
+      var sqlf = new SqlFormat('extsysname = :1');
+      sqlf.setObject(1, 'MAXEXTSYSTEM', 'EXTSYSNAME', externalSystem.extSysName);
+      maxExtSystemSet.setWhere(sqlf.format());
+  
+      if (!maxExtSystemSet.isEmpty()) {
+        maxExtSystemSet.deleteAll();
         maxExtSystemSet.save();
-
+      }
+      extSys.setMboValues(maxExtSystemSet.add());
+      maxExtSystemSet.save();
     } finally {
-        __libraryClose(maxExtSystemSet);
+      __libraryClose(maxExtSystemSet);
     }
-    logger.debug('Setup up the ' + this.extSysName + ' external sytsem.');
-}
-
-/**
- * Removes the provided external system by matching the extSysName properties.
- * @param {ExternalSystem} externalSystem single external system that will be deleted.
- */
-function deleteExternalSystem(externalSystem) {
-    logger.debug('Deleting the ' + externalSystem.extSysName + ' external sytsem.');
+    logger.debug(
+      'Setup up the ' + externalSystem.extSysName + ' external sytsem.'
+    );
+  }
+  
+  /**
+   * Removes the provided external system by matching the extSysName properties.
+   * @param {ExternalSystem} externalSystem single external system that will be deleted.
+   */
+  function deleteExternalSystem(externalSystem) {
+    logger.debug(
+      'Deleting the ' + externalSystem.extSysName + ' external sytsem.'
+    );
     var maxExtSystemSet;
     try {
-        maxExtSystemSet = MXServer.getMXServer().getMboSet('MAXEXTSYSTEM', MXServer.getMXServer().getSystemUserInfo());
-        var extSys = new ExternalSystem(externalSystem);
-        var sqlf = new SqlFormat('extsysname = :1');
-        sqlf.setObject(1, 'MAXEXTSYSTEM', 'EXTSYSNAME', externalSystem.extSysName);
-        maxExtSystemSet.setWhere(sqlf.format());
-
-        if (!maxExtSystemSet.isEmpty()) {
-            var maxExtSystem = maxExtSystemSet.moveFirst();
-            maxExtSystem.setValue('ENABLED', false);
-            maxExtSystemSet.deleteAll();
-            maxExtSystemSet.save();
-        }
-
+      maxExtSystemSet = MXServer.getMXServer().getMboSet(
+        'MAXEXTSYSTEM',
+        MXServer.getMXServer().getSystemUserInfo()
+      );
+      var extSys = new ExternalSystem(externalSystem);
+      var sqlf = new SqlFormat('extsysname = :1');
+      sqlf.setObject(1, 'MAXEXTSYSTEM', 'EXTSYSNAME', externalSystem.extSysName);
+      maxExtSystemSet.setWhere(sqlf.format());
+  
+      if (!maxExtSystemSet.isEmpty()) {
+        var maxExtSystem = maxExtSystemSet.moveFirst();
+        maxExtSystem.setValue('ENABLED', false);
+        maxExtSystemSet.deleteAll();
+        maxExtSystemSet.save();
+      }
     } finally {
-        __libraryClose(maxExtSystemSet);
+      __libraryClose(maxExtSystemSet);
     }
     logger.debug('Deleted the ' + this.extSysName + ' external sytsem.');
-}
+  }
 
 function deployIntegrationObjects(integrationObjects) {
     if (!integrationObjects || !Array.isArray(integrationObjects)) {
