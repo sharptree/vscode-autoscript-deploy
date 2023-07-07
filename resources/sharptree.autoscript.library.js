@@ -36,15 +36,92 @@ if (typeof Array.prototype.find != 'function') {
     };
 }
 
+function MaxEndPoint(maxEndPoint) {
+    if (!maxEndPoint) {
+        throw new Error(
+            'An maxEndPoint JSON is required to create the EndPoint object.'
+        );
+    } else if (typeof maxEndPoint.endPointName === 'undefined') {
+        throw new Error(
+            'The endPointName property is required.'
+        );
+    } else if (typeof maxEndPoint.handlerName === 'undefined') {
+        throw new Error(
+            'The handlerName property is required and must a valid Maximo handler.'
+        );
+    }
+
+    this.endPointName = maxEndPoint.endPointName;
+    this.handlerName = maxEndPoint.handlerName;
+    this.description = typeof maxEndPoint.description === 'undefined' ? '' : maxEndPoint.description;
+    this.maxEndPointDtl = typeof maxEndPoint.maxEndPointDtl === 'undefined' ? [] : maxEndPoint.maxEndPointDtl;
+    if (!Array.isArray(this.maxEndPointDtl)) {
+        throw new Error(
+            'The maxEndPointDtl property must be an array of maxEndPointDtl objects'
+        );
+    } else {
+        this.maxEndPointDtl.forEach(function (maxEndPointDtl) {
+            if (typeof maxEndPointDtl.property === 'undefined' || !maxEndPointDtl.property) {
+                throw new Error(
+                    'The property property is required for the maxEndPointDtl object'
+                );
+            }
+
+            maxEndPointDtl.value = typeof maxEndPointDtl.value === 'undefined' ? '' : maxEndPointDtl.value;
+            maxEndPointDtl.allowOverride = typeof maxEndPointDtl.allowOverride === 'undefined' ? false : maxEndPointDtl.allowOverride == true;
+        });
+    }
+
+}
+
+MaxEndPoint.prototype.constructor = MaxEndPoint;
+MaxEndPoint.prototype.setMboValues = function (mbo) {
+    if (!mbo) {
+        throw new Error(
+            'A Mbo is required to set values from the MaxEndPoint object.'
+        );
+    } else if (!(mbo instanceof Java.type('psdi.mbo.Mbo'))) {
+        throw new Error(
+            'The mbo parameter must be an instance of psdi.mbo.Mbo.'
+        );
+    } else if (!mbo.isBasedOn('MAXENDPOINT')) {
+        throw new Error(
+            'The mbo parameter must be based on the MAXENDPOINT Maximo object.'
+        );
+    }
+
+    if (mbo.toBeAdded()) {
+        mbo.setValue('ENDPOINTNAME', this.endPointName);
+    }
+
+    mbo.setValue('DESCRIPTION', this.description);
+    mbo.setValue('HANDLERNAME', this.handlerName);
+
+    var maxEndPointDtlSet = mbo.getMboSet('MAXENDPOINTDTL');
+
+    this.maxEndPointDtl.forEach(function (maxEndPointDtl) {
+
+        var maxEndPointDtlMbo = maxEndPointDtlSet.moveFirst();
+        while (maxEndPointDtlMbo) {
+            if (maxEndPointDtlMbo.getString('PROPERTY') == maxEndPointDtl.property.toUpperCase()) {
+                maxEndPointDtlMbo.setValue('VALUE', maxEndPointDtl.value);
+                maxEndPointDtlMbo.setValue('ALLOWOVERRIDE', maxEndPointDtl.allowOverride);
+                break;
+            }
+            maxEndPointDtlMbo = maxEndPointDtlSet.moveNext();
+        }
+    });
+};
+
 function MaxLogger(maxLogger) {
 
     if (!maxLogger) {
         throw new Error(
-            'A integration object JSON is required to create the maxLogger object.'
+            'A maxLogger JSON is required to create the MaxLogger object.'
         );
     } else if (typeof maxLogger.logger === 'undefined') {
         throw new Error(
-            'The logger property is required and must a Maximo MaxLogger field value.'
+            'The logger property is required and must be a Maximo MaxLogger field value.'
         );
     }
 
@@ -283,9 +360,7 @@ ExternalSystem.prototype.setMboValues = function (mbo) {
     mbo.setValue('OUTSEQQUEUENAME', this.outSeqQueueName);
     mbo.setValue('INSEQQUEUENAME', this.inSeqQueueName);
     mbo.setValue('INCONTQUEUENAME', this.inContQueueName);
-}
-
-
+};
 
 function Message(message) {
     if (!message) {
