@@ -1243,12 +1243,12 @@ function deploy(config) {
     }
     if (typeof config.EndPoints !== 'undefined') {
       deployEndPoints(config.endPoints);
+    }
     if (typeof config.ExternalSystem !== 'undefined') {
       deployExternalSystems(config.externalSystems);
     }
     if (typeof config.loggers !== 'undefined') {
         deployLoggers(config.loggers);
-    }
     }
   }
 
