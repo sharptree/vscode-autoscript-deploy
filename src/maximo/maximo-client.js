@@ -358,6 +358,24 @@ export default class MaximoClient {
         return result.data;
     }
 
+    async postConfig(json){
+        if (!this._isConnected) {
+            await this.connect();
+        } 
+
+        const configOptions = {
+            url: 'script/sharptree.autoscript.deploy/config',
+            method: MaximoClient.Method.POST,
+            headers: {
+                'Content-Type': 'text/plain',
+                Accept: 'application/json'
+            },
+            data: json
+        };
+        // @ts-ignore
+        await this.client.request(configOptions);
+    }
+
     async postScript(script, progress, fileName, deployScript) {
 
         if (!this._isConnected) {
@@ -600,7 +618,7 @@ export default class MaximoClient {
             await new Promise(resolve => setTimeout(resolve, 500));
         }
 
-        let increment = 100 / 7;
+        let increment = 100 / 8;
 
         // eslint-disable-next-line no-undef
         let source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.store.js')).toString();
@@ -630,6 +648,9 @@ export default class MaximoClient {
 
         source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.form.js')).toString();
         await this._installOrUpdateScript('sharptree.autoscript.form', 'Sharptree Inspection Forms Script', source, progress, increment);
+
+        source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.library.js')).toString();
+        await this._installOrUpdateScript('sharptree.autoscript.library', 'Sharptree Deployment Library Script', source, progress, increment);
 
         await this._fixInspectionFormData();
 

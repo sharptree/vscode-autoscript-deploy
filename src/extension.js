@@ -59,8 +59,6 @@ export function activate(context) {
 
 	let globalSettings = context.globalStoragePath + path.sep + 'userprefs.json';
 
-
-
 	context.subscriptions.push(workspace.registerTextDocumentContentProvider('vscode-autoscript-deploy', new ServerSourceProvider(fetchedSource)));
 
 	let disposableInsert = commands.registerTextEditorCommand('maximo-script-deploy.id', (editor, edit) => {
@@ -313,6 +311,7 @@ export function activate(context) {
 						if (document) {
 							let fileName = path.basename(document.fileName);
 							let deployFileName = document.fileName.substring(0, document.fileName.lastIndexOf('.')) + '-deploy' + document.fileName.substring(document.fileName.lastIndexOf('.'));
+							let deployJSONFileName = document.fileName.substring(0, document.fileName.lastIndexOf('.')) + '.json';
 
 							if (fileName.endsWith('.js') || fileName.endsWith('.py')) {
 								// Get the document text
@@ -339,6 +338,11 @@ export function activate(context) {
 														window.showErrorMessage('An unknown error occurred: ' + JSON.stringify(result), { modal: true });
 													}
 												} else {
+													if(fs.existsSync(deployJSONFileName)){
+														let configDeploy = fs.readFileSync(deployJSONFileName);
+														await client.postConfig(configDeploy);
+													}
+
 													progress.report({ increment: 100, message: `Successfully deployed ${fileName}` });
 													await new Promise(resolve => setTimeout(resolve, 2000));
 												}
