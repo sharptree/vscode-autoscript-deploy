@@ -35,7 +35,8 @@
 		"onCommand:maximo-script-deploy.screensOne",		
 		"onCommand:maximo-script-deploy.compare",
 		"onCommand:maximo-script-deploy.forms",
-		"onCommand:maximo-script-deploy.formsOne"
+		"onCommand:maximo-script-deploy.formsOne",
+		"onStartupFinished"
 	],
 	"main": "./dist/extension",
 	"contributes": {
