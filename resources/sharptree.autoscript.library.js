@@ -1151,26 +1151,27 @@ IntegrationObject.prototype.setMboValues = function (mbo) {
 };
 
 // Main function that is called when the script is invoked.
-main();
+// This is provided for testing purposes.
+// mainLibrary();
 
-function main() {
-    // if the script is being invoked from the web then parse the requestBody and proces.
-    if (typeof request !== 'undefined' && typeof requestBody !== 'undefined' && requestBody) {
-        var config = JSON.parse(requestBody);
-        deploy(config);
-        responseBody = JSON.stringify({
-            'status': 'success',
-            'message': 'Sucessfully deploy the configuration changes.'
-        }, null, 4);
-    }
-}
+// function mainLibrary() {
+//     // if the script is being invoked from the web then parse the requestBody and proces.
+//     if (typeof request !== 'undefined' && typeof requestBody !== 'undefined' && requestBody) {
+//         var config = JSON.parse(requestBody);
+//         deployConfig(config);
+//         responseBody = JSON.stringify({
+//             'status': 'success',
+//             'message': 'Sucessfully deploy the configuration changes.'
+//         }, null, 4);
+//     }
+// }
 
 /**
  * Deploys the array of messages, properties, or other items.
  * 
  * @param {*} config A parsed JSON array of messages, properties, and other items to be added, updated, or deleted.
  */
-function deploy(config) {
+function deployConfig(config) {
     logger.debug('Deploying Configuration: \n' + JSON.stringify(config, null, 4));
     if (typeof config.messages !== 'undefined') {
       deployMessages(config.messages);
@@ -1666,7 +1667,7 @@ function addOrUpdateIntegrationObject(integrationObject) {
  *
  * @param {*} messages A JSON array of messages to be added, updated or deleted
  */
-function deployMessages(messages) {
+function deployMessages(messages) {    
     if (!messages || !Array.isArray(messages)) {
         throw new Error(
             'The messages parameter is required and must be an array of message objects.'
