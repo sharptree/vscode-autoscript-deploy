@@ -673,7 +673,7 @@ Property.prototype.setMboValues = function (mbo) {
     if (!this.globalOnly) {
         this.maxPropInstance.forEach(function (instance) {
             maxPropInstance = maxPropInstanceSet.add();
-            maxPropInstance.setValue('DISPPROPVALUE', instance.propValue);
+            maxPropInstance.setValue('DISPPROPVALUE', instance.propValue, MboConstants.NOVALIDATION);
             maxPropInstance.setValue('SERVERNAME', instance.serverName);
             maxPropInstance.setValue('SERVERHOST', instance.serverHost);
         });
@@ -1152,19 +1152,19 @@ IntegrationObject.prototype.setMboValues = function (mbo) {
 
 // Main function that is called when the script is invoked.
 // This is provided for testing purposes.
-// mainLibrary();
+mainLibrary();
 
-// function mainLibrary() {
-//     // if the script is being invoked from the web then parse the requestBody and proces.
-//     if (typeof request !== 'undefined' && typeof requestBody !== 'undefined' && requestBody) {
-//         var config = JSON.parse(requestBody);
-//         deployConfig(config);
-//         responseBody = JSON.stringify({
-//             'status': 'success',
-//             'message': 'Sucessfully deploy the configuration changes.'
-//         }, null, 4);
-//     }
-// }
+function mainLibrary() {
+    // if the script is being invoked from the web then parse the requestBody and proces.
+    if (typeof request !== 'undefined' && typeof requestBody !== 'undefined' && requestBody && request.getQueryParam("develop") == "true") {
+        var config = JSON.parse(requestBody);
+        deployConfig(config);
+        responseBody = JSON.stringify({
+            'status': 'success',
+            'message': 'Sucessfully deploy the configuration changes.'
+        }, null, 4);
+    }
+}
 
 /**
  * Deploys the array of messages, properties, or other items.
