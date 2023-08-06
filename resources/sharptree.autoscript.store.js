@@ -13,6 +13,7 @@ MessageDigest = Java.type("java.security.MessageDigest");
 // eslint-disable-next-line no-global-assign
 Character = Java.type("java.lang.Character");
 String = Java.type("java.lang.String");
+StringBuilder = Java.type("java.lang.StringBuilder");
 System = Java.type("java.lang.System");
 
 MessageDigest = Java.type("java.security.MessageDigest");
@@ -399,10 +400,9 @@ function sha256Hex(value) {
 }
 
 function toHex(value) {
-    var result = [];
-    for (var n = 0, l = value.length; n < l; n++) {
-        var hex = Number(Character.codePointAt(new String(value), n)).toString(16);
-        result.push(hex);
+    var result = new StringBuilder();
+    for (var j = 0; j < value.length; j++) {
+            result.append(String.format("%02x", value[j]));
     }
-    return result.join('');
+    return result.toString();
 }

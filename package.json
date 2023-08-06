@@ -3,7 +3,7 @@
 	"displayName": "Maximo Development Tools",
 	"description": "An extension for developing and deploying Maximo automation scripts and screens from Visual Studio Code.",
 	"publisher": "Sharptree",
-	"version": "1.12.0",
+	"version": "1.13.0",
 	"galleryBanner": {
 		"color": "#372063",
 		"theme": "dark"
@@ -35,7 +35,8 @@
 		"onCommand:maximo-script-deploy.screensOne",		
 		"onCommand:maximo-script-deploy.compare",
 		"onCommand:maximo-script-deploy.forms",
-		"onCommand:maximo-script-deploy.formsOne"
+		"onCommand:maximo-script-deploy.formsOne",
+		"onStartupFinished"
 	],
 	"main": "./dist/extension",
 	"contributes": {

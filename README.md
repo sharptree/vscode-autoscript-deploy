@@ -122,6 +122,51 @@ The following four global variables are provided to the deployment scripts.
 
 When using a script for deploy actions, that script file may be named the same as the primary script with `-deploy` appended to the file name and with the same extension to have it automatically deployed with the primary script.  For example if a script is contained in a file named `example.js` the deployment script can be saved in a file named `example-deploy.js` and the deployment script will be deployed to Maximo first so it is available to be called by the primary script at deploy time. 
 
+As of version `1.13` a JSON document can be used to define select objects to deploy along with the script. By providing a JSON file with the same name as the primary script, with a `.json` file extension will cause the tooling to deploy the objects defined in the JSON document along with the script. 
+
+Currently Cron Tasks, Loggers, Messages and Properties are available.  Additional Maximo data types will be added in future releases based on feedback and demand. The JSON schemas for these objects are provided below.
+
+| Object Type       | Schema                                                                                                                                                                                                |  
+| :-----------------| :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------| 
+| Cron Task         | [https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/crontask.json](https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/crontask.json)    |
+| Logger            | [https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/logger.json](https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/logger.json)        |
+| Message           | [https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/message.json](https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/message.json)      |
+| Property          | [https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/property.json](https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/property.json)    |
+
+#### Example Deploy JSON
+Below is an example deploy JSON that will create or update two messages and a property and then delete the third message `example.exampleMessage3`.
+
+```json
+{
+    "messages": [
+        {
+            "msgGroup": "example",
+            "msgKey": "exampleMessage",
+            "value": "An example message"
+        },
+        {
+            "msgGroup": "example",
+            "msgKey": "exampleMessage2",
+            "value": "An example message 2"
+        },
+        {
+            "delete": true,
+            "msgGroup": "example",
+            "msgKey": "exampleMessage3"
+        }                
+    ],
+    "properties":[
+        {
+            "propName":"example.property",
+            "description":"Example property",
+            "propValue":"Example value"
+        }
+    ]
+}
+```
+
+
+
 > Maximo requires that JavaScript objects have quoted properties, as shown below.  If you are using Prettier as your code formatter it may automatically remove these quotes, which will result in errors when deploying.  To retain the quotes go to the Visual Studio Code Settings (`⌘ + ,` or `ctrl + ,`), select `Prettier`, then find the `Quote Props` setting and select the `preserve` option.  
 >
 > 

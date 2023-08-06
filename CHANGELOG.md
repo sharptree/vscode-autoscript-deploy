@@ -1,4 +1,9 @@
 # Release Notes
+## 1.13.0
+- Add support for JSON deployment object definitions.
+- Minor fixes to the Inspection form handling for differences between versions of Maximo.
+- Minor snippet fixes.
+
 ## 1.12.0
 - Add snippets support.
 

@@ -455,21 +455,21 @@
     "domainid": {
         "prefix": "domainid",
         "body": [
-            "domainid"
+            "domainid = \"${0:domainId}\";"
         ],
         "description": "Implicit String variable that indicates the name of the domain used to provide the list of values when using an attribute launch point with a Retrieve List."
     },
     "errorgroup": {
         "prefix": "errorgroup",
         "body": [
-            "errorgroup"
+            "errorgroup = \"${0:errorGroup}\";"
         ],
         "description": "Implicit String variable that indicates the message group that will be used to throw an error from the script."
     },
     "errorkey": {
         "prefix": "errorkey",
         "body": [
-            "errorkey"
+            "errorkey = \"${0:errorKey}\";"
         ],
         "description": "Implicit String variable that indicates the message key that will be used to throw an error from the script."
     },
@@ -490,28 +490,28 @@
     "listErrorGroup": {
         "prefix": "listErrorGroup",
         "body": [
-            "listErrorGroup"
+            "listErrorGroup = \"${0:errorGroup}\";"
         ],
         "description": "Implicit String variable that can be set in the script to indicate the message group to use when a list validation fails for attribute launch points with a Retrieve List."
     },
     "listErrorKey": {
         "prefix": "listErrorKey",
         "body": [
-            "listErrorKey"
+            "listErrorKey = \"{0:errorKey}\";"
         ],
         "description": "Implicit String variable that can be set in the script to indicate the message key to use when a list validation fails for attribute launch points with a Retrieve List."
     },
     "listOrder": {
         "prefix": "listOrder",
         "body": [
-            "listOrder"
+            "listOrder = \"${0:listOrder}\";"
         ],
         "description": "Implicit String variable that can be set in the script to provide an order by clause for the displayed list for attribute launch points with a Retrieve List."
     },
     "listWhere": {
         "prefix": "listWhere",
         "body": [
-            "listWhere"
+            "listWhere = \"${0:listWhere}\";"
         ],
         "description": "Implicit String variable that can be set in the script to provide a where clause for the displayed list for attribute launch points with a Retrieve List."
     },
@@ -553,14 +553,14 @@
     "relationObject": {
         "prefix": "relationObject",
         "body": [
-            "relationObject"
+            "relationObject = \"${0:relatedObject}\";"
         ],
         "description": "Implicit String variable that can be set in the script to provide the related object name for attribute launch points with a Retrieve List."
     },
     "relationWhere": {
         "prefix": "relationWhere",
         "body": [
-            "relationWhere"
+            "relationWhere = \"$[0:relationWhere}\";"
         ],
         "description": "Implicit String variable that can be set in the script to provide the relationship where clause for attribute launch points with a Retrieve List."
     },
@@ -574,14 +574,14 @@
     "srcKeys": {
         "prefix": "srcKeys",
         "body": [
-            "srcKeys"
+            "srcKeys = [\"${1:keyOne}\",\"${0:keyTwo}\"];"
         ],
         "description": "Implicit String array variable that can be set to specify the source keys from the look up list for attribute launch points with a Retrieve List."
     },
     "targetKeys": {
         "prefix": "targetKeys",
         "body": [
-            "targetKeys"
+            "targetKeys = [\"${1:keyOne}\",\"${0:keyTwo}\"];"
         ],
         "description": "Implicit String array variable that can be set to specify the target keys for the look up list for attribute launch points with a Retrieve List."
     },
@@ -1223,12 +1223,12 @@
         "description": "Validates the Mbo values."
     },
     "functionClose": {
-        "prefix": "function close(set)",
+        "prefix": "function close(mboSet)",
         "body": [
-            "function close(set){",
+            "function close(mboSet){",
             "   if (mboSet && mboSet instanceof Java.type(\"psdi.mbo.MboSet\")) {",
-            "       set.cleanup();",
-            "       set.close();",
+            "       mboSet.cleanup();",
+            "       mboSet.close();",
             "   }",
             "}"
         ],
@@ -1244,6 +1244,70 @@
             "   \"active\":\"${1|true, false|}\",",
             "   \"logLevel\":\"${0:ERROR}\",",
             "};"
-        ]
-    }    
+        ],
+        "description":"Creates a new scriptConfig variable."
+    },
+    "request.getHttpMethod":{
+        "prefix":"request.getHttpMethod()",
+        "body":[
+            "request.getHttpMethod();"
+        ],
+        "description":"Gets the request HTTP method (GET,PUT,POST,DELETE,PATCH)"
+    },   
+    "request.getQueryParam": {
+        "prefix": "request.getQueryParam(param)",
+        "body": [
+            "request.getQueryParam(\"${0:param}\");"
+        ],
+        "description": "Gets the value for named query parameter."
+    },
+    "request.getIntegerQueryParam": {
+        "prefix": "request.getIntegerQueryParam(param)",
+        "body": [
+            "request.getIntegerQueryParam(\"${0:param}\");"
+        ],
+        "description": "Gets the value for named query parameter as an Integer value."
+    }, 
+    "request.getBooleanQueryParam": {
+        "prefix": "request.getBooleanQueryParam(param)",
+        "body": [
+            "request.getBooleanQueryParam(\"${0:param}\");"
+        ],
+        "description": "Gets the value for named query parameter as a boolean value."
+    },
+    "request.getQueryParamWithDefault": {
+        "prefix": "request.getQueryParam(param, default)",
+        "body": [
+            "request.getBooleanQueryParam(\"${1:param}\",\"${0:default}\");"
+        ],
+        "description": "Gets the value for named query parameter or returns the default value if no query paramter is found."
+    },  
+    "request.getHttpServletRequest": {
+        "prefix": "request.getHttpServletRequest()",
+        "body": [
+            "request.getHttpServletRequest();"
+        ],
+        "description": "Gets the javax.servlet.http.HttpServletRequest object for the OSLC request."
+    },
+    "request.getHttpServletResponse": {
+        "prefix": "request.getHttpServletResponse()",
+        "body": [
+            "request.getHttpServletResponse();"
+        ],
+        "description": "Gets the javax.servlet.http.HttpServletResponse object for the OSLC request."
+    },
+    "requestBody": {
+        "prefix": "requestBody",
+        "body": [
+            "requestBody"
+        ],
+        "description": "Gets the body of the request as a String for POST/PATCH/PUT requests."
+    },
+    "responseBody": {
+        "prefix": "responseBody",
+        "body": [
+            "responseBody = \"${0:response}\";"
+        ],
+        "description": "Sets the body of the response as a String values."
+    }        
 }
