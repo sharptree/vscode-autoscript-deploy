@@ -596,7 +596,7 @@ function Property(property) {
     this.onlineChanges = typeof property.onlineChanges === 'undefined' ? true : property.onlineChanges == true;
     this.secureLevel = typeof property.secureLevel === 'undefined' ? 'PUBLIC' : property.secureLevel;
     this.propValue = typeof property.propValue === 'undefined' ? '' : property.propValue;
-    this.encryptedValue = typeof property.encryptedValue === 'undefined' ? '' : property.encryptedValue;
+    
     this.maximoDefault = typeof property.maximoDefault === 'undefined' ? '' : property.maximoDefault;
     if (property.maxPropInstance && Array.isArray(property.maxPropInstance)) {
         property.maxPropInstance.forEach(function (instance) {
