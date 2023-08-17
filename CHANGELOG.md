@@ -1,4 +1,8 @@
 # Release Notes
+## 1.13.1
+- Script deploy fix
+- MAS / 7.6 inspection form compatibility fix.
+
 ## 1.13.0
 - Add support for JSON deployment object definitions.
 - Minor fixes to the Inspection form handling for differences between versions of Maximo.
