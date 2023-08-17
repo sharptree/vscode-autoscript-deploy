@@ -1,4 +1,7 @@
 # Release Notes
+## 1.13.2
+- Added support for JDOM2 as JDOM was removed from 8.6 for screen extracting.
+
 ## 1.13.1
 - Script deploy fix
 - MAS / 7.6 inspection form compatibility fix.
