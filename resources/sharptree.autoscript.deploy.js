@@ -898,7 +898,7 @@ function astToJavaScript(ast) {
     if (ast.type === "ObjectExpression" && ast.properties) {
         ast.properties.map(function (property) {
             if (property.value.type == "Literal") {
-                javaScript[property.key.value] = property.value.value;
+                javaScript[property.key.name] = property.value.value;
             } else if (property.value.type == "ArrayExpression") {
                 var child = [];
                 property.value.elements.map(function (element) {
