@@ -22,6 +22,8 @@ MXApplicationException = Java.type("psdi.util.MXApplicationException");
 MXLoggerFactory = Java.type("psdi.util.logging.MXLoggerFactory");
 Version = Java.type("psdi.util.Version");
 
+System = Java.type("java.lang.System");
+
 var logger = MXLoggerFactory.getLogger("maximo.script." + service.getScriptName());
 
 main();
@@ -99,7 +101,7 @@ function main() {
             }
         } catch (error) {
             response.status = "error";
-
+            service.log_error(error);
             if (error instanceof SyntaxError) {
                 response.reason = "syntax_error";
                 response.message = error.message;
@@ -153,6 +155,7 @@ function importForm(form) {
             inspectionFormSet.reset();
             if (inspectionFormSet.isEmpty()) {
                 inspectionForm = inspectionFormSet.add();
+
                 inspectionForm.setValue("NAME", form.name);
             } else {
                 inspectionForm = inspectionFormSet.moveFirst();
@@ -629,8 +632,26 @@ function getInspectionFormId() {
 
 function fixInspectionAppDocTypes() {
     var docTypesSet;
-    var applications = ["INSPECTOR", "INSPECTORSUP", "INSPECTION"];
+    var appsSet;
+    var allApplications = ["INSPECTOR", "INSPECTORSUP", "INSPECTION"];
+
     try {
+        var applications = [];
+        appsSet = MXServer.getMXServer().getMboSet("MAXAPPS", userInfo);
+        allApplications.forEach(function(application){
+            var sqlfCheck = new SqlFormat("app = :1");
+            sqlfCheck.setObject(1, "MAXAPPS", "APP",application);
+            appsSet.setWhere(sqlfCheck.format());
+
+            System.out.println(sqlfCheck.format());
+            appsSet.reset();
+            if (!appsSet.isEmpty()) {
+                applications.push(application);
+            }
+        });
+        
+        System.out.println(JSON.stringify(applications, null, 4));
+
         docTypesSet = MXServer.getMXServer().getMboSet("DOCTYPES", userInfo);
 
         for (index in applications) {
@@ -646,11 +667,13 @@ function fixInspectionAppDocTypes() {
                 var appDocType = docTypes.getMboSet("APPDOCTYPE").add();
                 appDocType.setValue("APP", application);
                 appDocType.setValue("DOCTYPE", docTypes.getString("DOCTYPE"));
+
                 docTypes = docTypesSet.moveNext();
             }
             docTypesSet.save();
         }
     } finally {
+        __close(appsSet);
         __close(docTypesSet);
     }
 }

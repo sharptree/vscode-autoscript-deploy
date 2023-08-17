@@ -898,7 +898,12 @@ function astToJavaScript(ast) {
     if (ast.type === "ObjectExpression" && ast.properties) {
         ast.properties.map(function (property) {
             if (property.value.type == "Literal") {
-                javaScript[property.key.value] = property.value.value;
+                // In some systems the property key name is returned as "name" and in others as value.
+                if (typeof property.key.name !== "undefined") {
+                    javaScript[property.key.name] = property.value.value;
+                } else {
+                    javaScript[property.key.value] = property.value.value;
+                }
             } else if (property.value.type == "ArrayExpression") {
                 var child = [];
                 property.value.elements.map(function (element) {
@@ -917,7 +922,12 @@ function astToJavaScript(ast) {
                 var elementObject = {};
                 element.properties.map(function (property) {
                     if (property.value.type == "Literal" && property.key.type == "Identifier") {
-                        elementObject[property.key.name] = property.value.value;
+                        // In some systems the property key name is returned as "name" and in others as value.
+                        if (typeof property.key.name !== "undefined") {
+                            javaScript[property.key.name] = property.value.value;
+                        } else {
+                            javaScript[property.key.value] = property.value.value;
+                        }
                     } else if (property.value.type == "ArrayExpression") {
                         var child = [];
                         elementObject.value.elements.map(function (element) {
