@@ -152,10 +152,9 @@ function importForm(form) {
             inspectionFormSet.setWhere(sqlf.format());
             inspectionFormSet.reset();
             if (inspectionFormSet.isEmpty()) {
-                inspectionForm = inspectionFormSet.add();    
-                           
-                    inspectionForm.setValue("NAME", form.name);
-                
+                inspectionForm = inspectionFormSet.add();
+
+                inspectionForm.setValue("NAME", form.name);
             } else {
                 inspectionForm = inspectionFormSet.moveFirst();
                 inspectionForm.setValue("REASON", form.reason);
@@ -639,10 +638,10 @@ function fixInspectionAppDocTypes() {
         appsSet = MXServer.getMXServer().getMboSet("MAXAPPS", userInfo);
         for (aplication in allApplications) {
             var sqlfCheck = new SqlFormat("app = :1");
-            sqlfCheck.setObject(1, "MAXAPPS","APP", application);
+            sqlfCheck.setObject(1, "MAXAPPS", "APP", application);
             appsSet.setWhere(sqlfCheck.format());
             appsSet.reset();
-            if(!appsSet.isEmpty()){
+            if (!appsSet.isEmpty()) {
                 applications.push(application);
             }
         }
@@ -659,11 +658,10 @@ function fixInspectionAppDocTypes() {
             var docTypes = docTypesSet.moveFirst();
 
             while (docTypes) {
-         
                 var appDocType = docTypes.getMboSet("APPDOCTYPE").add();
                 appDocType.setValue("APP", application);
                 appDocType.setValue("DOCTYPE", docTypes.getString("DOCTYPE"));
-         
+
                 docTypes = docTypesSet.moveNext();
             }
             docTypesSet.save();
