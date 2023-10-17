@@ -1886,6 +1886,154 @@ PublishChannel.prototype.setMboValues = function (mbo) {
     });
 };
 
+function CommunicationTemplate(communicationTemplate) {
+    if (!communicationTemplate) {
+        throw new Error('A integration object JSON is required to create the CommunicationTemplate object.');
+    } else if (typeof communicationTemplate.templateID === 'undefined') {
+        throw new Error('The templateID property is required and must a Maximo Communication Template field value.');
+    } else if (typeof communicationTemplate.objectName === 'undefined') {
+        throw new Error('The objectName property is required and must a Maximo Communication Template field value.');
+    } else if (typeof communicationTemplate.sendFrom === 'undefined') {
+        throw new Error('The sendFrom property is required and must a Maximo Communication Template field value.');
+    }
+
+    this.templateID = communicationTemplate.templateID;
+    this.objectName = communicationTemplate.objectName;
+    this.sendFrom = communicationTemplate.sendFrom;
+    this.description = typeof communicationTemplate.description === 'undefined' ? '' : communicationTemplate.description;
+    this.useWith = typeof communicationTemplate.useWith === 'undefined' ? 'ALL' : communicationTemplate.useWith;
+    this.trackFailedMessages = typeof communicationTemplate.trackFailedMessages === 'undefined' ? false : communicationTemplate.trackFailedMessages == true;
+    this.logFlag = typeof communicationTemplate.logFlag === 'undefined' ? false : communicationTemplate.logFlag == true;
+    this.status = typeof communicationTemplate.status === 'undefined' ? 'INACTIVE' : communicationTemplate.status;
+    this.replyTo = typeof communicationTemplate.replyTo === 'undefined' ? '' : communicationTemplate.replyTo;
+    this.subject = typeof communicationTemplate.subject === 'undefined' ? '' : communicationTemplate.subject;
+    this.message = typeof communicationTemplate.message === 'undefined' ? '' : communicationTemplate.message;
+
+    //Send Tos for Communication Template
+    if (communicationTemplate.commTmpltSendTo && Array.isArray(communicationTemplate.commTmpltSendTo)) {
+        communicationTemplate.commTmpltSendTo.forEach(function (sendTo) {
+            if (typeof sendTo.type === 'undefined' || !sendTo.type) {
+                throw new Error(
+                    'A type for communication template ' +
+                        communicationTemplate.templateID +
+                        ' is missing or has an empty value for the required type property.'
+                );
+            }
+            if (typeof sendTo.sendToValue === 'undefined' || !sendTo.sendToValue) {
+                throw new Error(
+                    'A sendToValue for communication template ' +
+                        communicationTemplate.templateID +
+                        ' is missing or has an empty value for the required sendToValue property.'
+                );
+            }
+            sendTo.sendTo = typeof sendTo.sendTo === 'undefined' ? false : sendTo.sendTo == true;
+            sendTo.cc = typeof sendTo.cc === 'undefined' ? false : sendTo.cc == true;
+            sendTo.bcc = typeof sendTo.bcc === 'undefined' ? false : sendTo.bcc == true;
+        });
+
+        this.commTmpltSendTo = communicationTemplate.commTmpltSendTo;
+    } else {
+        this.commTmpltSendTo = [];
+    }
+}
+CommunicationTemplate.prototype.constructor = CommunicationTemplate;
+CommunicationTemplate.prototype.setMboValues = function (mbo) {
+    if (!mbo) {
+        throw new Error('A Mbo is required to set values from the External System object.');
+    } else if (!(mbo instanceof Java.type('psdi.mbo.Mbo'))) {
+        throw new Error('The mbo parameter must be an instance of psdi.mbo.Mbo.');
+    } else if (!mbo.isBasedOn('COMMTEMPLATE')) {
+        throw new Error('The mbo parameter must be based on the COMMTEMPLATE Maximo object.');
+    }
+    mbo.setValue('TEMPLATEID', this.templateID);
+    mbo.setValue('OBJECTNAME', this.objectName);
+    mbo.setValue('SENDFROM', this.sendFrom);
+    mbo.setValue('DESCRIPTION', this.description);
+    mbo.setValue('USEWITH', this.useWith);
+    mbo.setValue('TRACKFAILEDMESSAGES', this.trackFailedMessages);
+    mbo.setValue('LOGFLAG', this.logFlag);
+    mbo.setValue('STATUS', this.status);
+    mbo.setValue('REPLYTO', this.replyTo);
+    mbo.setValue('SUBJECT', this.subject);
+    mbo.setValue('MESSAGE', this.message);
+
+    var commTmpltSendToSet = mbo.getMboSet('COMMTMPLT_SENDTO');
+    commTmpltSendToSet.deleteAll();
+
+    this.commTmpltSendTo.forEach(function (sendTo) {
+        commTmpltSendTo = commTmpltSendToSet.add();
+        commTmpltSendTo.setValue('TYPE', sendTo.type);
+        commTmpltSendTo.setValue('SENDTOVALUE', sendTo.sendToValue);
+        commTmpltSendTo.setValue('SENDTO', sendTo.sendTo);
+        commTmpltSendTo.setValue('CC', sendTo.cc);
+        commTmpltSendTo.setValue('BCC', sendTo.bcc);
+    });
+};
+
+function LaunchInContext(launchInContext) {
+    if (!launchInContext) {
+        throw new Error('A integration object JSON is required to create the launchInContext object.');
+    } else if (typeof launchInContext.launchEntryName === 'undefined') {
+        throw new Error('The launchEntryName property is required and must a Maximo Launch in Context field value.');
+    } else if (typeof launchInContext.consoleURL === 'undefined') {
+        throw new Error('The consoleURL property is required and must a Maximo Launch in Context field value.');
+    }
+
+    this.launchEntryName = launchInContext.launchEntryName;
+    this.consoleURL = launchInContext.consoleURL;
+    this.displayName = typeof launchInContext.displayName === 'undefined' ? '' : launchInContext.displayName;
+    this.targetWindow = typeof launchInContext.targetWindow === 'undefined' ? '_usecurrent' : launchInContext.targetWindow;
+    this.ompProductName = typeof launchInContext.ompProductName === 'undefined' ? '' : launchInContext.ompProductName;
+    this.ompVersion = typeof launchInContext.ompVersion === 'undefined' ? '' : launchInContext.ompVersion;
+
+    //Launch Contexts fors
+    if (launchInContext.maxLeContext && Array.isArray(launchInContext.maxLeContext)) {
+        launchInContext.maxLeContext.forEach(function (leContext) {
+            if (typeof leContext.resourceType === 'undefined' || !leContext.resourceType) {
+                throw new Error(
+                    'A type for launch in context ' +
+                        launchInContext.launchEntryName +
+                        ' is missing or has an empty value for the required resource type property.'
+                );
+            }
+            leContext.resourceClass = typeof leContext.resourceClass === 'undefined' ? '' : leContext.resourceClass;
+            leContext.includeChildClass = typeof leContext.includeChildClass === 'undefined' ? false : leContext.includeChildClass == true;
+        });
+
+        this.maxLeContext = launchInContext.maxLeContext;
+    } else {
+        this.maxLeContext = [];
+    }
+}
+LaunchInContext.prototype.constructor = LaunchInContext;
+LaunchInContext.prototype.setMboValues = function (mbo) {
+    if (!mbo) {
+        throw new Error('A Mbo is required to set values from the External System object.');
+    } else if (!(mbo instanceof Java.type('psdi.mbo.Mbo'))) {
+        throw new Error('The mbo parameter must be an instance of psdi.mbo.Mbo.');
+    } else if (!mbo.isBasedOn('MAXLAUNCHENTRY')) {
+        throw new Error('The mbo parameter must be based on the MAXLAUNCHENTRY Maximo object.');
+    }
+    mbo.setValue('LAUNCHENTRYNAME', this.launchEntryName);
+    mbo.setValue('CONSOLEURL', this.consoleURL);
+    mbo.setValue('DISPLAYNAME', this.displayName);
+    mbo.setValue('TARGETWINDOW', this.targetWindow);
+    mbo.setValue('OMPPRODUCTNAME', this.ompProductName);
+    mbo.setValue('OMPVERSION', this.ompVersion);
+
+    var maxLeContextSet = mbo.getMboSet('MAXLECONTEXT');
+    maxLeContextSet.deleteAll();
+
+    this.maxLeContext.forEach(function (leContext) {
+        maxLeContext = maxLeContextSet.add();
+        maxLeContext.setValue('RESOURCETYPE', leContext.resourceType);
+        if (leContext.resourceType == '') {
+            maxLeContext.setValue('RESOURCECLASS', leContext.resourceClass);
+        }
+        maxLeContext.setValue('INCLUDECHILDCLASS', leContext.includeChildClass);
+    });
+};
+
 // Main function that is called when the script is invoked.
 // This is provided for testing purposes.
 mainLibrary();
@@ -1945,6 +2093,12 @@ function deployConfig(config) {
     }
     if (typeof config.InvocationChannel !== 'undefined') {
         deployInvocationChannels(config.invocationChannels);
+    }
+    if (typeof config.CommunicationTemplate !== 'undefined') {
+        deployCommunicationTemplates(config.communicationTemplates);
+    }
+    if (typeof config.LaunchInContext !== 'undefined') {
+        deployLaunchInContexts(config.launchInContexts);
     }
 }
 
@@ -2015,6 +2169,144 @@ function deleteAction(action) {
         __libraryClose(actionSet);
     }
     logger.debug('Deleted the ' + action.action + ' action.');
+}
+
+/**
+ * Deploys the array of communication templates provided. If a communication template has the value of delete set to true, that communication template
+ * will be deleted based on the communication template's templateID property.
+ *
+ * @param {CommunicationTemplate[]} communicationTemplates a JSON array of communication templates to be added, updated or deleted.
+ */
+function deployCommunicationTemplates(communicationTemplates) {
+    if (!communicationTemplates || !Array.isArray(communicationTemplates)) {
+        throw new Error('The communicationTemplates parameter is required and must be an array of communication template objects.');
+    }
+
+    communicationTemplates.forEach(function (communicationTemplate) {
+        if (typeof communicationTemplate.delete !== 'undefined' && communicationTemplate.delete == true) {
+            deleteCommunicationTemplate(communicationTemplate);
+        } else {
+            addOrUpdateCommunicationTemplate(communicationTemplate);
+        }
+    });
+}
+
+/**
+ * Adds a communication template if it does not exist or updates it to match the described state if the communication template exists.
+ * @param {CommunicationTemplate} communicationTemplate single communication template that will be added/updated
+ */
+function addOrUpdateCommunicationTemplate(communicationTemplate) {
+    logger.debug('Setting up the ' + communicationTemplate.templateID + ' communication template.');
+    var commTemplateSet;
+    try {
+        commTemplateSet = MXServer.getMXServer().getMboSet('COMMTEMPLATE', MXServer.getMXServer().getSystemUserInfo());
+        var commTemplate = new CommunicationTemplate(communicationTemplate);
+        var sqlf = new SqlFormat('templateid = :1');
+        sqlf.setObject(1, 'COMMTEMPLATE', 'TEMPLATEID', communicationTemplate.templateID);
+        commTemplateSet.setWhere(sqlf.format());
+
+        if (!commTemplateSet.isEmpty()) {
+            commTemplateSet.deleteAll();
+            commTemplateSet.save();
+        }
+        commTemplate.setMboValues(commTemplateSet.add());
+        commTemplateSet.save();
+    } finally {
+        __libraryClose(commTemplateSet);
+    }
+    logger.debug('Set up the ' + communicationTemplate.ifaceName + ' communication template.');
+}
+
+/**
+ * Removes the provided communication template by matching the templateID property.
+ * @param {CommunicationTemplate} communicationTemplate single communication template that will be deleted.
+ */
+function deleteCommunicationTemplate(communicationTemplate) {
+    logger.debug('Deleting the ' + communicationTemplate.ifaceName + ' communication template.');
+    var commTemplateSet;
+    try {
+        commTemplateSet = MXServer.getMXServer().getMboSet('COMMTEMPLATE', MXServer.getMXServer().getSystemUserInfo());
+        var sqlf = new SqlFormat('templateid = :1');
+        sqlf.setObject(1, 'COMMTEMPLATE', 'TEMPLATEID', communicationTemplate.templateID);
+        commTemplateSet.setWhere(sqlf.format());
+
+        if (!commTemplateSet.isEmpty()) {
+            commTemplateSet.deleteAll();
+            commTemplateSet.save();
+        }
+    } finally {
+        __libraryClose(commTemplateSet);
+    }
+    logger.debug('Deleted the ' + communicationTemplate.ifaceName + ' communication template.');
+}
+
+/**
+ * Deploys the array of launch in contexts provided. If a launch in context has the value of delete set to true, that launch in context
+ * will be deleted based on the launch in context's launchEntryName property.
+ *
+ * @param {LaunchInContext[]} launchInContext a JSON array of launch in contexts to be added, updated or deleted.
+ */
+function deployLaunchInContexts(launchInContexts) {
+    if (!launchInContexts || !Array.isArray(launchInContexts)) {
+        throw new Error('The launchInContexts parameter is required and must be an array of launch in context objects.');
+    }
+
+    launchInContexts.forEach(function (launchInContext) {
+        if (typeof launchInContext.delete !== 'undefined' && launchInContext.delete == true) {
+            deleteLaunchInContext(launchInContext);
+        } else {
+            addOrUpdateLaunchInContext(launchInContext);
+        }
+    });
+}
+
+/**
+ * Adds a launch in context if it does not exist or updates it to match the described state if the launch in context exists.
+ * @param {LaunchInContext} launchInContext single launch in context that will be added/updated
+ */
+function addOrUpdateLaunchInContext(launchInContext) {
+    logger.debug('Setting up the ' + launchInContext.launchEntryName + ' launch in context.');
+    var launchInContextSet;
+    try {
+        launchInContextSet = MXServer.getMXServer().getMboSet('MAXLAUNCHENTRY', MXServer.getMXServer().getSystemUserInfo());
+        var launchContext = new LaunchInContext(launchInContext);
+        var sqlf = new SqlFormat('launchentryname = :1');
+        sqlf.setObject(1, 'MAXLAUNCHENTRY', 'LAUNCHENTRYNAME', launchInContext.launchEntryName);
+        launchInContextSet.setWhere(sqlf.format());
+
+        if (!launchInContextSet.isEmpty()) {
+            launchInContextSet.deleteAll();
+            launchInContextSet.save();
+        }
+        launchContext.setMboValues(launchInContextSet.add());
+        launchInContextSet.save();
+    } finally {
+        __libraryClose(launchInContextSet);
+    }
+    logger.debug('Set up the ' + launchInContext.ifaceName + ' launch in context.');
+}
+
+/**
+ * Removes the provided launch in context by matching the launchEntryName property.
+ * @param {LaunchInContext} launchInContext single launch in context that will be deleted.
+ */
+function deleteLaunchInContext(launchInContext) {
+    logger.debug('Deleting the ' + launchInContext.ifaceName + ' launch in context.');
+    var launchInContextSet;
+    try {
+        launchInContextSet = MXServer.getMXServer().getMboSet('MAXLAUNCHENTRY', MXServer.getMXServer().getSystemUserInfo());
+        var sqlf = new SqlFormat('launchentryname = :1');
+        sqlf.setObject(1, 'MAXLAUNCHENTRY', 'LAUNCHENTRYNAME', launchInContext.launchEntryName);
+        launchInContextSet.setWhere(sqlf.format());
+
+        if (!launchInContextSet.isEmpty()) {
+            launchInContextSet.deleteAll();
+            launchInContextSet.save();
+        }
+    } finally {
+        __libraryClose(launchInContextSet);
+    }
+    logger.debug('Deleted the ' + launchInContext.ifaceName + ' launch in context.');
 }
 
 /**
