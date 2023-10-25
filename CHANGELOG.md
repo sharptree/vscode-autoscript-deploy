@@ -1,4 +1,7 @@
 # Release Notes
+## 1.13.3
+- Added support for MAS 8.11
+
 ## 1.13.2
 - Added support for JDOM2 as JDOM was removed from 8.6 for screen extracting.
 
