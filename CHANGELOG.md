@@ -1,5 +1,8 @@
 # Release Notes
 ## 1.13.3
+- Added support for naming a deployment script with a `.deploy` in addition to `-deploy` for naming consistency.
+  
+## 1.13.3
 - Added support for MAS 8.11
 
 ## 1.13.2
