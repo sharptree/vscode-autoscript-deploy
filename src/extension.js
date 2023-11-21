@@ -311,6 +311,7 @@ export function activate(context) {
 						if (document) {
 							let fileName = path.basename(document.fileName);
 							let deployFileName = document.fileName.substring(0, document.fileName.lastIndexOf('.')) + '-deploy' + document.fileName.substring(document.fileName.lastIndexOf('.'));
+							let deployDotFileName = document.fileName.substring(0, document.fileName.lastIndexOf('.')) + '.deploy' + document.fileName.substring(document.fileName.lastIndexOf('.'));
 							let deployJSONFileName = document.fileName.substring(0, document.fileName.lastIndexOf('.')) + '.json';
 
 							if (fileName.endsWith('.js') || fileName.endsWith('.py')) {
@@ -319,6 +320,8 @@ export function activate(context) {
 								var scriptDeploy;
 								if (fs.existsSync(deployFileName)) {
 									scriptDeploy = fs.readFileSync(deployFileName);
+								} else if (fs.existsSync(deployDotFileName)){
+									scriptDeploy = fs.readFileSync(deployDotFileName);
 								}
 								if (script && script.trim().length > 0) {
 									await window.withProgress({ cancellable: false, title: 'Script', location: ProgressLocation.Notification },
