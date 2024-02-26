@@ -111,7 +111,7 @@
 					"default": false,
 					"description": "Allow untrusted SSL certificates."
 				},
-				"sharptree.maximo.`maxauthOnly`": {
+				"sharptree.maximo.maxauthOnly": {
 					"type": "boolean",
 					"default": false,
 					"description": "Do not send Basic authentication header."
