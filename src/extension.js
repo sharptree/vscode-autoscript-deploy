@@ -1592,10 +1592,11 @@ async function login(client) {
 }
 
 async function installed(client) {
-	if (!await client.installed()) {
-		await window.showInformationMessage('Configurations are required to deploy automation scripts.  Do you want to configure Maximo now?', { modal: true }, ...['Yes']).then(async (response) => {
+	
+	if (!await client.installed()) {		
+		return await window.showInformationMessage('Configurations are required to deploy automation scripts.  Do you want to configure Maximo now?', { modal: true }, ...['Yes']).then(async (response) => {
 			if (response === 'Yes') {
-				await window.withProgress({
+				return await window.withProgress({
 					title: 'Configuring Maximo',
 					location: ProgressLocation.Notification
 				}, async (progress) => {
@@ -1611,7 +1612,7 @@ async function installed(client) {
 				);
 			}
 			return false;
-		});
+		});		
 	} else {
 		return true;
 	}
@@ -1619,9 +1620,9 @@ async function installed(client) {
 
 async function upgraded(client) {
 	if (await client.upgradeRequired()) {
-		await window.showInformationMessage('Updated configurations are required to deploy automation scripts.  Do you want to configure Maximo now?', { modal: true }, ...['Yes']).then(async (response) => {
+		return await window.showInformationMessage('Updated configurations are required to deploy automation scripts.  Do you want to configure Maximo now?', { modal: true }, ...['Yes']).then(async (response) => {
 			if (response === 'Yes') {
-				await window.withProgress({
+				return await window.withProgress({
 					title: 'Configuring Maximo',
 					location: ProgressLocation.Notification
 				}, async (progress) => {
@@ -1637,8 +1638,7 @@ async function upgraded(client) {
 				);
 			}
 			return false;
-		});
-		return;
+		});		
 	} else {
 		return true;
 	}
