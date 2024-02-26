@@ -115,7 +115,20 @@ export default class MaximoClient {
                     parsedCookies = [Cookie.parse(cookies)];
                 }
 
+                let version;
+                let appSecurity;
+
+                if (response.data && response.data.maxupg) {
+                    version = response.data.maxupg;
+                    appSecurity = response.data.appserversecurity;
+                }
+
                 parsedCookies.forEach((cookie) => {
+                    // If we are using a stand alone version of Maximo Manage it will return a secure cookie flag when not secure.
+                    // To allow the session cookie to be used we need to force it to not be secure.
+                    if(cookie.secure && response.request.protocol == 'http:' && (version && version.startsWith('V8')) && !appSecurity){
+                        cookie.secure = false;
+                    }
                     this.jar.setCookieSync(cookie, response.request.protocol + '//' + response.request.host);
                 });
             }
