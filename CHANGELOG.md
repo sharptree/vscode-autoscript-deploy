@@ -1,4 +1,9 @@
 # Release Notes
+## 1.13.5
+- Added support for Maximo Manage stand alone development instance.
+- Fixed bug with the MaxAuth Only option being ignored.
+- Fixed bug that required deploying the selected script again if an install or upgrade was required.
+  
 ## 1.13.3
 - Added support for naming a deployment script with a `.deploy` in addition to `-deploy` for naming consistency.
   
