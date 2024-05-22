@@ -36,8 +36,8 @@ export default class MaximoClient {
         // keep a reference to the config for later use.
         this.config = config;
 
-        this.requiredScriptVersion = '1.28.0';
-        this.currentScriptVersion = '1.28.0';
+        this.requiredScriptVersion = '1.29.0';
+        this.currentScriptVersion = '1.29.0';
 
         if (config.ca) {
             https.globalAgent.options.ca = config.ca;
@@ -232,7 +232,7 @@ export default class MaximoClient {
 
     _addAuthHeaders(request) {
 
-        request.headers.common['maxauth'] = this.config.maxauth;
+        request.headers['maxauth'] = this.config.maxauth;
         if (!this.config.maxauthOnly) {
             request.auth = { 'username': this.config.username, 'password': this.config.password };
         }

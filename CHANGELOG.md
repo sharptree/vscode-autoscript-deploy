@@ -1,4 +1,7 @@
 # Release Notes
+## 1.13.6
+- Added fallback support for importing screens where the PresentationLoader is not available.
+  
 ## 1.13.5
 - Added support for Maximo Manage stand alone development instance.
 - Fixed bug with the MaxAuth Only option being ignored.

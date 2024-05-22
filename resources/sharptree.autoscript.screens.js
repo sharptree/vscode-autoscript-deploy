@@ -16,25 +16,28 @@ MXException = Java.type("psdi.util.MXException");
 MXAccessException = Java.type("psdi.util.MXAccessException");
 MXApplicationException = Java.type("psdi.util.MXApplicationException");
 
-PresentationLoader = Java.type("psdi.webclient.system.controller.PresentationLoader");
-WebClientSessionFactory = Java.type("psdi.webclient.system.session.WebClientSessionFactory");
-WebClientSessionManager = Java.type("psdi.webclient.system.session.WebClientSessionManager");
+try {    
+    PresentationLoader = Java.type("psdi.webclient.system.controller.PresentationLoader");
+    WebClientSessionFactory = Java.type("psdi.webclient.system.session.WebClientSessionFactory");
+} catch (ignored) {}
 
 MXLoggerFactory = Java.type("psdi.util.logging.MXLoggerFactory");
 
-// MAS removed support for legacy JDOM, switch to JDOM2 and then fall back to legacy JDOM for older versions.  
+// MAS removed support for legacy JDOM, switch to JDOM2 and then fall back to legacy JDOM for older versions.
 try {
     Element = Java.type("org.jdom2.Element");
     SAXBuilder = Java.type("org.jdom2.input.SAXBuilder");
     Format = Java.type("org.jdom2.output.Format");
     XMLOutputter = Java.type("org.jdom2.output.XMLOutputter");
-
 } catch (error) {
     if (error instanceof Java.type("java.lang.ClassNotFoundException")) {
         Element = Java.type("org.jdom.Element");
         SAXBuilder = Java.type("org.jdom.input.SAXBuilder");
         Format = Java.type("org.jdom.output.Format");
         XMLOutputter = Java.type("org.jdom.output.XMLOutputter");
+    }else{
+        // if some other error is occurring throw the error to the user.
+        throw error;
     }
 }
 
@@ -81,6 +84,7 @@ function main() {
             } else if (httpMethod.toLowerCase() === "post" && typeof requestBody !== "undefined") {
                 var screen = new SAXBuilder().build(new StringReader(requestBody));
                 var metadata = screen.getRootElement().getChild("metadata");
+                var app = screen.getRootElement().getAttributeValue("id");
 
                 if (metadata) {
                     var controlGroups = metadata.getChildren("ctrlgroup");
@@ -116,12 +120,33 @@ function main() {
 
                 new XMLOutputter(Format.getPrettyFormat()).output(screen, writer);
 
-                var loader = new PresentationLoader();
-                var wcsf = WebClientSessionFactory.getWebClientSessionFactory();
-                var wcs = wcsf.createSession(request.getHttpServletRequest(), request.getHttpServletResponse());
+                if (typeof PresentationLoader !== "undefined" && typeof WebClientSessionFactory !== "undefined") {
+                    var loader = new PresentationLoader();
+                    var wcsf = WebClientSessionFactory.getWebClientSessionFactory();
+                    var wcs = wcsf.createSession(request.getHttpServletRequest(), request.getHttpServletResponse());
 
-                loader.importApp(wcs, writer.toString());
+                    loader.importApp(wcs, writer.toString());
+                } else {
+                    var maxPresentationSet;
+                    try {
+                        maxPresentationSet = MXServer.getMXServer().getMboSet("MAXPRESENTATION", MXServer.getMXServer().getSystemUserInfo());
 
+                        // Query to see if the option has already been assigned to the group.
+                        var sqlFormat = new SqlFormat("app = :1 ");
+                        sqlFormat.setObject(1, "MAXPRESENTATION", "APP", app);
+
+                        maxPresentationSet.setWhere(sqlFormat.format());
+                        maxPresentation = maxPresentationSet.moveFirst();
+                        if (maxPresentation) {
+                            maxPresentation.setValue("PRESENTATION", writer.toString());
+                            maxPresentationSet.save();
+                        } else {
+                            throw new MXApplicationException("designer", "noapp", Java.to([app.toUpperCase()], "java.lang.String[]"));
+                        }
+                    } finally {
+                        close(maxPresentationSet);
+                    }
+                }
                 response.status = "success";
                 responseBody = JSON.stringify(response);
             } else {
@@ -605,5 +630,5 @@ var scriptConfig = {
     description: "Extract screen definitions.",
     version: "1.0.0",
     active: true,
-    logLevel: "ERROR",
+    logLevel: "ERROR"
 };
