@@ -35,6 +35,9 @@ try {
         SAXBuilder = Java.type("org.jdom.input.SAXBuilder");
         Format = Java.type("org.jdom.output.Format");
         XMLOutputter = Java.type("org.jdom.output.XMLOutputter");
+    }else{
+        // if some other error is occurring throw the error to the user.
+        throw error;
     }
 }
 
