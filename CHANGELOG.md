@@ -1,4 +1,7 @@
 # Release Notes
+## 1.13.8
+- Fixed issue with LITERAL script variables. Thanks to Jared Scrag [https://github.com/jaredschrag](https://github.com/jaredschrag) for helping trouble shoot this issue.
+
 ## 1.13.7
 - Emergency rollback of incompatible axios version.
   
