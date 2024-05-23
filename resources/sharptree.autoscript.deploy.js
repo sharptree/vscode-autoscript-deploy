@@ -225,7 +225,7 @@ function deployScript(scriptSource, language) {
                         setValueIfAvailable(autoScriptVar, "VARTYPE", element.varType);
                         setValueIfAvailable(autoScriptVar, "ALLOWOVERRIDE", element.allowOverride);
 
-                        if(element.varBindingType.toUpperCase() != "LITERAL" && element.varType.toUpperCase() != "IN"){                            
+                        if (element.varBindingType.toUpperCase() != "LITERAL" && element.varType.toUpperCase() != "IN") {
                             setValueIfAvailable(autoScriptVar, "NOVALIDATION", element.noValidation);
                             setValueIfAvailable(autoScriptVar, "NOACCESSCHECK", element.noAccessCheck);
                             setValueIfAvailable(autoScriptVar, "NOACTION", element.noAction);
@@ -379,7 +379,7 @@ function deployScript(scriptSource, language) {
                                 var found = false;
                                 while (launchPointVars && !found) {
                                     if (launchPointVars.getString("VARNAME").equalsIgnoreCase(elementChild.varName)) {
-                                        launchPointVars.setValue("VARBINDINGVALUE", elementChild.varBindingValue);
+                                        launchPointVars.setValue("VARBINDINGVALUE", elementChild.varBindingValue, MboConstants.NOACCESSCHECK);
                                         found = true;
                                     }
 
