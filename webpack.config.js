@@ -4,7 +4,7 @@
 
 const path = require('path');
 const webpack = require('webpack');
-var nodeExternals = require('webpack-node-externals');
+// var nodeExternals = require('webpack-node-externals');
 
 /**@type {import('webpack').Configuration}*/
 const config = {
@@ -19,12 +19,12 @@ const config = {
         devtoolModuleFilenameTemplate: '../[resource-path]'
     },
     devtool: 'source-map',
-    externals: [nodeExternals(), {
+    externals:  {
         vscode: 'commonjs vscode' // the vscode-module is created on-the-fly and must be excluded. Add other modules that cannot be webpack'ed, 📖 -> https://webpack.js.org/configuration/externals/
-    }], // in order to ignore all modules in node_modules folder
-    externalsPresets: {
-        node: true // in order to ignore built-in modules like path, fs, etc. 
-    },
+    }, // in order to ignore all modules in node_modules folder
+    // externalsPresets: {
+    //     node: true // in order to ignore built-in modules like path, fs, etc. 
+    // },
     resolve: {
         // support reading TypeScript and JavaScript files, 📖 -> https://github.com/TypeStrong/ts-loader
         mainFields: ['browser', 'module', 'main'], // look for `browser` entry point in imported node modules
