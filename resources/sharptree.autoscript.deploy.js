@@ -114,7 +114,7 @@ function main() {
         }
     } catch (error) {
         response.status = "error";
-
+        Java.type("java.lang.System").out.println(error);
         if (error instanceof ScriptError) {
             response.message = error.message;
             response.reason = error.reason;
@@ -173,7 +173,7 @@ function deployScript(scriptSource, language) {
             if (autoScriptSet.isEmpty()) {
                 autoscript = autoScriptSet.add();
                 autoscript.setValue("AUTOSCRIPT", scriptConfig.autoscript);
-                autoscript.setValue("SCRIPTLANGUAGE", language ? language : "nashorn");
+                autoscript.setValue("SCRIPTLANGUAGE", language ? language : "javascript");
                 autoscript.setValue("ACTIVE", true);
             } else {
                 autoscript = autoScriptSet.getMbo(0);
@@ -224,11 +224,15 @@ function deployScript(scriptSource, language) {
                         setValueIfAvailable(autoScriptVar, "VARBINDINGTYPE", element.varBindingType);
                         setValueIfAvailable(autoScriptVar, "VARTYPE", element.varType);
                         setValueIfAvailable(autoScriptVar, "ALLOWOVERRIDE", element.allowOverride);
-                        setValueIfAvailable(autoScriptVar, "NOVALIDATION", element.noValidation);
-                        setValueIfAvailable(autoScriptVar, "NOACCESSCHECK", element.noAccessCheck);
-                        setValueIfAvailable(autoScriptVar, "NOACTION", element.noAction);
+
+                        if(element.varBindingType.toUpperCase() != "LITERAL" && element.varType.toUpperCase() != "IN"){                            
+                            setValueIfAvailable(autoScriptVar, "NOVALIDATION", element.noValidation);
+                            setValueIfAvailable(autoScriptVar, "NOACCESSCHECK", element.noAccessCheck);
+                            setValueIfAvailable(autoScriptVar, "NOACTION", element.noAction);
+                        }
+
                         setValueIfAvailable(autoScriptVar, "LITERALDATATYPE", element.literalDataType);
-                        setValueIfAvailable(autoScriptVar, "VARBINDINGVALUE", element.varBindingValue);
+                        setValueIfAvailable(autoScriptVar, "VARBINDINGVALUE", element.varBindingValue, MboConstants.NOACCESSCHECK);
                     }
                 });
             }
@@ -439,7 +443,7 @@ function deployScript(scriptSource, language) {
             var ctx = new HashMap();
             if (scriptConfig.onDeploy) {
                 var manager = new ScriptEngineManager();
-                var engine = manager.getEngineByName(language ? language : "nashorn");
+                var engine = manager.getEngineByName(language ? language : "javascript");
 
                 var bindings = engine.createBindings();
 
