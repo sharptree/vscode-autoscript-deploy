@@ -1,4 +1,7 @@
 # Release Notes
+## 1.13.7
+- Emergency rollback of incompatible axios version.
+  
 ## 1.13.6
 - Added fallback support for importing screens where the PresentationLoader is not available.
   
