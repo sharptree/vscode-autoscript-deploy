@@ -379,6 +379,7 @@ function deployScript(scriptSource, language) {
                                 var found = false;
                                 while (launchPointVars && !found) {
                                     if (launchPointVars.getString("VARNAME").equalsIgnoreCase(elementChild.varName)) {
+                                        launchPointVars.setValue("OVERRIDDEN", true, MboConstants.NOACCESSCHECK);
                                         launchPointVars.setValue("VARBINDINGVALUE", elementChild.varBindingValue, MboConstants.NOACCESSCHECK);
                                         found = true;
                                     }
