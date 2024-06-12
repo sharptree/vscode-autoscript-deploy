@@ -1,4 +1,7 @@
 # Release Notes
+## 1.14.0
+- Added support for apply Maximo object configurations including placing the server in Admin Mode and running Database Configuration
+  
 ## 1.13.9
 - Minor fix for Launch Point variable overrides to ensure the override checkbox is checked and the value updated.
   

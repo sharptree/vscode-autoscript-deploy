@@ -950,9 +950,7 @@ function astToJavaScript(ast) {
 }
 
 function getRequestAction() {
-    var field = RESTRequest.class.getDeclaredField("request");
-    field.setAccessible(true);
-    var httpRequest = field.get(request);
+    var httpRequest = request.getHttpServletRequest();
 
     var requestURI = httpRequest.getRequestURI();
     var contextPath = httpRequest.getContextPath();

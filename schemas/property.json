@@ -70,11 +70,11 @@
             "default": "PUBLIC"
         },
         "propValue": {
-            "description": "The global value for the property (MAXLOGGER.DISPPROPVALUE)",
+            "description": "The global value for the property (MAXPROP.DISPPROPVALUE)",
             "type": "string"
         },
         "maximoDefault": {
-            "description": "The Maximo default value for the property (MAXLOGGER.MAXIMODEFAULT)",
+            "description": "The Maximo default value for the property (MAXPROP.MAXIMODEFAULT)",
             "type": "string"
         },
         "maxPropInstance": {
