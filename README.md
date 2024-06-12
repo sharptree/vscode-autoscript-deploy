@@ -177,7 +177,7 @@ When deploying a Maximo Object, by default Maximo will be placed in Admin Mode i
 
 > Note: When deploying a Maximo Object with Admin Mode and Database Configuration, the user must have Maximo permissions to place Maximo in Admin Mode and run Database Configuration.
 
-If a configuration requires the Maximo to be in Admin Mode a confirmation dialog will be displayed, requiring confirmation before the configurations are applied. If the configurations are not applied, the script will also not be deployed, however the configurations will be staged and can be manually applied at a later time.
+If a configuration requires Maximo to be in Admin Mode a confirmation dialog will be displayed, requiring confirmation before the configurations are applied. If the configurations are not applied, the script will also not be deployed, however the configurations will be staged and can be manually applied at a later time.
 
 ![Deploy Maximo Object](./images/example_deploy_object.gif)
 
