@@ -123,12 +123,12 @@ The following four global variables are provided to the deployment scripts.
 When using a script for deploy actions, that script file may be named the same as the primary script with `-deploy` or `.deploy` appended to the file name and with the same extension to have it automatically deployed with the primary script.  For example if a script is contained in a file named `example.js` the deployment script can be saved in a file named `example-deploy.js` or `example.deploy.js` and the deployment script will be deployed to Maximo first so it is available to be called by the primary script at deploy time. 
 
 ### JSON Deploy File
-As of version `1.13` a JSON document can be used to define select objects to deploy along with the script. Providing a JSON file with the same name as the primary script, with a `.json` file extension will cause the tooling to deploy the objects defined in the JSON document along with the script. 
+As of version `1.13.0` a JSON document can be used to define select objects to deploy along with the script. Providing a JSON file with the same name as the primary script, with a `.json` file extension will cause the tooling to deploy the objects defined in the JSON document along with the script. 
 
 Currently Cron Tasks, Loggers, Maximo Objects, Messages and Properties are available.  Additional Maximo data types will be added in future releases based on feedback and demand. The JSON schemas for these objects are provided below.
 
 #### JSON Pre-deploy File
-As of version `1.2` there is support for a JSON deploy file that is applied prior to deploying the automation script. To have the JSON deploy file applied prior to deploying the automation script, name the file the same as the primary script with `.predeploy.json` as the suffix. The extension will automatically find the file and apply it before deploying the automation script. 
+As of version `1.14.0` there is support for a JSON deploy file that is applied prior to deploying the automation script. To have the JSON deploy file applied prior to deploying the automation script, name the file the same as the primary script with `.predeploy.json` as the suffix. The extension will automatically find the file and apply it before deploying the automation script. 
 
  For example if a script is contained in a file named `example.js` the pre-deploy JSON file will be named `example.predeploy.json`.
 
