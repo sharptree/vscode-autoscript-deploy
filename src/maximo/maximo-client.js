@@ -32,8 +32,8 @@ export default class MaximoClient {
         // keep a reference to the config for later use.
         this.config = config;
 
-        this.requiredScriptVersion = "1.31.0";
-        this.currentScriptVersion = "1.31.0";
+        this.requiredScriptVersion = "1.32.0";
+        this.currentScriptVersion = "1.32.0";
 
         if (config.ca) {
             https.globalAgent.options.ca = config.ca;
@@ -850,7 +850,7 @@ export default class MaximoClient {
         await this._installOrUpdateScript("sharptree.autoscript.library", "Sharptree Deployment Library Script", source, progress, increment);
 
         source = fs.readFileSync(path.resolve(__dirname, "../resources/sharptree.autoscript.admin.js")).toString();
-        await this._installOrUpdateScript("sharptree.autoscript.library", "Sharptree Admin Script", source, progress, increment);
+        await this._installOrUpdateScript("sharptree.autoscript.admin", "Sharptree Admin Script", source, progress, increment);
 
         await this._fixInspectionFormData();
     }
@@ -1208,7 +1208,7 @@ export default class MaximoClient {
             };
 
             // @ts-ignore
-            await this.client.request(options);
+            let result = await this.client.request(options);
 
             progress.report({ increment: increment, message: `Updated ${script}.` });
             await new Promise((resolve) => setTimeout(resolve, 500));
@@ -1230,7 +1230,7 @@ export default class MaximoClient {
             };
 
             // @ts-ignore
-            await this.client.request(options);
+            let result = await this.client.request(options);
             progress.report({ increment: increment, message: `Installed ${script}.` });
             await new Promise((resolve) => setTimeout(resolve, 500));
         }

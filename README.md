@@ -122,13 +122,15 @@ The following four global variables are provided to the deployment scripts.
 
 When using a script for deploy actions, that script file may be named the same as the primary script with `-deploy` or `.deploy` appended to the file name and with the same extension to have it automatically deployed with the primary script.  For example if a script is contained in a file named `example.js` the deployment script can be saved in a file named `example-deploy.js` or `example.deploy.js` and the deployment script will be deployed to Maximo first so it is available to be called by the primary script at deploy time. 
 
-As of version `1.13` a JSON document can be used to define select objects to deploy along with the script. By providing a JSON file with the same name as the primary script, with a `.json` file extension will cause the tooling to deploy the objects defined in the JSON document along with the script. 
+### JSON Deploy File
+As of version `1.13` a JSON document can be used to define select objects to deploy along with the script. Providing a JSON file with the same name as the primary script, with a `.json` file extension will cause the tooling to deploy the objects defined in the JSON document along with the script. 
 
-Currently Cron Tasks, Loggers,Maximo Objects, Messages and Properties are available.  Additional Maximo data types will be added in future releases based on feedback and demand. The JSON schemas for these objects are provided below.
+Currently Cron Tasks, Loggers, Maximo Objects, Messages and Properties are available.  Additional Maximo data types will be added in future releases based on feedback and demand. The JSON schemas for these objects are provided below.
 
-When deploying a Maximo Object, by default Maximo will be placed in Admin Mode if required and a database configuration performed. The top level boolean properties `noAdminMode` and `noDBConfig` can be set to not perform a configuration if it requires Admin Mode or skip the database configuration completely.
+#### JSON Pre-deploy File
+As of version `1.2` there is support for a JSON deploy file that is applied prior to deploying the automation script. To have the JSON deploy file applied prior to deploying the automation script, name the file the same as the primary script with `.predeploy.json` as the suffix. The extension will automatically find the file and apply it before deploying the automation script. 
 
-> Note: When deploying a Maximo Object with Admin Mode and Database Configuration, the user must have Maximo permissions to place Maximo in Admin Mode and run Database Configuration.
+ For example if a script is contained in a file named `example.js` the pre-deploy JSON file will be named `example.predeploy.json`.
 
 | Object Type       | Schema                                                                                                                                                                                                |  
 | :-----------------| :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------| 
@@ -170,7 +172,16 @@ Below is an example deploy JSON that will create or update two messages and a pr
 }
 ```
 
+#### Deploying Maximo Objects
+When deploying a Maximo Object, by default Maximo will be placed in Admin Mode if required and a database configuration performed. The top level boolean properties `noAdminMode` and `noDBConfig` can be set to not perform a configuration if it requires Admin Mode or skip the database configuration completely.
 
+> Note: When deploying a Maximo Object with Admin Mode and Database Configuration, the user must have Maximo permissions to place Maximo in Admin Mode and run Database Configuration.
+
+If a configuration requires the Maximo to be in Admin Mode a confirmation dialog will be displayed, requiring confirmation before the configurations are applied. If the configurations are not applied, the script will also not be deployed, however the configurations will be staged and can be manually applied at a later time.
+
+![Deploy Maximo Object](./images/example_deploy_object.gif)
+
+### Prettier Compatibility
 
 > Maximo requires that JavaScript objects have quoted properties, as shown below.  If you are using Prettier as your code formatter it may automatically remove these quotes, which will result in errors when deploying.  To retain the quotes go to the Visual Studio Code Settings (`⌘ + ,` or `ctrl + ,`), select `Prettier`, then find the `Quote Props` setting and select the `preserve` option.  
 >
