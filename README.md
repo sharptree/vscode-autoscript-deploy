@@ -124,7 +124,11 @@ When using a script for deploy actions, that script file may be named the same a
 
 As of version `1.13` a JSON document can be used to define select objects to deploy along with the script. By providing a JSON file with the same name as the primary script, with a `.json` file extension will cause the tooling to deploy the objects defined in the JSON document along with the script. 
 
-Currently Cron Tasks, Loggers, Messages and Properties are available.  Additional Maximo data types will be added in future releases based on feedback and demand. The JSON schemas for these objects are provided below.
+Currently Cron Tasks, Loggers,Maximo Objects, Messages and Properties are available.  Additional Maximo data types will be added in future releases based on feedback and demand. The JSON schemas for these objects are provided below.
+
+When deploying a Maximo Object, by default Maximo will be placed in Admin Mode if required and a database configuration performed. The top level boolean properties `noAdminMode` and `noDBConfig` can be set to not perform a configuration if it requires Admin Mode or skip the database configuration completely.
+
+> Note: When deploying a Maximo Object with Admin Mode and Database Configuration, the user must have Maximo permissions to place Maximo in Admin Mode and run Database Configuration.
 
 | Object Type       | Schema                                                                                                                                                                                                |  
 | :-----------------| :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------| 
@@ -132,6 +136,7 @@ Currently Cron Tasks, Loggers, Messages and Properties are available.  Additiona
 | Logger            | [https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/logger.json](https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/logger.json)        |
 | Message           | [https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/message.json](https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/message.json)      |
 | Property          | [https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/property.json](https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/property.json)    |
+| MaxObject         | [https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/maxobject.json](https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/maxobject.json)  |
 
 #### Example Deploy JSON
 Below is an example deploy JSON that will create or update two messages and a property and then delete the third message `example.exampleMessage3`.
