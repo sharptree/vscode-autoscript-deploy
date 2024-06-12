@@ -2059,7 +2059,7 @@ function MaxObject(maxobject) {
     this.alternateIndex = typeof maxobject.alternateIndex === "undefined" ? null : maxobject.alternateIndex;
 
     this.addRowstamp = typeof maxobject.addRowstamp === "undefined" ? true : maxobject.addRowstamp;
-    this.textSearchEnabled = typeof maxobject.textSearchEnabled === "undefined" ? true : maxobject.textSearchEnabled;
+    this.textSearchEnabled = typeof maxobject.textSearchEnabled === "undefined" ? false : maxobject.textSearchEnabled;
     this.view = typeof maxobject.view === "undefined" ? false : maxobject.view;
     this.viewWhere = typeof maxobject.viewWhere === "undefined" ? null : maxobject.viewWhere;
     this.joinToObject = typeof maxobject.joinToObject === "undefined" ? null : maxobject.joinToObject;
@@ -2131,7 +2131,7 @@ MaxObject.prototype.setMboValues = function (mbo) {
     mbo.setValue("DESCRIPTION", this.description);
 
     if (this.service != null) {
-        mbo.setValue("SERVICE", this.service);
+        mbo.setValue("SERVICENAME", this.service);
     }
 
     if (this.entity != null) {
