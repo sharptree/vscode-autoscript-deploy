@@ -1,4 +1,7 @@
 # Release Notes
+## 1.14.1
+- Fixed incorrect handling for service, persistent and alternative indexes.
+  
 ## 1.14.0
 - Added support for apply Maximo object configurations including placing the server in Admin Mode and running Database Configuration
   
