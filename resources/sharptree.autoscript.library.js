@@ -2057,7 +2057,7 @@ function MaxObject(maxobject) {
     this.languageTable = typeof maxobject.languageTable === "undefined" ? null : maxobject.languageTable;
     this.languageColumn = typeof maxobject.languageColumn === "undefined" ? null : maxobject.languageColumn;
     this.alternateIndex = typeof maxobject.alternateIndex === "undefined" ? null : maxobject.alternateIndex;
-
+    this.persistent = typeof maxobject.persistent === "undefined" ? true : maxobject.persistent;
     this.addRowstamp = typeof maxobject.addRowstamp === "undefined" ? true : maxobject.addRowstamp;
     this.textSearchEnabled = typeof maxobject.textSearchEnabled === "undefined" ? false : maxobject.textSearchEnabled;
     this.view = typeof maxobject.view === "undefined" ? false : maxobject.view;
@@ -2166,11 +2166,11 @@ MaxObject.prototype.setMboValues = function (mbo) {
 
     if (!this.view) {
         if (mbo.toBeAdded()) {
-            if (typeof this.presistent !== "undefined" && !mbo.getMboValueData("PERSISTENT").isReadOnly()) {
-                mbo.setValue("PERSISTENT", this.presistent);
+            if (!mbo.getMboValueData("PERSISTENT").isReadOnly()) {
+                mbo.setValue("PERSISTENT", this.persistent);
             }
 
-            if (typeof this.presistent !== "undefined" && !mbo.getMboValueData("ADDROWSTAMP").isReadOnly()) {
+            if (!mbo.getMboValueData("ADDROWSTAMP").isReadOnly()) {
                 mbo.setValue("ADDROWSTAMP", this.addRowstamp);
             }
 
@@ -2189,7 +2189,7 @@ MaxObject.prototype.setMboValues = function (mbo) {
             this.languageColumn != null ? mbo.setValue("LANGCOLUMNNAME", this.languageColumn) : mbo.setValueNull("LANGCOLUMNNAME");
         }
 
-        if (!mbo.toBeAdded() || (this.indexes.length > 0 && !mbo.getMboValueData("ALTIXNAME").isReadOnly())) {
+        if ( this.indexes.length > 0 && !mbo.getMboValueData("ALTIXNAME").isReadOnly()) {
             this.alternateIndex != null ? mbo.setValue("ALTIXNAME", this.alternateIndex, MboConstants.NOVALIDATION) : mbo.setValueNull("ALTIXNAME");
         }
 
