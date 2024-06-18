@@ -26,13 +26,16 @@ var logger = MXLoggerFactory.getLogger("maximo.script." + service.getScriptName(
 main();
 
 function main() {
-    if (typeof httpMethod !== 'undefined') {
+    if (typeof httpMethod !== "undefined") {
         var response = {};
+
         try {
-            if (httpMethod.toLowerCase() === 'get') {
+            checkPermissions("SHARPTREE_UTILS", "DEPLOYSCRIPT");
+
+            if (httpMethod.toLowerCase() === "get") {
                 var scriptName = getRequestScriptName();
-                if (typeof scriptName === 'undefined' || scriptName === null || !scriptName) {
-                    throw new ScriptError("missing_script_name", "The script name was not provided.");
+                if (typeof scriptName === "undefined" || scriptName === null || !scriptName) {
+                    throw new ScriptError("missing_script_name", "The script name was not provided. " + userInfo.getUserName());
                 }
 
                 response.status = "success";
@@ -43,7 +46,6 @@ function main() {
             } else {
                 throw new ScriptError("only_get_supported", "Only the HTTP GET method is supported when extracting automation scripts.");
             }
-
         } catch (error) {
             response.status = "error";
 
@@ -70,7 +72,7 @@ function main() {
                 response.cause = error;
             }
 
-            if (typeof httpMethod !== 'undefined') {
+            if (typeof httpMethod !== "undefined") {
                 responseBody = JSON.stringify(response);
             }
 
@@ -94,13 +96,11 @@ function getScriptLanguage(scriptName) {
             var autoScript = autoScriptSet.getMbo(0);
 
             return autoScript.getString("SCRIPTLANGUAGE");
-
         } else {
             throw new ScriptError("script_not_found", "The automation script " + scriptName + " was not found.");
         }
-
     } finally {
-        close(autoScriptSet);
+        _close(autoScriptSet);
     }
 }
 
@@ -119,14 +119,14 @@ function extractScript(scriptName) {
 
             var scriptLanguage = autoScript.getString("SCRIPTLANGUAGE");
 
-            if (scriptLanguage === 'MBR') {
+            if (scriptLanguage === "MBR") {
                 throw new ScriptError("mbr_not_supported", "MBR language support is not available.");
             }
 
             var isPython = false;
             switch (scriptLanguage.toLowerCase()) {
-                case 'python':
-                case 'jython':
+                case "python":
+                case "jython":
                     isPython = true;
                     break;
             }
@@ -138,20 +138,15 @@ function extractScript(scriptName) {
             } else {
                 return source + "\n\nvar scriptConfig=" + extractScriptConfiguration(autoScript) + ";";
             }
-
-
         } else {
             throw new ScriptError("script_not_found", "The automation script " + scriptName + " was not found.");
         }
-
     } finally {
-        close(autoScriptSet);
+        _close(autoScriptSet);
     }
 }
 
 function removeScriptConfigFromSource(source, isPython) {
-
-
     var result;
 
     var braces = 0;
@@ -163,7 +158,7 @@ function removeScriptConfigFromSource(source, isPython) {
     var endIndex = -1;
     var lineComment = false;
     var blockComment = false;
-    var word = '';
+    var word = "";
 
     var inScriptConfig = false;
     var lineStart = 0;
@@ -173,29 +168,33 @@ function removeScriptConfigFromSource(source, isPython) {
 
         for (var i = 0; i < source.length; i++) {
             var c = source.charAt(i);
-            if (c === ' ' || c === '\t' || c === '\n') {
-                if (c === '\n') {
+            if (c === " " || c === "\t" || c === "\n") {
+                if (c === "\n") {
                     lineStart = i;
                 }
-                word = '';
+                word = "";
             } else {
                 word += c;
             }
             if (!inScriptConfig) {
-                if (word === '#') { lineComment = true; }
+                if (word === "#") {
+                    lineComment = true;
+                }
 
                 if (!lineComment) {
-                    if (word === 'scriptConfig') {
+                    if (word === "scriptConfig") {
                         inScriptConfig = true;
                         startIndex = lineStart;
                     }
                 } else {
-                    if (lineComment && c === '\n') { lineComment = false; }
+                    if (lineComment && c === "\n") {
+                        lineComment = false;
+                    }
                 }
             } else {
                 if (word === '"""' || word.indexOf('"""') > -1) {
                     tripleQuoteCount++;
-                    word = '';
+                    word = "";
                 }
             }
 
@@ -208,38 +207,46 @@ function removeScriptConfigFromSource(source, isPython) {
         for (var i = 0; i < source.length; i++) {
             var c = source.charAt(i);
 
-            if (c === ' ' || c === '\t' || c === '\n') {
-                if (c === '\n') {
+            if (c === " " || c === "\t" || c === "\n") {
+                if (c === "\n") {
                     lineStart = i;
                 }
-                word = '';
+                word = "";
             } else {
                 word += c;
             }
 
             if (!inScriptConfig) {
-                if (word === '//') { lineComment = true; }
+                if (word === "//") {
+                    lineComment = true;
+                }
 
-                if (word == '/*') { blockComment = true; }
+                if (word == "/*") {
+                    blockComment = true;
+                }
 
                 if (!lineComment && !blockComment) {
-                    if (word === 'scriptConfig') {
+                    if (word === "scriptConfig") {
                         inScriptConfig = true;
                         startIndex = lineStart;
                     }
                 } else {
-                    if (lineComment && c === '\n') { lineComment = false; }
-                    if (blockComment && word === '*/') { blockComment = false; }
+                    if (lineComment && c === "\n") {
+                        lineComment = false;
+                    }
+                    if (blockComment && word === "*/") {
+                        blockComment = false;
+                    }
                 }
             } else {
                 if (!inBrace) {
-                    if (c === '{') {
+                    if (c === "{") {
                         inBrace = true;
                         braces = 1;
                     }
                 } else {
                     if (braces === 0) {
-                        if (c === ';' || (c !== '\n' && c !== ' ')) {
+                        if (c === ";" || (c !== "\n" && c !== " ")) {
                             endIndex = i + 1;
                             break;
                         }
@@ -334,7 +341,6 @@ function extractScriptConfiguration(autoScript) {
         if (scriptVars.length > 0) {
             scriptConfig.autoScriptVars = scriptVars;
         }
-
     }
 
     var scriptLaunchPointSet = autoScript.getMboSet("SCRIPTLAUNCHPOINT");
@@ -353,13 +359,12 @@ function extractScriptConfiguration(autoScript) {
                 launchPoint.description = scriptLaunchPoint.getString("DESCRIPTION");
             }
 
-            if (launchPoint.launchPointType.toUpperCase() === 'OBJECT') {
+            if (launchPoint.launchPointType.toUpperCase() === "OBJECT") {
                 launchPoint.objectName = scriptLaunchPoint.getString("OBJECTNAME");
 
                 if (!scriptLaunchPoint.isNull("CONDITION")) {
                     launchPoint.condition = scriptLaunchPoint.getString("CONDITION");
                 }
-
 
                 switch (scriptLaunchPoint.getInt("EVENTTYPE")) {
                     case 0:
@@ -395,8 +400,7 @@ function extractScriptConfiguration(autoScript) {
                         }
                         break;
                 }
-            } else if (launchPoint.launchPointType.toUpperCase() === 'ATTRIBUTE') {
-
+            } else if (launchPoint.launchPointType.toUpperCase() === "ATTRIBUTE") {
                 launchPoint.objectName = scriptLaunchPoint.getString("OBJECTNAME");
                 launchPoint.attributeName = scriptLaunchPoint.getString("ATTRIBUTENAME");
 
@@ -417,7 +421,7 @@ function extractScriptConfiguration(autoScript) {
                         launchPoint.runAction = true;
                         break;
                 }
-            } else if (launchPoint.launchPointType.toUpperCase() === 'ACTION') {
+            } else if (launchPoint.launchPointType.toUpperCase() === "ACTION") {
                 if (!scriptLaunchPoint.isNull("ACTIONNAME")) {
                     launchPoint.actionName = scriptLaunchPoint.getString("ACTIONNAME");
                 } else {
@@ -426,12 +430,11 @@ function extractScriptConfiguration(autoScript) {
                 if (!scriptLaunchPoint.isNull("OBJECTNAME")) {
                     launchPoint.objectName = scriptLaunchPoint.getString("OBJECTNAME");
                 }
-            } else if (launchPoint.launchPointType.toUpperCase() === 'CUSTOMCONDITION') {
+            } else if (launchPoint.launchPointType.toUpperCase() === "CUSTOMCONDITION") {
                 if (!scriptLaunchPoint.isNull("OBJECTNAME")) {
                     launchPoint.objectName = scriptLaunchPoint.getString("OBJECTNAME");
                 }
             }
-
 
             var launchPointVarsSet = scriptLaunchPoint.getMboSet("LAUNCHPOINTVARS");
 
@@ -471,9 +474,7 @@ function extractScriptConfiguration(autoScript) {
     return JSON.stringify(scriptConfig, null, 4);
 }
 
-
 function getRequestScriptName() {
-
     var field = RESTRequest.class.getDeclaredField("request");
     field.setAccessible(true);
     var httpRequest = field.get(request);
@@ -482,7 +483,7 @@ function getRequestScriptName() {
     var contextPath = httpRequest.getContextPath();
     var resourceReq = requestURI;
 
-    if (contextPath && contextPath !== '') {
+    if (contextPath && contextPath !== "") {
         resourceReq = requestURI.substring(contextPath.length());
     }
 
@@ -492,15 +493,15 @@ function getRequestScriptName() {
 
     var isOSLC = true;
 
-    if (!resourceReq.toLowerCase().startsWith('/oslc/script/' + service.scriptName.toLowerCase())) {
-        if (!resourceReq.toLowerCase().startsWith('/api/script/' + service.scriptName.toLowerCase())) {
+    if (!resourceReq.toLowerCase().startsWith("/oslc/script/" + service.scriptName.toLowerCase())) {
+        if (!resourceReq.toLowerCase().startsWith("/api/script/" + service.scriptName.toLowerCase())) {
             return null;
         } else {
             osOSLC = false;
         }
     }
 
-    var baseReqPath = isOSLC ? '/oslc/script/' + service.scriptName : '/api/script/' + service.scriptName;
+    var baseReqPath = isOSLC ? "/oslc/script/" + service.scriptName : "/api/script/" + service.scriptName;
 
     var action = resourceReq.substring(baseReqPath.length);
 
@@ -508,13 +509,56 @@ function getRequestScriptName() {
         action = action.substring(1);
     }
 
-    if (!action || action.trim() === '') {
+    if (!action || action.trim() === "") {
         return null;
     }
 
     return URLDecoder.decode(action.toLowerCase(), StandardCharsets.UTF_8.name());
 }
 
+function checkPermissions(app, optionName) {
+    if (!userInfo) {
+        throw new ScriptError("no_user_info", "The userInfo global variable has not been set, therefore the user permissions cannot be verified.");
+    }
+
+    if (!MXServer.getMXServer().lookup("SECURITY").getProfile(userInfo).hasAppOption(app, optionName) && !isInAdminGroup()) {
+        throw new ScriptError(
+            "no_permission",
+            "The user " + userInfo.getUserName() + " does not have access to the " + optionName + " option in the " + app + " object structure."
+        );
+    }
+}
+
+// Determines if the current user is in the administrator group, returns true if the user is, false otherwise.
+function isInAdminGroup() {
+    var user = userInfo.getUserName();
+    service.log_info("Determining if the user " + user + " is in the administrator group.");
+    var groupUserSet;
+
+    try {
+        groupUserSet = MXServer.getMXServer().getMboSet("GROUPUSER", MXServer.getMXServer().getSystemUserInfo());
+
+        // Get the ADMINGROUP MAXVAR value.
+        var adminGroup = MXServer.getMXServer().lookup("MAXVARS").getString("ADMINGROUP", null);
+
+        // Query for the current user and the found admin group.
+        // The current user is determined by the implicity `user` variable.
+        sqlFormat = new SqlFormat("userid = :1 and groupname = :2");
+        sqlFormat.setObject(1, "GROUPUSER", "USERID", user);
+        sqlFormat.setObject(2, "GROUPUSER", "GROUPNAME", adminGroup);
+        groupUserSet.setWhere(sqlFormat.format());
+
+        if (!groupUserSet.isEmpty()) {
+            service.log_info("The user " + user + " is in the administrator group " + adminGroup + ".");
+            return true;
+        } else {
+            service.log_info("The user " + user + " is not in the administrator group " + adminGroup + ".");
+            return false;
+        }
+    } finally {
+        _close(groupUserSet);
+    }
+}
 
 // Logging functions provided for compatibility with older versions where service.log_xxxx is not available.
 // eslint-disable-next-line no-unused-vars
@@ -537,10 +581,12 @@ function log_error(msg) {
 }
 
 // Cleans up the MboSet connections and closes the set.
-function close(set) {
+function _close(set) {
     if (set) {
-        set.cleanup();
-        set.close();
+        try {
+            set.cleanup();
+            set.close();
+        } catch (ignored) {}
     }
 }
 
@@ -554,3 +600,11 @@ function ScriptError(reason, message) {
 ScriptError.prototype = Object.create(Error.prototype);
 ScriptError.prototype.constructor = ScriptError;
 ScriptError.prototype.element;
+
+var scriptConfig = {
+    "autoscript": "SHARPTREE.AUTOSCRIPT.EXTRACT",
+    "description": "Sharptree Automation Script Extract Script",
+    "version": "1.0.0",
+    "active": true,
+    "logLevel": "INFO"
+};

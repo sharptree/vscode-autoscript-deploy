@@ -53,7 +53,7 @@ main();
 
 function main() {
     // the script only works from a web request.
-    if (typeof request !== 'undefined' || !request) {
+    if (typeof request !== "undefined" || !request) {
         if (request.getQueryParam("initialize")) {
             initSecurity();
             result = { "status": "success" };
@@ -64,7 +64,7 @@ function main() {
             var timeout = request.getQueryParam("timeout");
 
             //TODO check that timeout is a number
-            if (typeof timeout === 'undefined' || timeout === null || isNaN(timeout) || timeout > MAX_TIMEOUT) {
+            if (typeof timeout === "undefined" || timeout === null || isNaN(timeout) || timeout > MAX_TIMEOUT) {
                 timeout = MAX_TIMEOUT;
             }
 
@@ -82,7 +82,6 @@ function main() {
 }
 
 function _handleV8(timeout) {
-
     var logFolder = System.getenv("LOG_DIR");
 
     if (!logFolder) {
@@ -135,8 +134,6 @@ function _handleV8(timeout) {
                 Thread.sleep(SLEEP_INTERVAL);
             }
             output.println("log-lkp=" + lkp);
-
-
         } else {
             responseBody = JSON.stringify({ "status": "error", "message": "The log file " + logFile.getPath() + " could not be opened." });
             return;
@@ -145,18 +142,24 @@ function _handleV8(timeout) {
         responseBody = JSON.stringify({ "status": "error", "message": "Could not determine the log folder." });
         return;
     }
-
 }
 
-
-
 function _handleV7(timeout) {
-
     var appenderName = APPENDER_NAME + "_" + userInfo.getUserName();
 
     // Check for permissions to do remote log streaming.
     if (!hasAppOption(SECURITY_APP, SECURITY_OPTION) && !isAdmin()) {
-        responseBody = JSON.stringify({ "status": "error", "message": "The user " + userInfo.getUserName() + " does not have permission to stream the Maximo log. The security option " + SECURITY_OPTION + " on the " + SECURITY_APP + " application is required." });
+        responseBody = JSON.stringify({
+            "status": "error",
+            "message":
+                "The user " +
+                userInfo.getUserName() +
+                " does not have permission to stream the Maximo log. The security option " +
+                SECURITY_OPTION +
+                " on the " +
+                SECURITY_APP +
+                " application is required."
+        });
         return;
     }
 
@@ -164,17 +167,19 @@ function _handleV7(timeout) {
     var output = response.getOutputStream();
 
     if (log4ShellFix) {
-
         var factory = LogManager.getFactory();
 
         if (factory instanceof Java.type("org.apache.logging.log4j.core.impl.Log4jContextFactory")) {
             var context;
-            factory.getSelector().getLoggerContexts().forEach(function (ctx) {
-                if (ctx.hasLogger("maximo")) {
-                    context = ctx;
-                    return;
-                }
-            });
+            factory
+                .getSelector()
+                .getLoggerContexts()
+                .forEach(function (ctx) {
+                    if (ctx.hasLogger("maximo")) {
+                        context = ctx;
+                        return;
+                    }
+                });
 
             if (context) {
                 var maxLogAppenderSet;
@@ -212,19 +217,20 @@ function _handleV7(timeout) {
                         root.removeAppender(writer);
                     }
                 } finally {
-                    close(maxLogAppenderSet);
+                    _close(maxLogAppenderSet);
                 }
             } else {
                 responseBody = JSON.stringify({ "status": "error", "message": "A logging context with the maximo root logger could not be found." });
             }
-
         } else {
-            responseBody = JSON.stringify({ "status": "error", "message": "Only the default org.apache.logging.log4j.core.impl.Log4jContextFactory context factory is supported." });
+            responseBody = JSON.stringify({
+                "status": "error",
+                "message": "Only the default org.apache.logging.log4j.core.impl.Log4jContextFactory context factory is supported."
+            });
         }
     } else {
         var root = LogManager.getLogger("maximo");
         if (root) {
-
             var console = root.getAppender(PARENT_APPENDER);
             if (console) {
                 var layout = console.getLayout();
@@ -248,7 +254,10 @@ function _handleV7(timeout) {
                     root.removeAppender(appenderName);
                 }
             } else {
-                responseBody = JSON.stringify({ "status": "error", "message": "The standard Console log appender is not configured for the root maximo logger." });
+                responseBody = JSON.stringify({
+                    "status": "error",
+                    "message": "The standard Console log appender is not configured for the root maximo logger."
+                });
             }
         } else {
             responseBody = JSON.stringify({ "status": "error", "message": "Cannot get the root maximo logger." });
@@ -284,20 +293,16 @@ function initSecurity() {
             appAuth.setValue("OPTIONNAME", SECURITY_OPTION);
 
             appAuthSet.save();
-
         }
-
     } finally {
-        close(sigOptionSet);
-        close(appAuthSet);
+        _close(sigOptionSet);
+        _close(appAuthSet);
     }
 }
 
 function hasAppOption(app, optionName) {
-    return MXServer.getMXServer().lookup("SECURITY")
-        .getProfile(userInfo).hasAppOption(app, optionName);
+    return MXServer.getMXServer().lookup("SECURITY").getProfile(userInfo).hasAppOption(app, optionName);
 }
-
 
 function isAdmin() {
     var user = userInfo.getUserName();
@@ -309,7 +314,7 @@ function isAdmin() {
         // Get the ADMINGROUP MAXVAR value.
         var adminGroup = MXServer.getMXServer().lookup("MAXVARS").getString("ADMINGROUP", null);
 
-        // Query for the current user and the found admin group.  
+        // Query for the current user and the found admin group.
         // The current user is determined by the implicity `user` variable.
         sqlFormat = new SqlFormat("userid = :1 and groupname = :2");
         sqlFormat.setObject(1, "GROUPUSER", "USERID", user);
@@ -317,17 +322,18 @@ function isAdmin() {
         groupUserSet.setWhere(sqlFormat.format());
 
         return !groupUserSet.isEmpty();
-
     } finally {
-        close(groupUserSet);
+        _close(groupUserSet);
     }
 }
 
 // Cleans up the MboSet connections and closes the set.
-function close(set) {
+function _close(set) {
     if (set) {
-        set.cleanup();
-        set.close();
+        try {
+            set.cleanup();
+            set.close();
+        } catch (ignored) {}
     }
 }
 

@@ -90,7 +90,7 @@ function main() {
                         return;
                     }
                 } finally {
-                    close(autoScriptSet);
+                    _close(autoScriptSet);
                 }
             } else if (action && action == "config") {
                 deployConfig(JSON.parse(requestBody));
@@ -110,11 +110,12 @@ function main() {
         // if the script source is available then call the deploy script.
         // This allows the deployScript function to be called from the context directly if the script it loaded from another script.
         if (scriptSource) {
-            var response = { scriptName:  deployScript(scriptSource, action) };
-            responseBody = JSON.stringify(response);            
+            var response = { scriptName: deployScript(scriptSource, action) };
+            responseBody = JSON.stringify(response);
         }
     } catch (error) {
         response.status = "error";
+        // ensure the error is logged to the Maximo logs
         Java.type("java.lang.System").out.println(error);
         if (error instanceof ScriptError) {
             response.message = error.message;
@@ -501,7 +502,7 @@ function deployScript(scriptSource, language) {
                                 deployAutoScriptSet.save();
                             }
                         } finally {
-                            close(deployAutoScriptSet);
+                            _close(deployAutoScriptSet);
                         }
                     }
                 }
@@ -530,13 +531,13 @@ function deployScript(scriptSource, language) {
                                 deployAutoScriptSet.save();
                             }
                         } finally {
-                            close(deployAutoScriptSet);
+                            _close(deployAutoScriptSet);
                         }
                     }
                 }
             }
         } finally {
-            close(autoScriptSet);
+            _close(autoScriptSet);
         }
 
         return scriptConfig.autoscript;
@@ -559,7 +560,7 @@ function checkPermissions(app, optionName) {
     if (!MXServer.getMXServer().lookup("SECURITY").getProfile(userInfo).hasAppOption(app, optionName) && !isInAdminGroup()) {
         throw new ScriptError(
             "no_permission",
-            "The user " + userInfo.getUserName() + " does not have access to the " + optionName + " option in the " + app + "  object structure."
+            "The user " + userInfo.getUserName() + " does not have access to the " + optionName + " option in the " + app + " object structure."
         );
     }
 }
@@ -591,7 +592,7 @@ function isInAdminGroup() {
             return false;
         }
     } finally {
-        close(groupUserSet);
+        _close(groupUserSet);
     }
 }
 
@@ -738,7 +739,7 @@ function createOrUpdateProperty(property) {
 
         MXServer.getMXServer().reloadMaximoCache("MAXPROP", property.propName, true);
     } finally {
-        close(maxPropSet);
+        _close(maxPropSet);
     }
 }
 
@@ -823,7 +824,7 @@ function createOrUpdateMaxVar(maxvar) {
 
         maxvarTypeSet.save();
     } finally {
-        close(maxvarTypeSet);
+        _close(maxvarTypeSet);
     }
 }
 
@@ -890,7 +891,7 @@ function createOrUpdateMessage(message) {
 
         maxMessagesSet.save();
     } finally {
-        close(maxMessagesSet);
+        _close(maxMessagesSet);
     }
 }
 
@@ -1005,7 +1006,7 @@ function getScriptVersion(scriptName) {
             return mboset.getMbo(0).getString("VERSION");
         }
     } finally {
-        close(mboset);
+        _close(mboset);
     }
 }
 
@@ -1030,10 +1031,12 @@ function log_error(msg) {
 }
 
 // Cleans up the MboSet connections and closes the set.
-function close(set) {
+function _close(set) {
     if (set) {
-        set.cleanup();
-        set.close();
+        try {
+            set.cleanup();
+            set.close();
+        } catch (ignore) {}
     }
 }
 
