@@ -1,4 +1,7 @@
 # Release Notes
+## 1.14.2
+- Minor change so deploy script returns the deployed script's name for the command line tools.
+  
 ## 1.14.1
 - Fixed incorrect handling for service, persistent and alternative indexes.
   
