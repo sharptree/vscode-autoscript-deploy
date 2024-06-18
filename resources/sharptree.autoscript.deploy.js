@@ -110,7 +110,8 @@ function main() {
         // if the script source is available then call the deploy script.
         // This allows the deployScript function to be called from the context directly if the script it loaded from another script.
         if (scriptSource) {
-            deployScript(scriptSource, action);
+            var response = { scriptName:  deployScript(scriptSource, action) };
+            responseBody = JSON.stringify(response);            
         }
     } catch (error) {
         response.status = "error";
@@ -537,6 +538,8 @@ function deployScript(scriptSource, language) {
         } finally {
             close(autoScriptSet);
         }
+
+        return scriptConfig.autoscript;
     } else {
         throw new ScriptError("config_not_found", "Configuration variable scriptConfig was not found in the script.");
     }
