@@ -1,4 +1,7 @@
 # Release Notes
+## 1.14.3
+- Updated security to ensure only users with SHARPTREE_UTILS : DEPLOYSCRIPT can perform deploy actions.
+  
 ## 1.14.2
 - Minor change so deploy script returns the deployed script's name for the command line tools.
   
