@@ -52,6 +52,9 @@ function main() {
     if (typeof httpMethod !== "undefined") {
         var response = {};
         try {
+            
+            checkPermissions("SHARPTREE_UTILS", "DEPLOYSCRIPT");
+
             if (httpMethod.toLowerCase() === "get") {
                 var screenName = getRequestScreentName();
                 if (typeof screenName === "undefined" || screenName === null || !screenName) {
@@ -73,7 +76,7 @@ function main() {
                         response.screenNames = presentations;
                         responseBody = JSON.stringify(response);
                     } finally {
-                        close(presentationSet);
+                        _close(presentationSet);
                     }
                 } else {
                     response.status = "success";
@@ -144,7 +147,7 @@ function main() {
                             throw new MXApplicationException("designer", "noapp", Java.to([app.toUpperCase()], "java.lang.String[]"));
                         }
                     } finally {
-                        close(maxPresentationSet);
+                        _close(maxPresentationSet);
                     }
                 }
                 response.status = "success";
@@ -154,7 +157,8 @@ function main() {
             }
         } catch (error) {
             response.status = "error";
-
+            // ensure the error is logged to the Maximo logs
+            Java.type("java.lang.System").out.println(error);
             if (error instanceof ScreenError) {
                 response.message = error.message;
                 response.reason = error.reason;
@@ -203,7 +207,7 @@ function resetControlGroups(app) {
         ctrlGroupSet.deleteAll();
         ctrlGroupSet.save();
     } finally {
-        close(ctrlGroupSet);
+        _close(ctrlGroupSet);
     }
 }
 
@@ -246,7 +250,7 @@ function createControlGroup(ctrlGroupInfo) {
 
         ctrlGroupSet.save();
     } finally {
-        close(ctrlGroupSet);
+        _close(ctrlGroupSet);
     }
 }
 
@@ -275,7 +279,7 @@ function createOrUpdateCondition(conditionInfo) {
 
             conditionSet.save();
         } finally {
-            close(conditionSet);
+            _close(conditionSet);
         }
     }
 }
@@ -345,7 +349,7 @@ function createOrUpdateSigOption(sigOptionInfo) {
                 }
             }
         } finally {
-            close(sigOptionSet);
+            _close(sigOptionSet);
         }
     }
 }
@@ -391,7 +395,7 @@ function createGroupIfNotExists(groupInfo) {
                 groupSet.save();
             }
         } finally {
-            close(groupSet);
+            _close(groupSet);
         }
     }
 }
@@ -407,7 +411,7 @@ function scTemplateExists(templateId) {
 
             return !sctemplateSet.exists();
         } finally {
-            close(sctemplateSet);
+            _close(sctemplateSet);
         }
     }
 }
@@ -428,7 +432,7 @@ function extractScreen(screenName) {
             throw new ScreenError("screen_not_found", "The screen definition for " + screenName + " was not found.");
         }
     } finally {
-        close(maxpresentationSet);
+        _close(maxpresentationSet);
     }
 }
 
@@ -462,7 +466,7 @@ function addConditionalExpressionsMetaData(xml, screenName) {
             return xml;
         }
     } finally {
-        close(controlGroupSet);
+        _close(controlGroupSet);
     }
 }
 
@@ -605,11 +609,59 @@ function getRequestScreentName() {
     return URLDecoder.decode(action.toLowerCase(), StandardCharsets.UTF_8.name());
 }
 
+
+function checkPermissions(app, optionName) {
+    if (!userInfo) {
+        throw new ScreenError("no_user_info", "The userInfo global variable has not been set, therefore the user permissions cannot be verified.");
+    }
+
+    if (!MXServer.getMXServer().lookup("SECURITY").getProfile(userInfo).hasAppOption(app, optionName) && !isInAdminGroup()) {
+        throw new ScreenError(
+            "no_permission",
+            "The user " + userInfo.getUserName() + " does not have access to the " + optionName + " option in the " + app + " object structure."
+        );
+    }
+}
+
+// Determines if the current user is in the administrator group, returns true if the user is, false otherwise.
+function isInAdminGroup() {
+    var user = userInfo.getUserName();
+    service.log_info("Determining if the user " + user + " is in the administrator group.");
+    var groupUserSet;
+
+    try {
+        groupUserSet = MXServer.getMXServer().getMboSet("GROUPUSER", MXServer.getMXServer().getSystemUserInfo());
+
+        // Get the ADMINGROUP MAXVAR value.
+        var adminGroup = MXServer.getMXServer().lookup("MAXVARS").getString("ADMINGROUP", null);
+
+        // Query for the current user and the found admin group.
+        // The current user is determined by the implicity `user` variable.
+        sqlFormat = new SqlFormat("userid = :1 and groupname = :2");
+        sqlFormat.setObject(1, "GROUPUSER", "USERID", user);
+        sqlFormat.setObject(2, "GROUPUSER", "GROUPNAME", adminGroup);
+        groupUserSet.setWhere(sqlFormat.format());
+
+        if (!groupUserSet.isEmpty()) {
+            service.log_info("The user " + user + " is in the administrator group " + adminGroup + ".");
+            return true;
+        } else {
+            service.log_info("The user " + user + " is not in the administrator group " + adminGroup + ".");
+            return false;
+        }
+    } finally {
+        _close(groupUserSet);
+    }
+}
+
 // Cleans up the MboSet connections and closes the set.
-function close(set) {
+function _close(set) {
     if (set) {
-        set.cleanup();
-        set.close();
+        try
+        {
+            set.cleanup();
+            set.close();
+        }catch(ignore){}        
     }
 }
 

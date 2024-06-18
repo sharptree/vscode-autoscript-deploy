@@ -1,52 +1,91 @@
 // @ts-nocheck
+RuntimeException = Java.type("java.lang.RuntimeException");
 ConfigureServiceRemote = Java.type("psdi.app.configure.ConfigureServiceRemote");
 AdminModeManager = Java.type("psdi.security.AdminModeManager");
 MXServer = Java.type("psdi.server.MXServer");
+SqlFormat = Java.type("psdi.mbo.SqlFormat");
+
+MXException = Java.type("psdi.util.MXException");
 
 main();
 
 function main() {
     // if the implicit request variable is present then we are in the context of a REST request
     if (typeof request !== "undefined" && request) {
-        var result = {};
         try {
-            var action = getRequestAction();
+            checkPermissions("SHARPTREE_UTILS", "DEPLOYSCRIPT");
 
-            if (action) {
-                action = action.toLowerCase();
+            var result = {};
+            try {
+                var action = getRequestAction();
+
+                if (action) {
+                    action = action.toLowerCase();
+                }
+
+                if (action == "adminmodeon" && request.getHttpMethod() == "POST") {
+                    setAdminModeOn();
+                    result.adminModeOnStarted = true;
+                } else if (action == "adminmodeoff" && request.getHttpMethod() == "POST") {
+                    setAdminModeOff();
+                    result.adminModeOffStarted = true;
+                } else if (action == "adminmodeon" && request.getHttpMethod() == "GET") {
+                    result.adminModeOn = isAdminModeOn();
+                } else if (action == "adminmodeoff" && request.getHttpMethod() == "GET") {
+                    result.adminModeOff = isAdminModeOff();
+                } else if (action == "configuring" && request.getHttpMethod() == "GET") {
+                    result.configuring = dbConfigInProgress();
+                } else if (action == "configdbrequired" && request.getHttpMethod() == "GET") {
+                    result.configDBRequired = configDBRequired();
+                } else if (action == "configdblevel" && request.getHttpMethod() == "GET") {
+                    result.configDBLevel = configDBLevel();
+                } else if (action == "configdbrequiresadminmode" && request.getHttpMethod() == "GET") {
+                    result.configDBRequiresAdminMode = configDBRequiresAdmin();
+                } else if (action == "applyconfigdb" && request.getHttpMethod() == "POST") {
+                    applyConfigDB();
+                    result.configDBStarted = true;
+                } else if (action == "configmessages" && request.getHttpMethod() == "GET") {
+                    result.messages = getConfigurationMessages();
+                }
+                result.status = "ok";
+            } catch (error) {
+                result.error = error.toString();
+                result.status = "error";
             }
 
-            if (action == "adminmodeon" && request.getHttpMethod() == "POST") {
-                setAdminModeOn();
-                result.adminModeOnStarted = true;
-            } else if (action == "adminmodeoff" && request.getHttpMethod() == "POST") {
-                setAdminModeOff();
-                result.adminModeOffStarted = true;
-            } else if (action == "adminmodeon" && request.getHttpMethod() == "GET") {
-                result.adminModeOn = isAdminModeOn();
-            } else if (action == "adminmodeoff" && request.getHttpMethod() == "GET") {
-                result.adminModeOff = isAdminModeOff();
-            } else if (action == "configuring" && request.getHttpMethod() == "GET") {
-                result.configuring = dbConfigInProgress();
-            } else if (action == "configdbrequired" && request.getHttpMethod() == "GET") {
-                result.configDBRequired = configDBRequired();
-            } else if (action == "configdblevel" && request.getHttpMethod() == "GET") {
-                result.configDBLevel = configDBLevel();
-            } else if (action == "configdbrequiresadminmode" && request.getHttpMethod() == "GET") {
-                result.configDBRequiresAdminMode = configDBRequiresAdmin();
-            } else if (action == "applyconfigdb" && request.getHttpMethod() == "POST") {
-                applyConfigDB();
-                result.configDBStarted = true;
-            } else if (action == "configmessages" && request.getHttpMethod() == "GET") {
-                result.messages = getConfigurationMessages();
-            }
-            result.status = "ok";
+            responseBody = JSON.stringify(result, null, 4);
         } catch (error) {
-            result.error = error.toString();
-            result.status = "error";
-        }
+            var response = {};
+            response.status = "error";
+            Java.type("java.lang.System").out.println(error);
+            if (error instanceof AdminError) {
+                response.message = error.message;
+                response.reason = error.reason;
+            } else if (error instanceof Error) {
+                response.message = error.message;
+            } else if (error instanceof MXException) {
+                response.reason = error.getErrorGroup() + "_" + error.getErrorKey();
+                response.message = error.getMessage();
+            } else if (error instanceof RuntimeException) {
+                if (error.getCause() instanceof MXException) {
+                    response.reason = error.getCause().getErrorGroup() + "_" + error.getCause().getErrorKey();
+                    response.message = error.getCause().getMessage();
+                } else {
+                    response.reason = "runtime_exception";
+                    response.message = error.getMessage();
+                }
+            } else {
+                response.cause = error;
+            }
 
-        responseBody = JSON.stringify(result, null, 4);
+            if (typeof httpMethod !== "undefined") {
+                responseBody = JSON.stringify(response);
+            }
+
+            service.log_error(error);
+
+            return;
+        }
     }
 }
 
@@ -56,7 +95,7 @@ function getConfigurationMessages() {
     var listenerSet = MXServer.getMXServer().getMboSet("PROCESSMONITOR", userInfo);
     try {
         var listener = listenerSet.add();
-        configureService.listenToConfigDB(listener, true)  ;
+        configureService.listenToConfigDB(listener, true);
 
         return listener.getString("STATUS");
     } finally {
@@ -181,6 +220,73 @@ function getRequestAction() {
 
     return action.toLowerCase();
 }
+
+function checkPermissions(app, optionName) {
+    if (!userInfo) {
+        throw new AdminError("no_user_info", "The userInfo global variable has not been set, therefore the user permissions cannot be verified.");
+    }
+
+    var userProfile = MXServer.getMXServer().lookup("SECURITY").getProfile(userInfo);
+
+    if (!userProfile.hasAppOption(app, optionName) && !isInAdminGroup()) {
+        throw new AdminError(
+            "no_permission",
+            "The user " + userInfo.getUserName() + " does not have access to the " + optionName + " option in the " + app + " object structure."
+        );
+    }
+}
+
+// Determines if the current user is in the administrator group, returns true if the user is, false otherwise.
+function isInAdminGroup() {
+    var user = userInfo.getUserName();
+    service.log_info("Determining if the user " + user + " is in the administrator group.");
+    var groupUserSet;
+
+    try {
+        groupUserSet = MXServer.getMXServer().getMboSet("GROUPUSER", MXServer.getMXServer().getSystemUserInfo());
+
+        // Get the ADMINGROUP MAXVAR value.
+        var adminGroup = MXServer.getMXServer().lookup("MAXVARS").getString("ADMINGROUP", null);
+
+        // Query for the current user and the found admin group.
+        // The current user is determined by the implicity `user` variable.
+        sqlFormat = new SqlFormat("userid = :1 and groupname = :2");
+        sqlFormat.setObject(1, "GROUPUSER", "USERID", user);
+        sqlFormat.setObject(2, "GROUPUSER", "GROUPNAME", adminGroup);
+        groupUserSet.setWhere(sqlFormat.format());
+
+        if (!groupUserSet.isEmpty()) {
+            service.log_info("The user " + user + " is in the administrator group " + adminGroup + ".");
+            return true;
+        } else {
+            service.log_info("The user " + user + " is not in the administrator group " + adminGroup + ".");
+            return false;
+        }
+    } finally {
+        _close(groupUserSet);
+    }
+}
+
+// Cleans up the MboSet connections and closes the set.
+function _close(set) {
+    if (set) {
+        try {
+            set.cleanup();
+            set.close();
+        } catch (ignore) {}
+    }
+}
+
+function AdminError(reason, message) {
+    Error.call(this, message);
+    this.reason = reason;
+    this.message = message;
+}
+
+// ConfigurationError derives from Error
+AdminError.prototype = Object.create(Error.prototype);
+AdminError.prototype.constructor = AdminError;
+AdminError.prototype.element;
 
 var scriptConfig = {
     "autoscript": "SHARPTREE.AUTOSCRIPT.ADMIN",

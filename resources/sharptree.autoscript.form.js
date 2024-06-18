@@ -32,6 +32,8 @@ function main() {
     if (typeof httpMethod !== "undefined") {
         var response = {};
         try {
+            checkPermissions("SHARPTREE_UTILS", "DEPLOYSCRIPT");
+
             if (httpMethod.toLowerCase() === "get") {
                 var formId = getInspectionFormId();
                 if (typeof formId === "undefined" || formId === null || !formId) {
@@ -54,7 +56,7 @@ function main() {
                                     inspformnum: inspectionForm.getString("INSPFORMNUM"),
                                     name: inspectionForm.getString("NAME"),
                                     status: inspectionForm.getString("STATUS"),
-                                    id: inspectionForm.getUniqueIDValue(),
+                                    id: inspectionForm.getUniqueIDValue()
                                 };
 
                                 inspectionForms.push(form);
@@ -69,7 +71,7 @@ function main() {
                         response.inspectionForms = inspectionForms;
                         responseBody = JSON.stringify(response);
                     } finally {
-                        __close(inspectionFormSet);
+                        _close(inspectionFormSet);
                     }
                 } else {
                     response.status = "success";
@@ -97,12 +99,16 @@ function main() {
                     db.close();
                 }
             } else {
-                throw new ScriptError("only_get_supported", "Only the HTTP GET method is supported when extracting automation scripts.");
+                throw new FormError("only_get_supported", "Only the HTTP GET method is supported when extracting automation scripts.");
             }
         } catch (error) {
             response.status = "error";
-            service.log_error(error);
-            if (error instanceof SyntaxError) {
+            // ensure the error is logged to the Maximo logs
+            Java.type("java.lang.System").out.println(error);
+            if (error instanceof FormError) {
+                response.message = error.message;
+                response.reason = error.reason;
+            } else if (error instanceof SyntaxError) {
                 response.reason = "syntax_error";
                 response.message = error.message;
             } else if (error instanceof Error) {
@@ -320,7 +326,7 @@ function importForm(form) {
 
             inspectionFormSet.save();
 
-            __close(inspectionFormSet);
+            _close(inspectionFormSet);
 
             inspectionFormSet = MXServer.getMXServer().getMboSet("INSPECTIONFORM", userInfo);
             inspectionForm = inspectionFormSet.getMboForUniqueId(id);
@@ -332,7 +338,7 @@ function importForm(form) {
             inspectionFormSet.save();
         }
     } finally {
-        __close(inspectionFormSet);
+        _close(inspectionFormSet);
     }
 }
 
@@ -582,7 +588,7 @@ function extractForm(formId) {
             return null;
         }
     } finally {
-        __close(inspectionFormSet);
+        _close(inspectionFormSet);
     }
 }
 
@@ -638,9 +644,9 @@ function fixInspectionAppDocTypes() {
     try {
         var applications = [];
         appsSet = MXServer.getMXServer().getMboSet("MAXAPPS", userInfo);
-        allApplications.forEach(function(application){
+        allApplications.forEach(function (application) {
             var sqlfCheck = new SqlFormat("app = :1");
-            sqlfCheck.setObject(1, "MAXAPPS", "APP",application);
+            sqlfCheck.setObject(1, "MAXAPPS", "APP", application);
             appsSet.setWhere(sqlfCheck.format());
 
             System.out.println(sqlfCheck.format());
@@ -649,8 +655,6 @@ function fixInspectionAppDocTypes() {
                 applications.push(application);
             }
         });
-        
-        System.out.println(JSON.stringify(applications, null, 4));
 
         docTypesSet = MXServer.getMXServer().getMboSet("DOCTYPES", userInfo);
 
@@ -673,13 +677,57 @@ function fixInspectionAppDocTypes() {
             docTypesSet.save();
         }
     } finally {
-        __close(appsSet);
-        __close(docTypesSet);
+        _close(appsSet);
+        _close(docTypesSet);
+    }
+}
+
+function checkPermissions(app, optionName) {
+    if (!userInfo) {
+        throw new FormError("no_user_info", "The userInfo global variable has not been set, therefore the user permissions cannot be verified.");
+    }
+
+    if (!MXServer.getMXServer().lookup("SECURITY").getProfile(userInfo).hasAppOption(app, optionName) && !isInAdminGroup()) {
+        throw new FormError(
+            "no_permission",
+            "The user " + userInfo.getUserName() + " does not have access to the " + optionName + " option in the " + app + " object structure."
+        );
+    }
+}
+
+// Determines if the current user is in the administrator group, returns true if the user is, false otherwise.
+function isInAdminGroup() {
+    var user = userInfo.getUserName();
+    service.log_info("Determining if the user " + user + " is in the administrator group.");
+    var groupUserSet;
+
+    try {
+        groupUserSet = MXServer.getMXServer().getMboSet("GROUPUSER", MXServer.getMXServer().getSystemUserInfo());
+
+        // Get the ADMINGROUP MAXVAR value.
+        var adminGroup = MXServer.getMXServer().lookup("MAXVARS").getString("ADMINGROUP", null);
+
+        // Query for the current user and the found admin group.
+        // The current user is determined by the implicity `user` variable.
+        sqlFormat = new SqlFormat("userid = :1 and groupname = :2");
+        sqlFormat.setObject(1, "GROUPUSER", "USERID", user);
+        sqlFormat.setObject(2, "GROUPUSER", "GROUPNAME", adminGroup);
+        groupUserSet.setWhere(sqlFormat.format());
+
+        if (!groupUserSet.isEmpty()) {
+            service.log_info("The user " + user + " is in the administrator group " + adminGroup + ".");
+            return true;
+        } else {
+            service.log_info("The user " + user + " is not in the administrator group " + adminGroup + ".");
+            return false;
+        }
+    } finally {
+        _close(groupUserSet);
     }
 }
 
 // Cleans up the MboSet connections and closes the set.
-function __close(set) {
+function _close(set) {
     if (set) {
         try {
             set.cleanup();
@@ -689,11 +737,21 @@ function __close(set) {
     }
 }
 
-// eslint-disable-next-line no-unused-vars
+function FormError(reason, message) {
+    Error.call(this, message);
+    this.reason = reason;
+    this.message = message;
+}
+
+// ConfigurationError derives from Error
+FormError.prototype = Object.create(Error.prototype);
+FormError.prototype.constructor = FormError;
+FormError.prototype.element;
+
 var scriptConfig = {
     autoscript: "SHARPTREE.AUTOSCRIPT.FORM",
     description: "Export Inspection Form",
-    version: "",
+    version: "1.0.0",
     active: true,
-    logLevel: "ERROR",
+    logLevel: "ERROR"
 };
