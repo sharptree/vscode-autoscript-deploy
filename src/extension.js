@@ -1888,18 +1888,19 @@ async function upgraded(client) {
 }
 
 async function versionSupported(client) {
-    var version = await client.maximoVersion();
+    // We now support all supported versions of Maximo, removing this check.
+    // var version = await client.maximoVersion();
 
-    if (!version) {
-        window.showErrorMessage("Could not determine the Maximo version. Only Maximo 7.6.0.8 and greater are supported", { modal: true });
-        return false;
-    } else {
-        var checkVersion = version.substr(1, version.indexOf("-") - 1);
-        if (!supportedVersions.includes(checkVersion)) {
-            window.showErrorMessage(`The Maximo version ${version} is not supported.`, { modal: true });
-            return false;
-        }
-    }
+    // if (!version) {
+    //     window.showErrorMessage("Could not determine the Maximo version. Only Maximo 7.6.0.8 and greater are supported", { modal: true });
+    //     return false;
+    // } else {
+    //     var checkVersion = version.substr(1, version.indexOf("-") - 1);
+    //     if (!supportedVersions.includes(checkVersion)) {
+    //         window.showErrorMessage(`The Maximo version ${version} is not supported.`, { modal: true });
+    //         return false;
+    //     }
+    // }    
     return true;
 }
 

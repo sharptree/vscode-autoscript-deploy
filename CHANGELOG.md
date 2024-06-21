@@ -1,4 +1,8 @@
 # Release Notes
+## 1.14.4
+- Remove Maximo version check because all versions are now supported.
+- Minor documentation updated.
+  
 ## 1.14.3
 - Updated security to ensure only users with SHARPTREE_UTILS : DEPLOYSCRIPT can perform deploy actions.
   

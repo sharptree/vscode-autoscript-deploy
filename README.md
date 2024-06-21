@@ -136,9 +136,9 @@ As of version `1.14.0` there is support for a JSON deploy file that is applied p
 | :-----------------| :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------| 
 | Cron Task         | [https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/crontask.json](https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/crontask.json)    |
 | Logger            | [https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/logger.json](https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/logger.json)        |
+| MaxObject         | [https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/maxobject.json](https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/maxobject.json)  |
 | Message           | [https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/message.json](https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/message.json)      |
 | Property          | [https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/property.json](https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/property.json)    |
-| MaxObject         | [https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/maxobject.json](https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/maxobject.json)  |
 
 #### Example Deploy JSON
 Below is an example deploy JSON that will create or update two messages and a property and then delete the third message `example.exampleMessage3`.
