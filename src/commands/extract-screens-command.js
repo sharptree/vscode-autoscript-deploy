@@ -47,7 +47,7 @@ export default async function extractScreensCommand(client) {
                             cancellable: true
                         },
                         async (progress, cancelToken) => {
-                            let percent = Math.round((1 / screenNames.length) * 100);
+                            let percent = (1 / screenNames.length) * 100;
 
                             let overwriteAll = false;
                             let overwrite = false;
