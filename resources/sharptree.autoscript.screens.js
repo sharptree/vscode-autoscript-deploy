@@ -30,7 +30,7 @@ try {
     Format = Java.type("org.jdom2.output.Format");
     XMLOutputter = Java.type("org.jdom2.output.XMLOutputter");
 } catch (error) {
-    if (error instanceof Java.type("java.lang.ClassNotFoundException")) {
+    if (error instanceof Java.type("java.lang.ClassNotFoundException") || error instanceof Java.type("java.lang.RuntimeException")) {
         Element = Java.type("org.jdom.Element");
         SAXBuilder = Java.type("org.jdom.input.SAXBuilder");
         Format = Java.type("org.jdom.output.Format");
