@@ -1085,6 +1085,45 @@ export default class MaximoClient {
         }
     }
 
+    async getAllReports() {
+        const headers = new Map();
+        headers["Content-Type"] = "application/json";
+
+        let options = {
+            url: "script/sharptree.autoscript.report",
+            method: MaximoClient.Method.GET,
+            headers: { common: headers }
+        };
+        // @ts-ignore
+        let response = await this.client.request(options);
+
+        if (response.data.status === "success") {
+            return response.data.reports;
+        } else {
+            throw new Error(response.data.message);
+        }
+    }
+
+    async getReport(reportId) {
+        const headers = new Map();
+        headers["Content-Type"] = "application/json";
+
+        let options = {
+            url: `script/sharptree.autoscript.report/${reportId}`,
+            method: MaximoClient.Method.GET,
+            headers: { common: headers }
+        };
+
+        // @ts-ignore
+        let response = await this.client.request(options);
+
+        if (response.data.status === "success") {
+            return response.data.report;
+        } else {
+            throw new Error(response.data.message);
+        }
+    }
+
     // @ts-ignore
     // eslint-disable-next-line no-unused-vars
     async getPageData(url) {}

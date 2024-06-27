@@ -18,6 +18,8 @@ export default class MaximoConfig {
         extractLocation,
         extractLocationScreens,
         extractLocationForms,
+        extractLocationReports,
+        
     }
     ) {
         this.username = username;
@@ -36,6 +38,7 @@ export default class MaximoConfig {
         this.extractLocation = extractLocation;
         this.extractLocationScreens = extractLocationScreens;
         this.extractLocationForms = extractLocationForms;
+        this.extractLocationReports = extractLocationReports;
     }
 
     get maxauth() {

@@ -12,6 +12,8 @@ import extractScreensCommand from "./commands/extract-screens-command";
 import extractScreenCommand from "./commands/extract-screen-command";
 import extractFormsCommand from "./commands/extract-forms-command";
 import extractFormCommand from "./commands/extract-form-command";
+import extractReportCommand from "./commands/extract-report-command";
+import extractReportsCommand from "./commands/extract-reports-command";
 
 import { validateSettings } from "./settings";
 import * as path from "path";
@@ -94,6 +96,14 @@ export function activate(context) {
         {
             command: "maximo-script-deploy.formsOne",
             function: extractFormCommand
+        },
+        {
+            command: "maximo-script-deploy.reports",
+            function: extractReportsCommand
+        },
+        {
+            command: "maximo-script-deploy.reportsOne",
+            function: extractReportCommand
         }
     ];
 
