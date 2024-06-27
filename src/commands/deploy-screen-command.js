@@ -12,7 +12,7 @@ export default async function deployScript(client, filePath, screen) {
     }
 
     if (!filePath || filePath === null || !fs.existsSync(filePath)) {
-        throw new Error("The filePath parameter is required and must be a valid file path to a script file.");
+        throw new Error("The filePath parameter is required and must be a valid file path to a screen file.");
     }
 
     if (!screen || screen === null || screen.trim().length === 0) {
