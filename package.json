@@ -3,7 +3,7 @@
 	"displayName": "Maximo Development Tools",
 	"description": "An extension for developing and deploying Maximo automation scripts and screens from Visual Studio Code.",
 	"publisher": "Sharptree",
-	"version": "1.14.4",
+	"version": "1.15.0",
 	"galleryBanner": {
 		"color": "#372063",
 		"theme": "dark"
@@ -88,6 +88,11 @@
 					"type": "string",
 					"default": "",
 					"description": "The Maximo inspection forms extraction location."
+				},
+				"sharptree.maximo.extractReportsLocation": {
+					"type": "string",
+					"default": "",
+					"description": "The Maximo BIRT reports extraction location."
 				},
 				"sharptree.maximo.port": {
 					"type": "number",
@@ -184,6 +189,14 @@
 			{
 				"command": "maximo-script-deploy.formsOne",
 				"title": "Extract Inspection Form"
+			},
+			{
+				"command": "maximo-script-deploy.reports",
+				"title": "Extract All BIRT Reports"
+			},
+			{
+				"command": "maximo-script-deploy.reportsOne",
+				"title": "Extract BIRT Report"
 			}
 		],
 		"keybindings": [
@@ -225,6 +238,7 @@
 		"webpack-cli": "^4.10.0"
 	},
 	"dependencies": {
+		"archiver": "^7.0.1",
 		"axios": "^0.26.1",
 		"axios-oauth-client": "^1.5.0",
 		"axios-token-interceptor": "^0.2.0",
@@ -234,8 +248,10 @@
 		"temp": "^0.9.4",
 		"text-encoding": "^0.7.0",
 		"tough-cookie": "^4.1.2",
+		"uuid": "^10.0.0",
 		"webpack-node-externals": "^3.0.0",
 		"xml-formatter": "^2.6.1",
-		"xml2js": "^0.6.0"
+		"xml2js": "^0.6.0",
+		"yauzl": "^3.1.3"
 	}
 }

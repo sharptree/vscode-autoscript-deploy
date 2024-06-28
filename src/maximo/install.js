@@ -1,4 +1,1 @@
-
-async function install() {
-
-}
+async function install() {}

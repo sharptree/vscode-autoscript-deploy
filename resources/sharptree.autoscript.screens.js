@@ -16,7 +16,7 @@ MXException = Java.type("psdi.util.MXException");
 MXAccessException = Java.type("psdi.util.MXAccessException");
 MXApplicationException = Java.type("psdi.util.MXApplicationException");
 
-try {    
+try {
     PresentationLoader = Java.type("psdi.webclient.system.controller.PresentationLoader");
     WebClientSessionFactory = Java.type("psdi.webclient.system.session.WebClientSessionFactory");
 } catch (ignored) {}
@@ -30,12 +30,12 @@ try {
     Format = Java.type("org.jdom2.output.Format");
     XMLOutputter = Java.type("org.jdom2.output.XMLOutputter");
 } catch (error) {
-    if (error instanceof Java.type("java.lang.ClassNotFoundException")) {
+    if (error instanceof Java.type("java.lang.ClassNotFoundException") || error instanceof Java.type("java.lang.RuntimeException")) {
         Element = Java.type("org.jdom.Element");
         SAXBuilder = Java.type("org.jdom.input.SAXBuilder");
         Format = Java.type("org.jdom.output.Format");
         XMLOutputter = Java.type("org.jdom.output.XMLOutputter");
-    }else{
+    } else {
         // if some other error is occurring throw the error to the user.
         throw error;
     }
@@ -52,7 +52,6 @@ function main() {
     if (typeof httpMethod !== "undefined") {
         var response = {};
         try {
-            
             checkPermissions("SHARPTREE_UTILS", "DEPLOYSCRIPT");
 
             if (httpMethod.toLowerCase() === "get") {
@@ -609,7 +608,6 @@ function getRequestScreentName() {
     return URLDecoder.decode(action.toLowerCase(), StandardCharsets.UTF_8.name());
 }
 
-
 function checkPermissions(app, optionName) {
     if (!userInfo) {
         throw new ScreenError("no_user_info", "The userInfo global variable has not been set, therefore the user permissions cannot be verified.");
@@ -657,11 +655,10 @@ function isInAdminGroup() {
 // Cleans up the MboSet connections and closes the set.
 function _close(set) {
     if (set) {
-        try
-        {
+        try {
             set.cleanup();
             set.close();
-        }catch(ignore){}        
+        } catch (ignore) {}
     }
 }
 

@@ -94,12 +94,16 @@ As part of the configuration, an integration object named `SHARPTREE_UTILS` is c
 
 | Script                                | Description                                                                                                       |
 | :-------------------------------------| :-----------------------------------------------------------------------------------------------------------------|
+| SHARPTREE.AUTOSCRIPT.ADMIN            | Script for managing Maximo administrative actions.                                                                |
 | SHARPTREE.AUTOSCRIPT.DEPLOY           | The primary script used for deploying and managing automation scripts.                                            |
 | SHARPTREE.AUTOSCRIPT.DEPLOY.HISTORY   | Created after the first script is deployed. Contains a JSON with a history of all scripts deployed.               |
-| SHARPTREE.AUTOSCRIPT.STORE            | Script for managing the storage of the deploy history.                                                            |
 | SHARPTREE.AUTOSCRIPT.EXTRACT          | Script for extracting scripts from Maximo.                                                                        |
+| SHARPTREE.AUTOSCRIPT.FORM             | Script for managing inspection forms.                                                                             |
+| SHARPTREE.AUTOSCRIPT.LIBRARY          | Script library for applying deployment object defined in JSON deploy files.                                       |
 | SHARPTREE.AUTOSCRIPT.LOGGING          | Script for streaming the Maximo log.                                                                              |
+| SHARPTREE.AUTOSCRIPT.REPORT           | Script for managing BIRT reports.                                                                                 |
 | SHARPTREE.AUTOSCRIPT.SCREENS          | Script for managing Maximo screen definitions.                                                                    |
+| SHARPTREE.AUTOSCRIPT.STORE            | Script for managing the storage of the deploy history.                                                            |
 
 ## scriptConfig Variable
 Each script must define a variable named `scriptConfig` that is a JSON object describing how to deploy the script. The extension uses these values to populate the corresponding values of the `AUTOSCRIPT` and `SCRIPTLAUNCHPOINT` Maximo Business Objects. At a minimum the `autoscript` attribute is required, all other attributes are optional.  All configuration attributes are available and are defined by their label name without spaces, in camel case.  The example below provides the basic structure.
@@ -285,6 +289,7 @@ To deploy a script, screen definition or inspection form, open script, screen de
 When deploying an automation script, after the script has been deployed you can view the script in Maximo. Each deployment replaces the script launch point configuration with the configuration defined in the `scriptConfig` JSON.
 
 ![Maximo Automation Script](images/example_script_maximo.png)
+
 ### Deploy Screen
 ![Deploy Screen](./images/palette_screen_deploy_example.gif)
 
@@ -294,6 +299,13 @@ When deploying an automation script, after the script has been deployed you can 
 When deploying an inspection form the form is matched based on the inspection form name, not the inspection number since it may differ between the source and target systems. If the form already exists the current form is revised and the form definition completely replaces the previous configuration. The option attribute `activateOnDeploy` can be specified in the inspection form JSON to indicate that the new revision should be marked as active when the form is deployed.
 
 > The `sourceVersion` attribute indicates the version of the source system. Inspection forms are portable between versions as long as the target system is the same or a later version than the source. 
+
+### Deploy Report
+![Deploy Report](./images/palette_report_deploy_example.gif)
+
+When deploying a report, the report must be registered in the `reports.xml` file found the in the same folder with the report design file. The `reports.xml` follows the same syntax as the Maximo reporting tools.
+
+> When a report is deployed its request page is automatically generated.
 
 ## Extract Automation Scripts
 To extract the scripts currently deployed to Maximo, bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Extract All Automation Scripts`. The extension will query Maximo for the available scripts and then prompt for confirmation to extract the scripts as shown below. Scripts are saved to the directory specified in the `Extract Location` setting. If the setting has not been configured, the scripts are extracted to the current workspace folder.
@@ -323,6 +335,13 @@ To extract inspection forms from Maximo, bring up the Visual Studio Code Command
 ![Extract Screen Definition](images/palette_form_extract_example.gif)
 
 To extract a single inspection form from Maximo, bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Extract Inspection Form`. The extension will query Maximo for the latest inspection forms and display them in a searchable quick pick list. Select the form to extract from the list and the extension will extract it to the directory specified in the `Extract Inspection Forms Location` setting. If the setting has not been configured, the form is extracted to the current workspace folder.
+
+## Extract Reports
+To extract reports from Maximo, bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Extract All BIRT Reports`. The extension will query Maximo for the registered reports and then prompt for confirmation to extract the reports as shown below. Reports are saved to the directory specified in the `Extract Reports Location` setting. If the setting has not been configured, the reports are extracted to the current workspace folder. The extract reports are saved to a sub folder named with the `REPORTFOLDER` value from Maximo. Additionally, the report attributes, parameters and resource references are written to a `reports.xml` file in the `REPORTFOLDER` folder. The `reports.xml` has the same syntax as the standard Maximo tools `report.xml` files. If the report has resources, those are extracted to a sub folder with the same name as the report, without the `.rptdesign` extension.
+
+To extract a single report form from Maximo, bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Extract BIRT Report`. The extension will query Maximo for the reports and display them in a searchable quick pick list, displaying the report description followed by the report name. Select the report to extract from the list and the extension will extract it to the directory specified in the `Extract Reports Location` setting. If the setting has not been configured, the report is extracted to the current workspace folder in a sub folder named with the `REPORTFOLDER` value from Maximo. Additionally, the report attributes, parameters and resource references are written to a `reports.xml` file in the `REPORTFOLDER` folder. If the report has resources, those are extracted to a sub folder with the same name as the report, without the `.rptdesign` extension.
+
+![Extract Report](images/palette_report_extract_example.gif)
 
 ## Compare with Maximo
 To compare the current script or screen definition with the script or screen on the server, bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Compare with Maximo`. The extension will query Maximo for the current script or screen that is in the editor based on the `scriptConfig` variable or `<presentation id=""` attribute and open a new window, providing the Visual Studio Code diff editor.
@@ -358,6 +377,6 @@ Pressing `ctrl+space` will bring up help information for each snippet, describin
 # Requirements
 
 - Maximo 7.6.0.8 or higher, Maximo Application Suite 8 is supported.
-- Files must have a `.js` of `.py` extension for scripts, `xml` for screens and `json` for inspection forms.
+- Files must have a `.js` of `.py` extension for scripts, `xml` for screens, `rptdesign` for BIRT reports and `json` for inspection forms.
 - This extension requires Maximo to support Nashorn scripts, which requires Java 8.
 - Initial configuration must be done by a user in the administrative group defined by `ADMINGROUP` `MAXVARS` entry. Typically this is `MAXADMIN`.

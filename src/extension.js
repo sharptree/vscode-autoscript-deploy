@@ -1,17 +1,23 @@
-/* eslint-disable indent */
-// @ts-nocheck
 import { window, commands, workspace, ProgressLocation, Uri, StatusBarAlignment, TextEditorRevealType, Range, Position } from "vscode";
-import { parseString } from "xml2js";
+
 import MaximoConfig from "./maximo/maximo-config";
 import MaximoClient from "./maximo/maximo-client";
 import ServerSourceProvider from "./maximo/provider";
-import * as format from "xml-formatter";
+
+import deployCommand from "./commands/deploy-command";
+import compareCommand from "./commands/compare-command";
+import extractScriptsCommand from "./commands/extract-scripts-command";
+import extractScriptCommand from "./commands/extract-script-command";
+import extractScreensCommand from "./commands/extract-screens-command";
+import extractScreenCommand from "./commands/extract-screen-command";
+import extractFormsCommand from "./commands/extract-forms-command";
+import extractFormCommand from "./commands/extract-form-command";
+import extractReportCommand from "./commands/extract-report-command";
+import extractReportsCommand from "./commands/extract-reports-command";
 
 import { validateSettings } from "./settings";
 import * as path from "path";
 import * as fs from "fs";
-
-import * as crypto from "crypto";
 
 import * as temp from "temp";
 import { TextDecoder, TextEncoder } from "text-encoding";
@@ -31,10 +37,9 @@ var currentWindow;
 var currentFollow;
 var logClient;
 
-const supportedVersions = ["7608", "7609", "76010", "76011", "7610", "7611", "7612", "7613", "8300", "8400", "8500", "8600", "8700"];
-
 var statusBar;
 var secretStorage;
+export let fetchedSource = new Map();
 
 export function activate(context) {
     secretStorage = context.secrets;
@@ -55,1371 +60,159 @@ export function activate(context) {
 
     context.subscriptions.push(statusBar);
 
-    let fetchedSource = new Map();
-
     let globalSettings = context.globalStoragePath + path.sep + "userprefs.json";
 
     context.subscriptions.push(workspace.registerTextDocumentContentProvider("vscode-autoscript-deploy", new ServerSourceProvider(fetchedSource)));
 
-    let disposableInsert = commands.registerTextEditorCommand("maximo-script-deploy.id", (editor, edit) => {
-        let fileName = path.basename(editor.document.fileName);
-
-        // if we are not dealing with an XML file do nothing.
-        if (!fileName.endsWith(".xml")) {
-            return;
+    let commandList = [
+        {
+            command: "maximo-script-deploy.deploy",
+            function: deployCommand
+        },
+        {
+            command: "maximo-script-deploy.compare",
+            function: compareCommand
+        },
+        {
+            command: "maximo-script-deploy.extract",
+            function: extractScriptsCommand
+        },
+        {
+            command: "maximo-script-deploy.extractOne",
+            function: extractScriptCommand
+        },
+        {
+            command: "maximo-script-deploy.screens",
+            function: extractScreensCommand
+        },
+        {
+            command: "maximo-script-deploy.screensOne",
+            function: extractScreenCommand
+        },
+        {
+            command: "maximo-script-deploy.forms",
+            function: extractFormsCommand
+        },
+        {
+            command: "maximo-script-deploy.formsOne",
+            function: extractFormCommand
+        },
+        {
+            command: "maximo-script-deploy.reports",
+            function: extractReportsCommand
+        },
+        {
+            command: "maximo-script-deploy.reportsOne",
+            function: extractReportCommand
         }
-
-        var currentSelection = editor.selection;
-        var regex = /<[^>]+(>)/g;
-        let start = editor.document.offsetAt(new Position(currentSelection.start.line, currentSelection.start.character));
-
-        let match;
-
-        let found = false;
-        while ((match = regex.exec(editor.document.getText()))) {
-            if (start > match.index && start < regex.lastIndex) {
-                let tag = match[0];
-                let idMatch = /id= *".+?"/.exec(tag);
-
-                if (idMatch) {
-                    let startId = match.index + idMatch.index;
-                    let endId = startId + idMatch[0].length;
-                    edit.replace(new Range(editor.document.positionAt(startId), editor.document.positionAt(endId)), `id="${Date.now()}"`);
-                    found = true;
-                } else {
-                    let tagMatch = /<.* /.exec(tag);
-                    if (tagMatch) {
-                        let startId = match.index + tagMatch.index + tagMatch[0].length;
-                        edit.insert(editor.document.positionAt(startId), `id="${Date.now()}" `);
-                        found = true;
-                    }
-                }
-
-                break;
-            }
-        }
-
-        if (!found) {
-            if (fs.existsSync(globalSettings)) {
-                workspace.fs.readFile(Uri.file(globalSettings)).then((data) => {
-                    if (data) {
-                        let settings = JSON.parse(new TextDecoder().decode(data));
-                        if (settings && !settings.suppressXMLIdMessage) {
-                            window.showWarningMessage("Select an XML tag to insert an Id.", "Don't Show Again").then((selection) => {
-                                if (selection == "Don't Show Again") {
-                                    settings.suppressXMLIdMessage = true;
-                                    workspace.fs.writeFile(Uri.file(globalSettings), JSON.stringify(settings, null, 4));
-                                }
-                            });
-                        }
-                    }
-                });
-            } else {
-                window.showWarningMessage("Select an XML tag to insert an Id.", "Don't Show Again").then((selection) => {
-                    if (selection == "Don't Show Again") {
-                        let settings = { suppressXMLIdMessage: true };
-                        workspace.fs
-                            .writeFile(Uri.file(globalSettings), new TextEncoder().encode(JSON.stringify(settings, null, 4)))
-                            .catch((error) => console.log(error));
-                    }
-                });
-            }
-        }
-    });
-
-    let disposableCompare = commands.registerCommand("maximo-script-deploy.compare", async function () {
-        const config = await getMaximoConfig();
-
-        if (!config) {
-            return;
-        }
-
-        let client;
-        try {
-            client = new MaximoClient(config);
-
-            if (await login(client)) {
-                // Get the active text editor
-                const editor = window.activeTextEditor;
-                if (editor) {
-                    let document = editor.document;
-
-                    if (document) {
-                        let fileName = path.basename(document.fileName);
-                        if (fileName.endsWith(".js") || fileName.endsWith(".py")) {
-                            // Get the document text
-                            const script = document.getText();
-                            if (script && script.trim().length > 0) {
-                                await window.withProgress(
-                                    { cancellable: false, title: "Script", location: ProgressLocation.Notification },
-                                    async (progress) => {
-                                        progress.report({ message: "Getting script from the server.", increment: 0 });
-
-                                        await new Promise((resolve) => setTimeout(resolve, 500));
-                                        let result = await client.getScriptSource(script, progress, fileName);
-
-                                        if (result) {
-                                            if (result.status === "error") {
-                                                if (result.message) {
-                                                    window.showErrorMessage(result.message, { modal: true });
-                                                } else if (result.cause) {
-                                                    window.showErrorMessage(`Error: ${JSON.stringify(result.cause)}`, { modal: true });
-                                                } else {
-                                                    window.showErrorMessage("An unknown error occurred: " + JSON.stringify(result), { modal: true });
-                                                }
-                                            } else {
-                                                if (result.source) {
-                                                    progress.report({ increment: 100, message: "Successfully got script from the server." });
-                                                    await new Promise((resolve) => setTimeout(resolve, 2000));
-                                                    let localScript = document.uri;
-                                                    let serverScript = Uri.parse("vscode-autoscript-deploy:" + fileName);
-
-                                                    fetchedSource[serverScript.path] = result.source;
-
-                                                    commands.executeCommand("vscode.diff", localScript, serverScript, "↔ server " + fileName);
-                                                } else {
-                                                    window.showErrorMessage(
-                                                        `The ${fileName} was not found on ${config.host}.\n\nCheck that the scriptConfig.autoscript value matches a script on the server.`,
-                                                        { modal: true }
-                                                    );
-                                                }
-                                            }
-                                        } else {
-                                            window.showErrorMessage("Did not receive a response from Maximo.", { modal: true });
-                                        }
-                                        return result;
-                                    }
-                                );
-                            } else {
-                                window.showErrorMessage("The selected Automation Script cannot be empty.", { modal: true });
-                            }
-                        } else if (fileName.endsWith(".xml")) {
-                            // Get the document text
-                            const screen = document.getText();
-                            let screenName;
-                            if (screen && screen.trim().length > 0) {
-                                parseString(screen, function (error, result) {
-                                    if (error) {
-                                        window.showErrorMessage(error.message, { modal: true });
-                                        return;
-                                    } else {
-                                        if (result.presentation) {
-                                            screenName = result.presentation.$.id;
-                                        } else if (result.systemlib) {
-                                            screenName = result.systemlib.$.id;
-                                        } else {
-                                            window.showErrorMessage('Current XML document does not have an root element of "presentation" or "systemlib".', {
-                                                modal: true
-                                            });
-                                            return;
-                                        }
-                                    }
-                                });
-
-                                if (!screenName) {
-                                    window.showErrorMessage(
-                                        "Unable to find presentation or systemlib id from current document. Cannot fetch screen from server to compare.",
-                                        { modal: true }
-                                    );
-                                    return;
-                                }
-
-                                await window.withProgress(
-                                    { cancellable: false, title: "Screen", location: ProgressLocation.Notification },
-                                    async (progress) => {
-                                        progress.report({ message: "Getting screen from the server.", increment: 0 });
-
-                                        await new Promise((resolve) => setTimeout(resolve, 500));
-                                        let result = await client.getScreen(screenName, progress, fileName);
-
-                                        if (result) {
-                                            if (result.status === "error") {
-                                                if (result.message) {
-                                                    window.showErrorMessage(result.message, { modal: true });
-                                                } else if (result.cause) {
-                                                    window.showErrorMessage(`Error: ${JSON.stringify(result.cause)}`, { modal: true });
-                                                } else {
-                                                    window.showErrorMessage("An unknown error occurred: " + JSON.stringify(result), { modal: true });
-                                                }
-                                            } else {
-                                                if (result.presentation) {
-                                                    progress.report({ increment: 100, message: "Successfully got screen from the server." });
-                                                    await new Promise((resolve) => setTimeout(resolve, 2000));
-                                                    let localScreen = document.uri;
-                                                    let serverScreen = Uri.parse("vscode-autoscript-deploy:" + fileName);
-
-                                                    fetchedSource[serverScreen.path] = format(result.presentation);
-
-                                                    commands.executeCommand("vscode.diff", localScreen, serverScreen, "↔ server " + fileName);
-                                                } else {
-                                                    window.showErrorMessage(
-                                                        `The ${fileName} was not found on ${config.host}.\n\nCheck that the presentation id attribute value matches a Screen Definition on the server.`,
-                                                        { modal: true }
-                                                    );
-                                                }
-                                            }
-                                        } else {
-                                            window.showErrorMessage("Did not receive a response from Maximo.", { modal: true });
-                                        }
-                                        return result;
-                                    }
-                                );
-                            } else {
-                                window.showErrorMessage("The selected Screen Definition cannot be empty.", { modal: true });
-                            }
-                        } else {
-                            window.showErrorMessage(
-                                "The selected file must have a Javascript ('.js') or Python ('.py') file extension for an automation script or ('.xml') for a Screen Definition.",
-                                { modal: true }
-                            );
-                        }
-                    } else {
-                        window.showErrorMessage("An Automation Script or Screen Definition must be selected to compare.", { modal: true });
-                    }
-                } else {
-                    window.showErrorMessage("An Automation Script or Screen Definition must be selected to compare.", { modal: true });
-                }
-            }
-        } catch (error) {
-            if (error && typeof error.message !== "undefined") {
-                window.showErrorMessage(error.message, { modal: true });
-            } else {
-                window.showErrorMessage("An unexpected error occurred: " + error, { modal: true });
-            }
-        } finally {
-            // if the client exists then disconnect it.
-            if (client) {
-                await client.disconnect().catch(() => {
-                    //do nothing with this
-                });
-            }
-        }
-    });
-
-    let disposableDeploy = commands.registerCommand("maximo-script-deploy.deploy", async function () {
-        const config = await getMaximoConfig();
-
-        if (!config) {
-            return;
-        }
-
-        let client;
-
-        try {
-            client = new MaximoClient(config);
-
-            if (await login(client)) {
-                // Get the active text editor
-                const editor = window.activeTextEditor;
-                if (editor) {
-                    let document = editor.document;
-
-                    if (document) {
-                        let fileName = path.basename(document.fileName);
-                        let deployFileName =
-                            document.fileName.substring(0, document.fileName.lastIndexOf(".")) +
-                            "-deploy" +
-                            document.fileName.substring(document.fileName.lastIndexOf("."));
-                        let deployDotFileName =
-                            document.fileName.substring(0, document.fileName.lastIndexOf(".")) +
-                            ".deploy" +
-                            document.fileName.substring(document.fileName.lastIndexOf("."));
-                        let deployJSONFileName = document.fileName.substring(0, document.fileName.lastIndexOf(".")) + ".json";
-                        let preDeployJSONFileName = document.fileName.substring(0, document.fileName.lastIndexOf(".")) + ".predeploy.json";
-
-                        if (fileName.endsWith(".js") || fileName.endsWith(".py")) {
-                            // Get the document text
-                            const script = document.getText();
-                            var scriptDeploy;
-                            if (fs.existsSync(deployFileName)) {
-                                scriptDeploy = fs.readFileSync(deployFileName);
-                            } else if (fs.existsSync(deployDotFileName)) {
-                                scriptDeploy = fs.readFileSync(deployDotFileName);
-                            }
-
-                            if (script && script.trim().length > 0) {
-                                if (fs.existsSync(preDeployJSONFileName)) {
-                                    let preConfigDeploy = fs.readFileSync(preDeployJSONFileName, "utf8");
-
-                                    await window.withProgress(
-                                        { cancellable: false, title: "Pre-deployment", location: ProgressLocation.Notification },
-                                        async (progress) => {
-                                            progress.report({ message: `Applying configurations.`, increment: 50 });
-
-                                            await new Promise((resolve) => setTimeout(resolve, 500));
-                                            await client.postConfig(preConfigDeploy);
-                                            progress.report({ message: `Configurations applied.`, increment: 100 });
-                                            await new Promise((resolve) => setTimeout(resolve, 1500));
-                                        }
-                                    );
-
-                                    const preDeployConfig = JSON.parse(preConfigDeploy);
-                                    if (
-                                        typeof preDeployConfig.maxObjects !== "undefined" &&
-                                        Array.isArray(preDeployConfig.maxObjects) &&
-                                        preDeployConfig.maxObjects.length > 0
-                                    ) {
-                                        if (typeof preDeployConfig.noDBConfig === "undefined" || preDeployConfig.noDBConfig === false) {
-                                            if (await client.dbConfigRequired()) {
-                                                const adminModeRequired = await client.dbConfigRequiresAdminMode();
-
-                                                if (adminModeRequired) {
-                                                    if (typeof preDeployConfig.noAdminMode === "undefined" || preDeployConfig.noAdminMode === false) {
-                                                        
-                                                        const userConfirmation = await window.showInformationMessage(
-                                                            "The script has deployment configurations that require Admin Mode to be applied.\n\nThis will logout all users and make the server unavailable while the configuration is performed. Do you want to continue?", 
-                                                            { modal: true }, 
-                                                            "Yes",
-                                                            "No"  
-                                                        );
-                                                        
-                                                        if (userConfirmation !== "Yes") {
-                                                            await window.showInformationMessage('The script cannot be deployed until the database configurations have been applied.\n\nThe configurations have been added to Maximo and can be manually applied by an administrator.',{modal: true});
-                                                            return;
-                                                        }
-
-                                                        //put the server in admin mode, then do the config.
-                                                        await window.withProgress(
-                                                            { cancellable: false, title: "Admin Mode", location: ProgressLocation.Notification },
-                                                            async (progress) => {
-																progress.report({  message: `Requesting Admin Mode On` });
-                                                                await client.setAdminModeOn();
-                                                                await new Promise((resolve) => setTimeout(resolve, 2000));
-                                                                progress.report({ message: `Requested Admin Mode On` });
-                                                                while ((await client.isAdminModeOn()) === false) {
-                                                                    await new Promise((resolve) => setTimeout(resolve, 2000));
-                                                                    progress.report({ message: `Waiting for Admin Mode On` });
-                                                                }
-                                                                progress.report({ increment: 100, message: `Admin Mode is On` });
-                                                            }
-                                                        );
-
-                                                        await window.withProgress(
-                                                            { cancellable: false, title: "Database Configuration", location: ProgressLocation.Notification },
-                                                            async (progress) => {
-                                                                await client.applyDBConfig();
-                                                                progress.report({ message: `Requested database configuration start` });
-
-                                                                // wait for the server to respond that the db config is in progress
-                                                                while ((await client.dbConfigInProgress()) === false) {
-                                                                    await new Promise((resolve) => setTimeout(resolve, 2000));
-                                                                }
-
-                                                                // wait for the database configuration to complete
-                                                                const regex = /BMX.*?E(?= -)/;
-                                                                while ((await client.dbConfigInProgress()) === true) {
-                                                                    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-                                                                    var messages = await client.dbConfigMessages();
-                                                                    if (messages.length > 0) {
-																		var messageList = messages.split("\n");
-                                                                        messageList.forEach((message) => {
-                                                                            if (regex.test(message) || messages.startsWith("BMXAA6819I")) {
-                                                                                throw new Error("An error occurred during database configuration: " + message);
-                                                                            }
-                                                                        });
-                                                                        progress.report({
-                                                                            message: messageList[messageList.length - 1]
-                                                                        });
-                                                                    } else {
-                                                                        progress.report({
-                                                                            message: `Waiting for database configuration to complete`
-                                                                        });
-                                                                    }
-                                                                }
-                                                                progress.report({ increment: 100, message: `Database configuration is complete` });
-                                                            }
-                                                        );
-                                                        await window.withProgress(
-                                                            { cancellable: false, title: "Admin Mode", location: ProgressLocation.Notification },
-                                                            async (progress) => {
-                                                                progress.report({  message: `Requesting Admin Mode Off` });
-																await client.setAdminModeOff();
-                                                                await new Promise((resolve) => setTimeout(resolve, 2000));
-                                                                progress.report({  message: `Requested Admin Mode Off` });
-                                                                while ((await client.isAdminModeOn()) === true) {
-                                                                    await new Promise((resolve) => setTimeout(resolve, 2000));
-                                                                    progress.report({ message: `Waiting for Admin Mode Off` });
-                                                                }
-                                                                await new Promise((resolve) => setTimeout(resolve, 2000));
-                                                                progress.report({ increment: 100, message: `Admin Mode is Off` });
-                                                            }
-                                                        );
-                                                    }else{
-                                                        await window.showInformationMessage('The script deployment specifies that Admin Mode should not be applied, but the script cannot be deployed until the database configurations have been applied.\n\nThe configurations have been added to Maximo and can be manually applied by an administrator.',{modal: true});
-                                                        return;
-                                                    }
-                                                } else {
-                                                    // just do the config.
-                                                    await window.withProgress(
-                                                        { cancellable: false, title: "Database Configuration", location: ProgressLocation.Notification },
-                                                        async (progress) => {
-                                                            await client.applyDBConfig();
-                                                            progress.report({ increment: 10, message: `Requested database configuration start` });
-                                                            await new Promise((resolve) => setTimeout(resolve, 2000));
-                                                            while ((await client.dbConfigInProgress()) === true) {
-                                                                await new Promise((resolve) => setTimeout(resolve, 2000));
-                                                                progress.report({
-                                                                    message: `Waiting for database configuration to complete`
-                                                                });
-                                                            }
-                                                            progress.report({ increment: 100, message: `Database configuration is complete` });
-                                                        }
-                                                    );
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                await window.withProgress(
-                                    { cancellable: false, title: "Script", location: ProgressLocation.Notification },
-                                    async (progress) => {
-                                        progress.report({ message: `Deploying script ${fileName}`, increment: 0 });
-
-                                        await new Promise((resolve) => setTimeout(resolve, 500));
-                                        let result = await client.postScript(script, progress, fileName, scriptDeploy);
-
-                                        if (result) {
-                                            if (result.status === "error") {
-                                                if (result.message) {
-                                                    window.showErrorMessage(result.message, { modal: true });
-                                                } else if (result.cause) {
-                                                    window.showErrorMessage(`Error: ${JSON.stringify(result.cause)}`, { modal: true });
-                                                } else {
-                                                    window.showErrorMessage("An unknown error occurred: " + JSON.stringify(result), { modal: true });
-                                                }
-                                            } else {
-                                                if (fs.existsSync(deployJSONFileName)) {
-                                                    let configDeploy = fs.readFileSync(deployJSONFileName);
-                                                    await client.postConfig(configDeploy);
-
-                                                    const deployConfig = JSON.parse(configDeploy);
-                                                    if (
-                                                        typeof deployConfig.maxObjects !== "undefined" &&
-                                                        Array.isArray(deployConfig.maxObjects) &&
-                                                        deployConfig.maxObjects.length > 0
-                                                    ) {
-                                                        if (typeof deployConfig.noDBConfig === "undefined" || deployConfig.noDBConfig === false) {
-                                                            if (await client.dbConfigRequired()) {
-                                                                const adminModeRequired = await client.dbConfigRequiresAdminMode();
-                                                                if (adminModeRequired) {
-                                                                    if (typeof deployConfig.noAdminMode === "undefined" || deployConfig.noAdminMode === false) {
-                                                                        //put the server in admin mode, then do the config.
-                                                                    }
-                                                                } else {
-                                                                    // just do the config.
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-
-                                                progress.report({ increment: 100, message: `Successfully deployed ${fileName}` });
-                                                await new Promise((resolve) => setTimeout(resolve, 2000));
-                                            }
-                                        } else {
-                                            window.showErrorMessage("Did not receive a response from Maximo.", { modal: true });
-                                        }
-                                        return result;
-                                    }
-                                );
-                            } else {
-                                window.showErrorMessage("The selected Automation Script cannot be empty.", { modal: true });
-                            }
-                        } else if (fileName.endsWith(".xml")) {
-                            const screen = document.getText();
-                            if (screen && screen.trim().length > 0) {
-                                var screenName;
-                                var parseError;
-
-                                parseString(screen, function (error, result) {
-                                    parseError = error;
-                                    if (error) {
-                                        return;
-                                    } else {
-                                        if (result.presentation) {
-                                            screenName = result.presentation.$.id;
-                                        } else if (result.systemlib) {
-                                            screenName = result.systemlib.$.id;
-                                        } else {
-                                            parseError = { message: 'Current XML document does not have an root element of "presentation" or "systemlib".' };
-                                        }
-                                    }
-                                });
-
-                                if (parseError) {
-                                    window.showErrorMessage(`Error parsing ${fileName}: ${parseError.message}`, { modal: true });
-                                    return;
-                                }
-
-                                if (!screenName) {
-                                    window.showErrorMessage(
-                                        "Unable to find presentation or systemlib id from current document. Cannot fetch screen from server to compare.",
-                                        { modal: true }
-                                    );
-                                    return;
-                                }
-
-                                await window.withProgress(
-                                    { cancellable: false, title: "Screen", location: ProgressLocation.Notification },
-                                    async (progress) => {
-                                        progress.report({ message: `Deploying screen ${fileName}`, increment: 0 });
-
-                                        await new Promise((resolve) => setTimeout(resolve, 500));
-                                        let result = await client.postScreen(screen, progress, fileName);
-
-                                        if (result) {
-                                            if (result.status === "error") {
-                                                if (result.message) {
-                                                    window.showErrorMessage(result.message, { modal: true });
-                                                } else if (result.cause) {
-                                                    window.showErrorMessage(`Error: ${JSON.stringify(result.cause)}`, { modal: true });
-                                                } else {
-                                                    window.showErrorMessage("An unknown error occurred: " + JSON.stringify(result), { modal: true });
-                                                }
-                                            } else {
-                                                progress.report({ increment: 100, message: `Successfully deployed ${fileName}` });
-                                                await new Promise((resolve) => setTimeout(resolve, 2000));
-                                            }
-                                        } else {
-                                            window.showErrorMessage("Did not receive a response from Maximo.", { modal: true });
-                                        }
-                                        return result;
-                                    }
-                                );
-                            } else {
-                                window.showErrorMessage("The selected Screen Definition cannot be empty.", { modal: true });
-                            }
-                        } else if (fileName.endsWith(".json")) {
-                            const formText = document.getText();
-                            if (formText && formText.trim().length > 0) {
-                                try {
-                                    // test parse
-                                    JSON.parse(formText);
-                                } catch (error) {
-                                    window.showErrorMessage(`File ${fileName} is not a valid JSON formatted inspection form extract.\n\n${error.message}`, {
-                                        modal: true
-                                    });
-                                    return;
-                                }
-
-                                let form = JSON.parse(formText);
-
-                                if (typeof form.name === "undefined" || !form.name) {
-                                    window.showErrorMessage(`File ${fileName} does not have a 'name' attribute and is not a valid inspection form extract.`, {
-                                        modal: true
-                                    });
-                                    return;
-                                }
-
-                                await window.withProgress(
-                                    { cancellable: false, title: "Inspection Form", location: ProgressLocation.Notification },
-                                    async (progress) => {
-                                        progress.report({ message: `Inspection form ${form.name}`, increment: 0 });
-
-                                        await new Promise((resolve) => setTimeout(resolve, 500));
-                                        let result = await client.postForm(form, progress);
-
-                                        if (result) {
-                                            if (result.status === "error") {
-                                                if (result.message) {
-                                                    window.showErrorMessage(result.message, { modal: true });
-                                                } else if (result.cause) {
-                                                    window.showErrorMessage(`Error: ${JSON.stringify(result.cause)}`, { modal: true });
-                                                } else {
-                                                    window.showErrorMessage("An unknown error occurred: " + JSON.stringify(result), { modal: true });
-                                                }
-                                            } else {
-                                                progress.report({ increment: 100, message: `Successfully deployed ${form.name}` });
-                                                await new Promise((resolve) => setTimeout(resolve, 2000));
-                                            }
-                                        } else {
-                                            window.showErrorMessage("Did not receive a response from Maximo.", { modal: true });
-                                        }
-                                        return result;
-                                    }
-                                );
-                            } else {
-                                window.showErrorMessage("The selected inspection form cannot be empty.", { modal: true });
-                            }
-                        } else {
-                            window.showErrorMessage(
-                                "The selected file must have a Javascript ('.js') or Python ('.py') file extension for an automation script, ('.xml') for a screen definition or ('.json') for an inspection form.",
-                                { modal: true }
-                            );
-                        }
-                    } else {
-                        window.showErrorMessage("An automation script, screen definition or inspection form must be selected to deploy.", { modal: true });
-                    }
-                } else {
-                    window.showErrorMessage("An automation script, screen definition or inspection form must be selected to deploy.", { modal: true });
-                }
-            }
-        } catch (error) {
-            if (error && typeof error.message !== "undefined") {
-                window.showErrorMessage(error.message, { modal: true });
-            } else {
-                window.showErrorMessage("An unexpected error occurred: " + error, { modal: true });
-            }
-        } finally {
-            // if the client exists then disconnect it.
-            if (client) {
-                await client.disconnect().catch(() => {
-                    //do nothing with this
-                });
-            }
-        }
-    });
-
-    let disposableExtract = commands.registerCommand("maximo-script-deploy.extract", async function () {
-        const config = await getMaximoConfig();
-
-        if (!config) {
-            return;
-        }
-
-        let client;
-
-        try {
-            client = new MaximoClient(config);
-
-            if (await login(client)) {
-                let extractLoc = config.extractLocation;
-                // if the extract location has not been specified use the workspace folder.
-                if (typeof extractLoc === "undefined" || !extractLoc) {
-                    if (workspace.workspaceFolders !== undefined) {
-                        extractLoc = workspace.workspaceFolders[0].uri.fsPath;
-                    } else {
-                        window.showErrorMessage("A working folder must be selected or an export folder configured before exporting automation scripts. ", {
-                            modal: true
-                        });
-                        return;
-                    }
-                }
-
-                if (!fs.existsSync(extractLoc)) {
-                    window.showErrorMessage(`The script extract folder ${extractLoc} does not exist.`, { modal: true });
-                    return;
-                }
-
-                let scriptNames = await window.withProgress({ title: "Getting script names", location: ProgressLocation.Notification }, async (progress) => {
-                    return await client.getAllScriptNames(progress);
-                });
-
-                if (typeof scriptNames !== "undefined" && scriptNames.length > 0) {
-                    await window
-                        .showInformationMessage(
-                            "Do you want to extract " +
-                                (scriptNames.length > 1 ? "the " + scriptNames.length + " automation scripts?" : " the one automation script?"),
-                            { modal: true },
-                            ...["Yes"]
-                        )
-                        .then(async (response) => {
-                            if (response === "Yes") {
-                                await window.withProgress(
-                                    {
-                                        title: "Extracting Automation Script",
-                                        location: ProgressLocation.Notification,
-                                        cancellable: true
-                                    },
-                                    async (progress, cancelToken) => {
-                                        let percent = Math.round((1 / scriptNames.length) * 100);
-
-                                        let overwriteAll = false;
-                                        let overwrite = false;
-
-                                        await asyncForEach(scriptNames, async (scriptName) => {
-                                            if (!cancelToken.isCancellationRequested) {
-                                                progress.report({ increment: percent, message: `Extracting ${scriptName}` });
-                                                let scriptInfo = await client.getScript(scriptName);
-
-                                                let fileExtension = getExtension(scriptInfo.scriptLanguage);
-
-                                                let outputFile = extractLoc + "/" + scriptName.toLowerCase() + fileExtension;
-
-                                                // if the file doesn't exist then just write it out.
-                                                if (!fs.existsSync(outputFile)) {
-                                                    fs.writeFileSync(outputFile, scriptInfo.script);
-                                                } else {
-                                                    let incomingHash = crypto.createHash("sha256").update(scriptInfo.script).digest("hex");
-                                                    let fileHash = crypto.createHash("sha256").update(fs.readFileSync(outputFile)).digest("hex");
-
-                                                    if (fileHash !== incomingHash) {
-                                                        if (!overwriteAll) {
-                                                            await window
-                                                                .showInformationMessage(
-                                                                    `The script ${scriptName.toLowerCase()}${fileExtension} exists. \nReplace?`,
-                                                                    { modal: true },
-                                                                    ...["Replace", "Replace All", "Skip"]
-                                                                )
-                                                                .then(async (response) => {
-                                                                    if (response === "Replace") {
-                                                                        overwrite = true;
-                                                                    } else if (response === "Replace All") {
-                                                                        overwriteAll = true;
-                                                                    } else if (response === "Skip") {
-                                                                        // do nothing
-                                                                        overwrite = false;
-                                                                    } else {
-                                                                        cancelToken.cancel();
-                                                                    }
-                                                                });
-                                                        }
-                                                        if (overwriteAll || overwrite) {
-                                                            fs.writeFileSync(outputFile, scriptInfo.script);
-                                                            overwrite = false;
-                                                        }
-                                                    }
-                                                }
-
-                                                if (cancelToken.isCancellationRequested) {
-                                                    return;
-                                                }
-                                            }
-                                        });
-
-                                        if (!cancelToken.isCancellationRequested) {
-                                            window.showInformationMessage("Automation scripts extracted.", { modal: true });
-                                        }
-                                    }
-                                );
-                            }
-                        });
-                } else {
-                    window.showErrorMessage("No scripts were found to extract.", { modal: true });
-                }
-            }
-        } catch (error) {
-            if (error && typeof error.reasonCode !== "undefined" && error.reasonCode === "BMXAA0021E") {
-                password = undefined;
-                window.showErrorMessage(error.message, { modal: true });
-            } else if (error && typeof error.message !== "undefined") {
-                window.showErrorMessage(error.message, { modal: true });
-            } else {
-                window.showErrorMessage("An unexpected error occurred: " + error, { modal: true });
-            }
-        } finally {
-            // if the client exists then disconnect it.
-            if (client) {
-                await client.disconnect().catch(() => {
-                    //do nothing with this
-                });
-            }
-        }
-    });
-
-    let disposableExtractOne = commands.registerCommand("maximo-script-deploy.extractOne", async function () {
-        const config = await getMaximoConfig();
-
-        if (!config) {
-            return;
-        }
-
-        let client;
-
-        try {
-            client = new MaximoClient(config);
-
-            if (await login(client)) {
-                let extractLoc = config.extractLocation;
-                // if the extract location has not been specified use the workspace folder.
-                if (typeof extractLoc === "undefined" || !extractLoc) {
-                    if (workspace.workspaceFolders !== undefined) {
-                        extractLoc = workspace.workspaceFolders[0].uri.fsPath;
-                    } else {
-                        window.showErrorMessage("A working folder must be selected or an export folder configured before exporting automation scripts. ", {
-                            modal: true
-                        });
-                        return;
-                    }
-                }
-
-                if (!fs.existsSync(extractLoc)) {
-                    window.showErrorMessage(`The script extract folder ${extractLoc} does not exist.`, { modal: true });
-                    return;
-                }
-
-                let scriptNames = await window.withProgress({ title: "Getting script names", location: ProgressLocation.Notification }, async (progress) => {
-                    return await client.getAllScriptNames(progress);
-                });
-
-                if (typeof scriptNames !== "undefined" && scriptNames.length > 0) {
-                    scriptNames.sort();
-                    await window.showQuickPick(scriptNames, { placeHolder: "Search for script" }).then(async (scriptName) => {
-                        if (typeof scriptName !== "undefined") {
-                            await window.withProgress(
-                                {
-                                    title: `Extracting ${scriptName}`,
-                                    location: ProgressLocation.Notification,
-                                    cancellable: true
-                                },
-                                async (progress, cancelToken) => {
-                                    let scriptInfo = await client.getScript(scriptName);
-
-                                    let fileExtension = getExtension(scriptInfo.scriptLanguage);
-
-                                    let outputFile = extractLoc + "/" + scriptName.toLowerCase() + fileExtension;
-
-                                    // if the file doesn't exist then just write it out.
-                                    if (!fs.existsSync(outputFile)) {
-                                        fs.writeFileSync(outputFile, scriptInfo.script);
-                                    } else {
-                                        let incomingHash = crypto.createHash("sha256").update(scriptInfo.script).digest("hex");
-                                        let fileHash = crypto.createHash("sha256").update(fs.readFileSync(outputFile)).digest("hex");
-
-                                        if (fileHash !== incomingHash) {
-                                            await window
-                                                .showInformationMessage(
-                                                    `The script ${scriptName.toLowerCase()}${fileExtension} exists. \nReplace?`,
-                                                    { modal: true },
-                                                    ...["Replace"]
-                                                )
-                                                .then(async (response) => {
-                                                    if (response === "Replace") {
-                                                        fs.writeFileSync(outputFile, scriptInfo.script);
-                                                    } else {
-                                                        cancelToken.cancel();
-                                                    }
-                                                });
-                                        }
-                                    }
-
-                                    if (!cancelToken.isCancellationRequested) {
-                                        window.showInformationMessage(`Automation script "${scriptName}" extracted.`, { modal: true });
-                                    }
-                                }
-                            );
-                        }
-                    });
-                }
-            }
-        } catch (error) {
-            if (error && typeof error.reasonCode !== "undefined" && error.reasonCode === "BMXAA0021E") {
-                password = undefined;
-                window.showErrorMessage(error.message, { modal: true });
-            } else if (error && typeof error.message !== "undefined") {
-                window.showErrorMessage(error.message, { modal: true });
-            } else {
-                window.showErrorMessage("An unexpected error occurred: " + error, { modal: true });
-            }
-        } finally {
-            // if the client exists then disconnect it.
-            if (client) {
-                await client.disconnect().catch(() => {
-                    //do nothing with this
-                });
-            }
-        }
-    });
-
-    let disposableExtractScreens = commands.registerCommand("maximo-script-deploy.screens", async function () {
-        const config = await getMaximoConfig();
-
-        if (!config) {
-            return;
-        }
-
-        let client;
-
-        try {
-            client = new MaximoClient(config);
-
-            if (await login(client)) {
-                let extractLoc = config.extractLocationScreens;
-                // if the extract location has not been specified use the workspace folder.
-                if (typeof extractLoc === "undefined" || !extractLoc) {
-                    if (workspace.workspaceFolders !== undefined) {
-                        extractLoc = workspace.workspaceFolders[0].uri.fsPath;
-                    } else {
-                        window.showErrorMessage("A working folder must be selected or an export folder configured before exporting screen definitions.", {
-                            modal: true
-                        });
-                        return;
-                    }
-                }
-
-                if (!fs.existsSync(extractLoc)) {
-                    window.showErrorMessage(`The screen extract folder ${extractLoc} does not exist.`, { modal: true });
-                    return;
-                }
-
-                let screenNames = await window.withProgress({ title: "Getting screen names", location: ProgressLocation.Notification }, async () => {
-                    return await client.getAllScreenNames();
-                });
-
-                if (typeof screenNames !== "undefined" && screenNames.length > 0) {
-                    await window
-                        .showInformationMessage(
-                            "Do you want to extract " +
-                                (screenNames.length > 1 ? "the " + screenNames.length + " screen definitions?" : " the one screen definition?"),
-                            { modal: true },
-                            ...["Yes"]
-                        )
-                        .then(async (response) => {
-                            if (response === "Yes") {
-                                await window.withProgress(
-                                    {
-                                        title: "Extracting Screen Definitions",
-                                        location: ProgressLocation.Notification,
-                                        cancellable: true
-                                    },
-                                    async (progress, cancelToken) => {
-                                        let percent = Math.round((1 / screenNames.length) * 100);
-
-                                        let overwriteAll = false;
-                                        let overwrite = false;
-
-                                        await asyncForEach(screenNames, async (screenName) => {
-                                            if (!cancelToken.isCancellationRequested) {
-                                                progress.report({ increment: percent, message: `Extracting ${screenName.toLowerCase()}` });
-                                                let screenInfo = await client.getScreen(screenName);
-
-                                                let fileExtension = ".xml";
-
-                                                let outputFile = extractLoc + "/" + screenName.toLowerCase() + fileExtension;
-                                                let xml = format(screenInfo.presentation);
-                                                // if the file doesn't exist then just write it out.
-                                                if (!fs.existsSync(outputFile)) {
-                                                    fs.writeFileSync(outputFile, xml);
-                                                } else {
-                                                    let incomingHash = crypto.createHash("sha256").update(xml).digest("hex");
-                                                    let fileHash = crypto.createHash("sha256").update(fs.readFileSync(outputFile)).digest("hex");
-
-                                                    if (fileHash !== incomingHash) {
-                                                        if (!overwriteAll) {
-                                                            await window
-                                                                .showInformationMessage(
-                                                                    `The screen ${screenName.toLowerCase()}${fileExtension} exists. \nReplace?`,
-                                                                    { modal: true },
-                                                                    ...["Replace", "Replace All", "Skip"]
-                                                                )
-                                                                .then(async (response) => {
-                                                                    if (response === "Replace") {
-                                                                        overwrite = true;
-                                                                    } else if (response === "Replace All") {
-                                                                        overwriteAll = true;
-                                                                    } else if (response === "Skip") {
-                                                                        // do nothing
-                                                                        overwrite = false;
-                                                                    } else {
-                                                                        cancelToken.cancel();
-                                                                    }
-                                                                });
-                                                        }
-                                                        if (overwriteAll || overwrite) {
-                                                            fs.writeFileSync(outputFile, xml);
-                                                            overwrite = false;
-                                                        }
-                                                    }
-                                                }
-
-                                                if (cancelToken.isCancellationRequested) {
-                                                    return;
-                                                }
-                                            }
-                                        });
-
-                                        if (!cancelToken.isCancellationRequested) {
-                                            window.showInformationMessage("Screen definitions extracted.", { modal: true });
-                                        }
-                                    }
-                                );
-                            }
-                        });
-                } else {
-                    window.showErrorMessage("No screen definitions were found to extract.", { modal: true });
-                }
-            }
-        } catch (error) {
-            if (error && typeof error.reasonCode !== "undefined" && error.reasonCode === "BMXAA0021E") {
-                password = undefined;
-                window.showErrorMessage(error.message, { modal: true });
-            } else if (error && typeof error.message !== "undefined") {
-                window.showErrorMessage(error.message, { modal: true });
-            } else {
-                window.showErrorMessage("An unexpected error occurred: " + error, { modal: true });
-            }
-        } finally {
-            // if the client exists then disconnect it.
-            if (client) {
-                await client.disconnect().catch(() => {
-                    //do nothing with this
-                });
-            }
-        }
-    });
-
-    let disposableExtractScreenOne = commands.registerCommand("maximo-script-deploy.screensOne", async function () {
-        const config = await getMaximoConfig();
-
-        if (!config) {
-            return;
-        }
-
-        let client;
-
-        try {
-            client = new MaximoClient(config);
-
-            if (await login(client)) {
-                let extractLoc = config.extractLocationScreens;
-                // if the extract location has not been specified use the workspace folder.
-                if (typeof extractLoc === "undefined" || !extractLoc) {
-                    if (workspace.workspaceFolders !== undefined) {
-                        extractLoc = workspace.workspaceFolders[0].uri.fsPath;
-                    } else {
-                        window.showErrorMessage("A working folder must be selected or an export folder configured before exporting screen definitions.", {
-                            modal: true
-                        });
-                        return;
-                    }
-                }
-
-                if (!fs.existsSync(extractLoc)) {
-                    window.showErrorMessage(`The screen extract folder ${extractLoc} does not exist.`, { modal: true });
-                    return;
-                }
-
-                let screenNames = await window.withProgress({ title: "Getting screen names", location: ProgressLocation.Notification }, async () => {
-                    return await client.getAllScreenNames();
-                });
-
-                if (typeof screenNames !== "undefined" && screenNames.length > 0) {
-                    screenNames.sort();
-                    await window.showQuickPick(screenNames, { placeHolder: "Search for screen" }).then(async (screenName) => {
-                        if (typeof screenName !== "undefined") {
-                            await window.withProgress(
-                                {
-                                    title: `Extracting Screen ${screenName}`,
-                                    location: ProgressLocation.Notification,
-                                    cancellable: true
-                                },
-                                async (progress, cancelToken) => {
-                                    let screenInfo = await client.getScreen(screenName);
-
-                                    let fileExtension = ".xml";
-
-                                    let outputFile = extractLoc + "/" + screenName.toLowerCase() + fileExtension;
-                                    let xml = format(screenInfo.presentation);
-                                    // if the file doesn't exist then just write it out.
-                                    if (!fs.existsSync(outputFile)) {
-                                        fs.writeFileSync(outputFile, xml);
-                                    } else {
-                                        let incomingHash = crypto.createHash("sha256").update(xml).digest("hex");
-                                        let fileHash = crypto.createHash("sha256").update(fs.readFileSync(outputFile)).digest("hex");
-
-                                        if (fileHash !== incomingHash) {
-                                            await window
-                                                .showInformationMessage(
-                                                    `The screen ${screenName.toLowerCase()}${fileExtension} exists. \nReplace?`,
-                                                    { modal: true },
-                                                    ...["Replace"]
-                                                )
-                                                .then(async (response) => {
-                                                    if (response === "Replace") {
-                                                        fs.writeFileSync(outputFile, xml);
-                                                    } else {
-                                                        cancelToken.cancel();
-                                                    }
-                                                });
-                                        }
-                                    }
-
-                                    if (cancelToken.isCancellationRequested) {
-                                        return;
-                                    } else {
-                                        window.showInformationMessage(`Screen "${screenName}" extracted.`, { modal: true });
-                                    }
-                                }
-                            );
-                        }
-                    });
-                } else {
-                    window.showErrorMessage("No screen definitions were found to extract.", { modal: true });
-                }
-            }
-        } catch (error) {
-            if (error && typeof error.reasonCode !== "undefined" && error.reasonCode === "BMXAA0021E") {
-                password = undefined;
-                window.showErrorMessage(error.message, { modal: true });
-            } else if (error && typeof error.message !== "undefined") {
-                window.showErrorMessage(error.message, { modal: true });
-            } else {
-                window.showErrorMessage("An unexpected error occurred: " + error, { modal: true });
-            }
-        } finally {
-            // if the client exists then disconnect it.
-            if (client) {
-                await client.disconnect().catch(() => {
-                    //do nothing with this
-                });
-            }
-        }
-    });
-
-    let disposableExtractForms = commands.registerCommand("maximo-script-deploy.forms", async function () {
-        const config = await getMaximoConfig();
-
-        if (!config) {
-            return;
-        }
-
-        let client;
-
-        try {
-            client = new MaximoClient(config);
-
-            if (await login(client)) {
-                let extractLoc = config.extractLocationForms;
-                // if the extract location has not been specified use the workspace folder.
-                if (typeof extractLoc === "undefined" || !extractLoc) {
-                    if (workspace.workspaceFolders !== undefined) {
-                        extractLoc = workspace.workspaceFolders[0].uri.fsPath;
-                    } else {
-                        window.showErrorMessage("A working folder must be selected or an export folder configured before exporting inspection forms.", {
-                            modal: true
-                        });
-                        return;
-                    }
-                }
-
-                if (!fs.existsSync(extractLoc)) {
-                    window.showErrorMessage(`The inspection form extract folder ${extractLoc} does not exist.`, { modal: true });
-                    return;
-                }
-
-                let formNames = await window.withProgress({ title: "Getting inspection forms", location: ProgressLocation.Notification }, async () => {
-                    return await client.getAllForms();
-                });
-
-                if (typeof formNames !== "undefined" && formNames.length > 0) {
-                    await window
-                        .showInformationMessage(
-                            "Do you want to extract " + (formNames.length > 1 ? "the " + formNames.length + " inspection forms?" : " the one inspection form?"),
-                            { modal: true },
-                            ...["Yes"]
-                        )
-                        .then(async (response) => {
-                            if (response === "Yes") {
-                                await window.withProgress(
-                                    {
-                                        title: "Extracting Inspection Forms",
-                                        location: ProgressLocation.Notification,
-                                        cancellable: true
-                                    },
-                                    async (progress, cancelToken) => {
-                                        let percent = Math.round((1 / formNames.length) * 100);
-
-                                        let overwriteAll = false;
-                                        let overwrite = false;
-
-                                        await asyncForEach(formNames, async (form) => {
-                                            if (!cancelToken.isCancellationRequested) {
-                                                progress.report({ increment: percent, message: `Extracting ${form.name.toLowerCase()} (${form.inspformnum})` });
-                                                let formInfo = await client.getForm(form.id);
-
-                                                let fileExtension = ".json";
-
-                                                let outputFile =
-                                                    extractLoc +
-                                                    "/" +
-                                                    formInfo.name.toLowerCase().replaceAll(" ", "-").replaceAll("/", "-").replaceAll("\\", "-") +
-                                                    fileExtension;
-                                                let source = JSON.stringify(formInfo, null, 4);
-                                                // if the file doesn't exist then just write it out.
-                                                if (!fs.existsSync(outputFile)) {
-                                                    fs.writeFileSync(outputFile, source);
-                                                } else {
-                                                    let incomingHash = crypto.createHash("sha256").update(source).digest("hex");
-                                                    let fileHash = crypto.createHash("sha256").update(fs.readFileSync(outputFile)).digest("hex");
-
-                                                    if (fileHash !== incomingHash) {
-                                                        if (!overwriteAll) {
-                                                            await window
-                                                                .showInformationMessage(
-                                                                    `The inspection form ${form.name} exists. \nReplace?`,
-                                                                    { modal: true },
-                                                                    ...["Replace", "Replace All", "Skip"]
-                                                                )
-                                                                .then(async (response) => {
-                                                                    if (response === "Replace") {
-                                                                        overwrite = true;
-                                                                    } else if (response === "Replace All") {
-                                                                        overwriteAll = true;
-                                                                    } else if (response === "Skip") {
-                                                                        // do nothing
-                                                                        overwrite = false;
-                                                                    } else {
-                                                                        cancelToken.cancel();
-                                                                    }
-                                                                });
-                                                        }
-                                                        if (overwriteAll || overwrite) {
-                                                            fs.writeFileSync(outputFile, source);
-                                                            overwrite = false;
-                                                        }
-                                                    }
-                                                }
-
-                                                if (cancelToken.isCancellationRequested) {
-                                                    return;
-                                                }
-                                            }
-                                        });
-
-                                        if (!cancelToken.isCancellationRequested) {
-                                            window.showInformationMessage("Inspection forms extracted.", { modal: true });
-                                        }
-                                    }
-                                );
-                            }
-                        });
-                } else {
-                    window.showErrorMessage("No inspection forms were found to extract.", { modal: true });
-                }
-            }
-        } catch (error) {
-            if (error && typeof error.reasonCode !== "undefined" && error.reasonCode === "BMXAA0021E") {
-                password = undefined;
-                window.showErrorMessage(error.message, { modal: true });
-            } else if (error && typeof error.message !== "undefined") {
-                window.showErrorMessage(error.message, { modal: true });
-            } else {
-                window.showErrorMessage("An unexpected error occurred: " + error, { modal: true });
-            }
-        } finally {
-            // if the client exists then disconnect it.
-            if (client) {
-                await client.disconnect().catch(() => {
-                    //do nothing with this
-                });
-            }
-        }
-    });
-
-    let disposableExtractFormsOne = commands.registerCommand("maximo-script-deploy.formsOne", async function () {
-        const config = await getMaximoConfig();
-
-        if (!config) {
-            return;
-        }
-
-        let client;
-
-        try {
-            client = new MaximoClient(config);
-
-            if (await login(client)) {
-                let extractLoc = config.extractLocationForms;
-                // if the extract location has not been specified use the workspace folder.
-                if (typeof extractLoc === "undefined" || !extractLoc) {
-                    if (workspace.workspaceFolders !== undefined) {
-                        extractLoc = workspace.workspaceFolders[0].uri.fsPath;
-                    } else {
-                        window.showErrorMessage("A working folder must be selected or an export folder configured before exporting inspection forms.", {
-                            modal: true
-                        });
-                        return;
-                    }
-                }
-
-                if (!fs.existsSync(extractLoc)) {
-                    window.showErrorMessage(`The inspection form extract folder ${extractLoc} does not exist.`, { modal: true });
-                    return;
-                }
-
-                let formFullNames = await window.withProgress({ title: "Getting inspection forms", location: ProgressLocation.Notification }, async () => {
-                    return await client.getAllForms();
-                });
-
-                if (typeof formFullNames !== "undefined" && formFullNames.length > 0) {
-                    var formNames = formFullNames.map((x) => x.name);
-                    formNames.sort();
-                    await window.showQuickPick(formNames, { placeHolder: "Search for form" }).then(async (formName) => {
-                        if (typeof formName !== "undefined") {
-                            var form = formFullNames.find((x) => x.name == formName);
-
-                            await window.withProgress(
-                                {
-                                    title: `Extracting Inspection Form ${formName}`,
-                                    location: ProgressLocation.Notification,
-                                    cancellable: true
-                                },
-                                async (progress, cancelToken) => {
-                                    let formInfo = await client.getForm(form.id);
-
-                                    let fileExtension = ".json";
-
-                                    let outputFile =
-                                        extractLoc +
-                                        "/" +
-                                        formInfo.name.toLowerCase().replaceAll(" ", "-").replaceAll("/", "-").replaceAll("\\", "-") +
-                                        fileExtension;
-                                    let source = JSON.stringify(formInfo, null, 4);
-                                    // if the file doesn't exist then just write it out.
-                                    if (!fs.existsSync(outputFile)) {
-                                        fs.writeFileSync(outputFile, source);
-                                    } else {
-                                        let incomingHash = crypto.createHash("sha256").update(source).digest("hex");
-                                        let fileHash = crypto.createHash("sha256").update(fs.readFileSync(outputFile)).digest("hex");
-
-                                        if (fileHash !== incomingHash) {
-                                            await window
-                                                .showInformationMessage(`The inspection form ${form.name} exists. \nReplace?`, { modal: true }, ...["Replace"])
-                                                .then(async (response) => {
-                                                    if (response === "Replace") {
-                                                        fs.writeFileSync(outputFile, source);
-                                                    } else {
-                                                        cancelToken.cancel();
-                                                    }
-                                                });
-                                        }
-                                    }
-
-                                    if (cancelToken.isCancellationRequested) {
-                                        return;
-                                    } else {
-                                        window.showInformationMessage(`Inspection form "${formName}" extracted.`, { modal: true });
-                                    }
-                                }
-                            );
-                        }
-                    });
-                } else {
-                    window.showErrorMessage("No inspection forms were found to extract.", { modal: true });
-                }
-            }
-        } catch (error) {
-            if (error && typeof error.reasonCode !== "undefined" && error.reasonCode === "BMXAA0021E") {
-                password = undefined;
-                window.showErrorMessage(error.message, { modal: true });
-            } else if (error && typeof error.message !== "undefined") {
-                window.showErrorMessage(error.message, { modal: true });
-            } else {
-                window.showErrorMessage("An unexpected error occurred: " + error, { modal: true });
-            }
-        } finally {
-            // if the client exists then disconnect it.
-            if (client) {
-                await client.disconnect().catch(() => {
-                    //do nothing with this
-                });
-            }
-        }
-    });
+    ];
 
     context.subscriptions.push(
-        disposableDeploy,
-        disposableExtract,
-        disposableCompare,
-        disposableExtractScreens,
-        disposableExtractScreenOne,
-        disposableInsert,
-        disposableExtractForms,
-        disposableExtractOne,
-        disposableExtractFormsOne
+        commands.registerTextEditorCommand("maximo-script-deploy.id", (editor, edit) => {
+            let fileName = path.basename(editor.document.fileName);
+
+            // if we are not dealing with an XML file do nothing.
+            if (!fileName.endsWith(".xml")) {
+                return;
+            }
+
+            var currentSelection = editor.selection;
+            var regex = /<[^>]+(>)/g;
+            let start = editor.document.offsetAt(new Position(currentSelection.start.line, currentSelection.start.character));
+
+            let match;
+
+            let found = false;
+            while ((match = regex.exec(editor.document.getText()))) {
+                if (start > match.index && start < regex.lastIndex) {
+                    let tag = match[0];
+                    let idMatch = /id= *".+?"/.exec(tag);
+
+                    if (idMatch) {
+                        let startId = match.index + idMatch.index;
+                        let endId = startId + idMatch[0].length;
+                        edit.replace(new Range(editor.document.positionAt(startId), editor.document.positionAt(endId)), `id="${Date.now()}"`);
+                        found = true;
+                    } else {
+                        let tagMatch = /<.* /.exec(tag);
+                        if (tagMatch) {
+                            let startId = match.index + tagMatch.index + tagMatch[0].length;
+                            edit.insert(editor.document.positionAt(startId), `id="${Date.now()}" `);
+                            found = true;
+                        }
+                    }
+
+                    break;
+                }
+            }
+
+            if (!found) {
+                if (fs.existsSync(globalSettings)) {
+                    workspace.fs.readFile(Uri.file(globalSettings)).then((data) => {
+                        if (data) {
+                            let settings = JSON.parse(new TextDecoder().decode(data));
+                            if (settings && !settings.suppressXMLIdMessage) {
+                                window.showWarningMessage("Select an XML tag to insert an Id.", "Don't Show Again").then((selection) => {
+                                    if (selection == "Don't Show Again") {
+                                        settings.suppressXMLIdMessage = true;
+                                        // @ts-ignore
+                                        workspace.fs.writeFile(Uri.file(globalSettings), JSON.stringify(settings, null, 4));
+                                    }
+                                });
+                            }
+                        }
+                    });
+                } else {
+                    window.showWarningMessage("Select an XML tag to insert an Id.", "Don't Show Again").then((selection) => {
+                        if (selection == "Don't Show Again") {
+                            let settings = { suppressXMLIdMessage: true };
+                            workspace.fs
+                                .writeFile(Uri.file(globalSettings), new TextEncoder().encode(JSON.stringify(settings, null, 4)))
+                                // @ts-ignore
+                                .catch((error) => console.log(error));
+                        }
+                    });
+                }
+            }
+        })
     );
+
+    commandList.forEach((command) => {
+        context.subscriptions.push(
+            commands.registerCommand(command.command, async function () {
+                const config = await getMaximoConfig();
+
+                if (!config) {
+                    return;
+                }
+
+                let client;
+
+                try {
+                    client = new MaximoClient(config);
+                    if (await login(client)) {
+                        await command.function(client);
+                    }
+                } catch (error) {
+                    if (error && typeof error.reasonCode !== "undefined" && error.reasonCode === "BMXAA0021E") {
+                        password = undefined;
+                        window.showErrorMessage(error.message, { modal: true });
+                    } else if (error && typeof error.message !== "undefined") {
+                        window.showErrorMessage(error.message, { modal: true });
+                    } else {
+                        window.showErrorMessage("An unexpected error occurred: " + error, { modal: true });
+                    }
+                } finally {
+                    // if the client exists then disconnect it.
+                    if (client) {
+                        await client.disconnect().catch(() => {
+                            //do nothing with this
+                        });
+                    }
+                }
+            })
+        );
+    });
 }
 
 async function toggleLog() {
@@ -1471,6 +264,7 @@ async function toggleLog() {
                         }
                     }
                 } else {
+                    // @ts-ignore
                     logFilePath = temp.path({ suffix: ".log", defaultPrefix: "maximo" });
                 }
 
@@ -1607,33 +401,7 @@ function _onConfigurationChange(e) {
     }
 }
 
-function formatXML(sourceXml) {
-    var xmlDoc = new DOMParser().parseFromString(sourceXml, "application/xml");
-    var xsltDoc = new DOMParser().parseFromString(
-        [
-            // describes how we want to modify the XML - indent everything
-            '<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform">',
-            '  <xsl:strip-space elements="*"/>',
-            '  <xsl:template match="para[content-style][not(text())]">', // change to just text() to strip space in text nodes
-            '    <xsl:value-of select="normalize-space(.)"/>',
-            "  </xsl:template>",
-            '  <xsl:template match="node()|@*">',
-            '    <xsl:copy><xsl:apply-templates select="node()|@*"/></xsl:copy>',
-            "  </xsl:template>",
-            '  <xsl:output indent="yes"/>',
-            "</xsl:stylesheet>"
-        ].join("\n"),
-        "application/xml"
-    );
-
-    var xsltProcessor = new XSLTProcessor();
-    xsltProcessor.importStylesheet(xsltDoc);
-    var resultDoc = xsltProcessor.transformToDocument(xmlDoc);
-    var resultXml = new XMLSerializer().serializeToString(resultDoc);
-    return resultXml;
-}
-
-async function getMaximoConfig() {
+export async function getMaximoConfig() {
     try {
         let localConfig = await getLocalConfig();
         if (!localConfig) {
@@ -1657,6 +425,7 @@ async function getMaximoConfig() {
         let extractLocation = localConfig.extractLocation ?? settings.get("maximo.extractLocation");
         let extractLocationScreens = localConfig.extractLocationScreens ?? settings.get("maximo.extractScreenLocation");
         let extractLocationForms = localConfig.extractLocationForms ?? settings.get("maximo.extractInspectionFormsLocation");
+        let extractLocationReports = localConfig.extractLocationForms ?? settings.get("maximo.extractReportsLocation");
 
         // make sure we have all the settings.
         if (!validateSettings({ host: host, username: userName, port: port, apiKey: apiKey })) {
@@ -1719,7 +488,8 @@ async function getMaximoConfig() {
             apiKey: apiKey,
             extractLocation: extractLocation,
             extractLocationScreens: extractLocationScreens,
-            extractLocationForms: extractLocationForms
+            extractLocationForms: extractLocationForms,
+            extractLocationReports: extractLocationReports
         });
     } catch (error) {
         if (error.reason == "WRONG_FINAL_BLOCK_LENGTH") {
@@ -1804,10 +574,6 @@ async function login(client) {
     );
 
     if (logInSuccessful) {
-        logInSuccessful = await versionSupported(client);
-    }
-
-    if (logInSuccessful) {
         if ((await installed(client)) && (await upgraded(client))) {
             return true;
         } else {
@@ -1887,43 +653,12 @@ async function upgraded(client) {
     }
 }
 
-async function versionSupported(client) {
-    // We now support all supported versions of Maximo, removing this check.
-    // var version = await client.maximoVersion();
-
-    // if (!version) {
-    //     window.showErrorMessage("Could not determine the Maximo version. Only Maximo 7.6.0.8 and greater are supported", { modal: true });
-    //     return false;
-    // } else {
-    //     var checkVersion = version.substr(1, version.indexOf("-") - 1);
-    //     if (!supportedVersions.includes(checkVersion)) {
-    //         window.showErrorMessage(`The Maximo version ${version} is not supported.`, { modal: true });
-    //         return false;
-    //     }
-    // }    
-    return true;
-}
-
-function getExtension(scriptLanguage) {
-    switch (scriptLanguage.toLowerCase()) {
-        case "python":
-        case "jython":
-            return ".py";
-        case "nashorn":
-        case "javascript":
-        case "emcascript":
-        case "js":
-            return ".js";
-        default:
-            return ".unknown";
-    }
-}
-
-async function asyncForEach(array, callback) {
+export async function asyncForEach(array, callback) {
     for (let index = 0; index < array.length; index++) {
         await callback(array[index], index, array);
     }
 }
+
 // this method is called when your extension is deactivated
 function deactivate() {
     currentWindow = undefined;

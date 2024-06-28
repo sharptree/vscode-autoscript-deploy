@@ -2189,7 +2189,7 @@ MaxObject.prototype.setMboValues = function (mbo) {
             this.languageColumn != null ? mbo.setValue("LANGCOLUMNNAME", this.languageColumn) : mbo.setValueNull("LANGCOLUMNNAME");
         }
 
-        if ( this.indexes.length > 0 && !mbo.getMboValueData("ALTIXNAME").isReadOnly()) {
+        if (this.indexes.length > 0 && !mbo.getMboValueData("ALTIXNAME").isReadOnly()) {
             this.alternateIndex != null ? mbo.setValue("ALTIXNAME", this.alternateIndex, MboConstants.NOVALIDATION) : mbo.setValueNull("ALTIXNAME");
         }
 
@@ -2211,7 +2211,7 @@ MaxObject.prototype.setMboValues = function (mbo) {
         }
 
         this.viewWhere != null ? mbo.setValue("VIEWWHERE", this.viewWhere) : mbo.setValueNull("VIEWWHERE");
-        
+
         if (this.joinToObject && mbo.toBeAdded()) {
             mbo.setValue("JOINTOOBJECT", this.joinToObject);
         }
