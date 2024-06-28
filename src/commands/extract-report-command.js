@@ -95,7 +95,7 @@ export default async function extractReportCommand(client) {
 }
 
 export async function writeMetaData(reportInfo, extractLoc) {
-    let xmlFilePath = extractLoc + "/" + reportInfo.reportFolder + "/resports.xml";
+    let xmlFilePath = extractLoc + "/" + reportInfo.reportFolder + "/reports.xml";
 
     let reportsXML = await new Promise((resolve, reject) => {
         if (fs.existsSync(xmlFilePath)) {
@@ -153,6 +153,8 @@ export async function writeMetaData(reportInfo, extractLoc) {
     report.attribute.push({ _: reportInfo.scheduleOnly ? 1 : 0, $: { name: "scheduleonly" } });
     report.attribute.push({ _: reportInfo.toolbarLocation, $: { name: "toolbarlocation" } });
     report.attribute.push({ _: reportInfo.useWhereWithParam ? 1 : 0, $: { name: "usewherewithparam" } });
+    report.attribute.push({ _: reportInfo.displayOrder ? 1 : 0, $: { name: "displayOrder" } });
+    report.attribute.push({ _: reportInfo.paramColumns ? 1 : 0, $: { name: "paramcolumns" } });
 
     if (reportInfo.parameters.length > 0) {
         report.parameters = {};

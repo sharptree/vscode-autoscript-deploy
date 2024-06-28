@@ -32,8 +32,8 @@ export default class MaximoClient {
         // keep a reference to the config for later use.
         this.config = config;
 
-        this.requiredScriptVersion = "1.35.0";
-        this.currentScriptVersion = "1.35.0";
+        this.requiredScriptVersion = "1.36.0";
+        this.currentScriptVersion = "1.36.0";
 
         if (config.ca) {
             https.globalAgent.options.ca = config.ca;
@@ -656,6 +656,32 @@ export default class MaximoClient {
         return result.data;
     }
 
+    async postReport(report, progress, fileName) {
+        if (!this._isConnected) {
+            await this.connect();
+        }
+
+        progress.report({ increment: 10, message: `Deploying report ${fileName}` });
+
+        const options = {
+            url: "script/sharptree.autoscript.report",
+            method: MaximoClient.Method.POST,
+            headers: {
+                "Content-Type": "text/plain",
+                Accept: "application/json"
+            },
+            data: report
+        };
+
+        progress.report({ increment: 50, message: `Deploying report ${fileName}` });
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        // @ts-ignore
+        const result = await this.client.request(options);
+
+        progress.report({ increment: 90, message: `Deploying report ${fileName}` });
+        return result.data;
+    }
+
     async postForm(form, progress) {
         if (!this._isConnected) {
             await this.connect();
@@ -819,7 +845,7 @@ export default class MaximoClient {
             await new Promise((resolve) => setTimeout(resolve, 500));
         }
 
-        let increment = 100 / 9;
+        let increment = 100 / 10;
 
         let source = fs.readFileSync(path.resolve(__dirname, "../resources/sharptree.autoscript.store.js")).toString();
         await this._installOrUpdateScript("sharptree.autoscript.store", "Sharptree Automation Script Storage Script", source, progress, increment);
@@ -851,6 +877,15 @@ export default class MaximoClient {
 
         source = fs.readFileSync(path.resolve(__dirname, "../resources/sharptree.autoscript.admin.js")).toString();
         await this._installOrUpdateScript("sharptree.autoscript.admin", "Sharptree Admin Script", source, progress, increment);
+
+        source = fs.readFileSync(path.resolve(__dirname, "../resources/sharptree.autoscript.report.js")).toString();
+        await this._installOrUpdateScript(
+            "sharptree.autoscript.report",
+            "Report Automation Script for Exporting and Importing Reports",
+            source,
+            progress,
+            increment
+        );
 
         await this._fixInspectionFormData();
     }

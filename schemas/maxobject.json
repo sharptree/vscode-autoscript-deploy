@@ -1,6 +1,6 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/logger.json",
+    "$id": "https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/maxobject.json",
     "title": "Maximo Object",
     "description": "A Maximo Object",
     "type": "object",

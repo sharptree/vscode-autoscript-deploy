@@ -238,6 +238,7 @@
 		"webpack-cli": "^4.10.0"
 	},
 	"dependencies": {
+		"archiver": "^7.0.1",
 		"axios": "^0.26.1",
 		"axios-oauth-client": "^1.5.0",
 		"axios-token-interceptor": "^0.2.0",

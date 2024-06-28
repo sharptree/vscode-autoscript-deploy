@@ -6,7 +6,7 @@ import { window, ProgressLocation } from "vscode";
 
 import MaximoClient from "../maximo/maximo-client";
 
-export default async function deployScript(client, filePath, form) {
+export default async function deployForm(client, filePath, form) {
     if (!client || client === null || client instanceof MaximoClient === false) {
         throw new Error("The client parameter is required and must be an instance of the MaximoClient class.");
     }
