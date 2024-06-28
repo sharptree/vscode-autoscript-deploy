@@ -1,4 +1,7 @@
 # Release Notes
+## 1.15.3
+- Fixed defaults for dploc, qlloc and padloc to be NONE since it is missing from some of the out of the box reports.xml files.
+
 ## 1.15.2
 - Fixed export formatting issues that could cause problems with re-imports.
 - Added application name to selection list.
