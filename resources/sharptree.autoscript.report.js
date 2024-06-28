@@ -50,6 +50,9 @@ function main() {
                     var reportSet;
                     try {
                         reportSet = MXServer.getMXServer().getMboSet("REPORT", userInfo);
+                        var sqlf = new SqlFormat("runtype = :1");
+                        sqlf.setObject(1, "REPORT", "RUNTYPE", "BIRT");
+                        reportSet.setWhere(sqlf.format());  
                         reportSet.setOrderBy("description");
 
                         var reports = [];
@@ -61,7 +64,7 @@ function main() {
                                 "reportId": report.getUniqueIDValue(),
                                 "report": report.getString("REPORTNAME"),
                                 "description": report.getString("DESCRIPTION"),
-                                "app": report.getString("REPORTFOLDER"),
+                                "app": report.getString("REPORTFOLDER")
                             });
 
                             reportSet.remove(0);
@@ -257,7 +260,7 @@ function exportReport(reportId) {
             while ((entry = zis.getNextEntry()) != null) {
                 if (entry.getName() == report.getString("REPORTNAME")) {
                     var baos = new ByteArrayOutputStream();
-                    var buffer = new ByteArray(1024);;
+                    var buffer = new ByteArray(1024);
                     var count;
                     while ((count = zis.read(buffer)) != -1) {
                         baos.write(buffer, 0, count);
@@ -278,19 +281,19 @@ function exportReport(reportId) {
             result.appName = report.getString("APPNAME");
             result.toolbarLocation = report.getString("TOOLBARLOCATION");
             result.toolbarIcon = report.getString("TOOLBARICON");
-            result.toolbarSequence = report.getInt("TOOLBARSEQUENCE");
+            result.toolbarSequence = !report.isNull("TOOLBARSEQUENCE") ? report.getInt("TOOLBARSEQUENCE") : null;
             result.noRequestPage = report.getBoolean("NOREQUESTPAGE");
             result.detail = report.getBoolean("DETAIL");
             result.langCode = report.getString("LANGCODE");
             result.useWhereWithParam = report.getBoolean("USEWHEREWITHPARAM");
-            result.recordLimit = report.getInt("RECORDLIMIT");
+            result.recordLimit = !report.isNull("RECORDLIMIT") ? report.getInt("RECORDLIMIT") : null;
             result.browserView = report.getBoolean("QL");
             result.directPrint = report.getBoolean("DP");
             result.printWithAttachments = report.getBoolean("PAD");
             result.browserViewLocation = report.getString("QLLOC");
             result.directPrintLocation = report.getString("DPLOC");
             result.printWithAttachmentsLocation = report.getString("PADLOC");
-            result.priority = report.getInt("PRIORITY");
+            result.priority = !report.isNull("PRIORITY") ? report.getInt("PRIORITY") : null;
             result.scheduleOnly = report.getBoolean("SCHEDULEONLY");
             result.design = design ? design : report.getString("REPORT_DESIGN.DESIGN");
             result.displayOrder = report.getString("DISPLAYORDER");

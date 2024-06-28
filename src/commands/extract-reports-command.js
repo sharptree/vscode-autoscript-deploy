@@ -53,59 +53,80 @@ export default async function extractReportsCommand(client) {
 
                             let overwriteAll = false;
                             let overwrite = false;
-
+                            let ignoreMissingDesign = false;
                             await asyncForEach(mappedReportNames, async (reportName) => {
                                 if (!cancelToken.isCancellationRequested) {
                                     progress.report({ increment: percent, message: `Extracting ${reportName}` });
                                     var report = reportNames.find((x) => x.description + " (" + x.report + ")" == reportName);
-
-                                    let reportInfo = await client.getReport(report.reportId);
-
-                                    let outputFile = extractLoc + "/" + reportInfo.reportFolder + "/" + report.report;
-                                    if (reportInfo.design) {
-                                        let xml = reportInfo.design;
-                                        
-                                        // if the file doesn't exist then just write it out.
-                                        if (!fs.existsSync(outputFile)) {
-                                            fs.mkdirSync(extractLoc + "/" + reportInfo.reportFolder, { recursive: true });
-                                            fs.writeFileSync(outputFile, xml);
-                                        } else {
-                                            let incomingHash = crypto.createHash("sha256").update(xml).digest("hex");
-                                            let fileHash = crypto.createHash("sha256").update(fs.readFileSync(outputFile)).digest("hex");
-
-                                            if (fileHash !== incomingHash) {
-                                                if (!overwriteAll) {
-                                                    await window
-                                                        .showInformationMessage(
-                                                            `The report ${reportName} exists. \nReplace?`,
-                                                            { modal: true },
-                                                            ...["Replace", "Replace All", "Skip"]
-                                                        )
-                                                        .then(async (response) => {
-                                                            if (response === "Replace") {
-                                                                overwrite = true;
-                                                            } else if (response === "Replace All") {
-                                                                overwriteAll = true;
-                                                            } else if (response === "Skip") {
-                                                                // do nothing
-                                                                overwrite = false;
-                                                            } else {
-                                                                // @ts-ignore
-                                                                cancelToken.cancel();
-                                                            }
-                                                        });
-                                                }
-                                                if (overwriteAll || overwrite) {
-                                                    fs.writeFileSync(outputFile, xml);
-                                                    overwrite = false;
+                                    let reportInfo;
+                                    try {
+                                        reportInfo = await client.getReport(report.reportId);
+                                    } catch (e) {
+                                        if (e.message && e.message.includes("BMXAA5478E")) {
+                                            if (!ignoreMissingDesign) {
+                                                let response = await window.showInformationMessage(
+                                                    `The report design for ${reportName} is not present in Maximo.\n\nContinue extract reports?`,
+                                                    { modal: true },
+                                                    ...["Yes", "Yes to All"]
+                                                );
+                                                if (response === "Yes to All") {
+                                                    ignoreMissingDesign = true;
+                                                } else if (response !== "Yes") {
+                                                    // @ts-ignore
+                                                    cancelToken.cancel();
                                                 }
                                             }
-                                            await writeResources(reportInfo, extractLoc);
-                                            await writeMetaData(reportInfo, extractLoc);
+                                        } else {
+                                            throw e;
                                         }
+                                    }
+                                    if (reportInfo) {
+                                        let outputFile = extractLoc + "/" + reportInfo.reportFolder + "/" + report.report;
+                                        if (reportInfo.design) {
+                                            let xml = reportInfo.design;
 
-                                        if (cancelToken.isCancellationRequested) {
-                                            return;
+                                            // if the file doesn't exist then just write it out.
+                                            if (!fs.existsSync(outputFile)) {
+                                                fs.mkdirSync(extractLoc + "/" + reportInfo.reportFolder, { recursive: true });
+                                                fs.writeFileSync(outputFile, xml);
+                                            } else {
+                                                let incomingHash = crypto.createHash("sha256").update(xml).digest("hex");
+                                                let fileHash = crypto.createHash("sha256").update(fs.readFileSync(outputFile)).digest("hex");
+
+                                                if (fileHash !== incomingHash) {
+                                                    if (!overwriteAll) {
+                                                        await window
+                                                            .showInformationMessage(
+                                                                `The report ${reportName} exists. \nReplace?`,
+                                                                { modal: true },
+                                                                ...["Replace", "Replace All", "Skip"]
+                                                            )
+                                                            .then(async (response) => {
+                                                                if (response === "Replace") {
+                                                                    overwrite = true;
+                                                                } else if (response === "Replace All") {
+                                                                    overwriteAll = true;
+                                                                } else if (response === "Skip") {
+                                                                    // do nothing
+                                                                    overwrite = false;
+                                                                } else {
+                                                                    // @ts-ignore
+                                                                    cancelToken.cancel();
+                                                                }
+                                                            });
+                                                    }
+                                                    if (overwriteAll || overwrite) {
+                                                        fs.writeFileSync(outputFile, xml);
+                                                        overwrite = false;
+                                                    }
+                                                }
+                                                await writeResources(reportInfo, extractLoc);
+                                                await writeMetaData(reportInfo, extractLoc);
+                                            }
+
+                                            if (cancelToken.isCancellationRequested) {
+                                                return;
+                                            }
                                         }
                                     }
                                 }
