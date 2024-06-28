@@ -1,4 +1,7 @@
 # Release Notes
+## 1.15.1
+- Documentation updates.
+  
 ## 1.15.0
 - Significant code restructuring to better accommodate future command modules.
 - Add support for exporting and importing BIRT reports.
