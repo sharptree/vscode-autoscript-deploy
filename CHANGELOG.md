@@ -1,4 +1,8 @@
 # Release Notes
+## 1.15.0
+- Significant code restructuring to better accommodate future command modules.
+- Add support for exporting and importing BIRT reports.
+  
 ## 1.14.4
 - Remove Maximo version check because all versions are now supported.
 - Minor documentation updated.
