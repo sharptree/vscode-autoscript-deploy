@@ -6,9 +6,6 @@ import { parseString } from "xml2js";
 
 import { PassThrough } from "stream";
 
-// @ts-ignore
-import * as format from "xml-formatter";
-
 import { window, ProgressLocation } from "vscode";
 
 import MaximoClient from "../maximo/maximo-client";
@@ -32,7 +29,7 @@ export default async function deployScript(client, filePath, report) {
     }
 
     let fileName = path.basename(filePath);
-    let reportContent = format(fs.readFileSync(filePath, "utf8"), { whiteSpaceAtEndOfSelfclosingTag: true, collapseContent: true });
+    let reportContent = fs.readFileSync(filePath, "utf8");
 
     const reportName = path.basename(fileName, path.extname(fileName));
 
@@ -73,8 +70,7 @@ export default async function deployScript(client, filePath, report) {
     if (fs.existsSync(resourceFolder) && fs.readdirSync(resourceFolder).length > 0) {
         resourceData = await createZipFromFolder(resourceFolder);
     }
-
-    console.log(resourceData);
+    
     let attributes = reportConfig.attribute;
 
     let reportData = {
