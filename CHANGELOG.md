@@ -1,4 +1,8 @@
 # Release Notes
+## 1.15.4
+- Fixed errors related to toolbar position defaulting to zero.
+- Added nicer support for missing design files in Maximo.
+
 ## 1.15.3
 - Fixed defaults for dploc, qlloc and padloc to be NONE since it is missing from some of the out of the box reports.xml files.
 
