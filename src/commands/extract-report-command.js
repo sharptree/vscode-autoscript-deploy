@@ -144,12 +144,12 @@ export async function writeMetaData(reportInfo, extractLoc) {
     report.attribute.push({ _: reportInfo.browserView, $: { name: "ql" } });
     report.attribute.push({ _: reportInfo.printWithAttachmentsLocation, $: { name: "padloc" } });
     report.attribute.push({ _: reportInfo.printWithAttachments, $: { name: "pad" } });
-    report.attribute.push({ _: reportInfo.toolbarSequence, $: { name: "toolbarsequence" } });
+    if (reportInfo.toolbarSequence) report.attribute.push({ _: reportInfo.toolbarSequence, $: { name: "toolbarsequence" } });
     report.attribute.push({ _: reportInfo.noRequestPage ? 1 : 0, $: { name: "norequestpage" } });
     report.attribute.push({ _: reportInfo.detail ? 1 : 0, $: { name: "detail" } });
-    report.attribute.push({ _: reportInfo.recordLimit, $: { name: "recordlimit" } });
+    if (reportInfo.recordLimit) report.attribute.push({ _: reportInfo.recordLimit, $: { name: "recordlimit" } });
     report.attribute.push({ _: reportInfo.reportFolder, $: { name: "reportfolder" } });
-    report.attribute.push({ _: reportInfo.priority, $: { name: "priority" } });
+    if (reportInfo.priority) report.attribute.push({ _: reportInfo.priority, $: { name: "priority" } });
     report.attribute.push({ _: reportInfo.scheduleOnly ? 1 : 0, $: { name: "scheduleonly" } });
     report.attribute.push({ _: reportInfo.toolbarLocation, $: { name: "toolbarlocation" } });
     report.attribute.push({ _: reportInfo.useWhereWithParam ? 1 : 0, $: { name: "usewherewithparam" } });

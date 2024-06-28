@@ -1,7 +1,7 @@
 import * as path from "path";
 import * as fs from "fs";
 import * as archiver from "archiver";
-import * as os from "os";
+
 import { parseString } from "xml2js";
 
 import { PassThrough } from "stream";
@@ -31,7 +31,7 @@ export default async function deployScript(client, filePath, report) {
     let fileName = path.basename(filePath);
     let reportContent = fs.readFileSync(filePath, "utf8");
 
-    const reportName = path.basename(fileName, path.extname(fileName));
+    let reportName = path.basename(fileName, path.extname(fileName));
 
     let folderPath = path.dirname(filePath);
 
