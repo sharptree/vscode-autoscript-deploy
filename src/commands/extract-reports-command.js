@@ -1,7 +1,5 @@
 import * as fs from "fs";
 import * as crypto from "crypto";
-// @ts-ignore
-import * as format from "xml-formatter";
 
 import { ProgressLocation, window, workspace } from "vscode";
 import { writeResources, writeMetaData } from "./extract-report-command";
@@ -56,7 +54,7 @@ export default async function extractReportsCommand(client) {
                             let overwriteAll = false;
                             let overwrite = false;
 
-                            await asyncForEach(mappedReportNames, async (reportName) => {                                
+                            await asyncForEach(mappedReportNames, async (reportName) => {
                                 if (!cancelToken.isCancellationRequested) {
                                     progress.report({ increment: percent, message: `Extracting ${reportName}` });
                                     var report = reportNames.find((x) => x.description + " (" + x.report + ")" == reportName);
@@ -65,8 +63,8 @@ export default async function extractReportsCommand(client) {
 
                                     let outputFile = extractLoc + "/" + reportInfo.reportFolder + "/" + report.report;
                                     if (reportInfo.design) {
-                                        let xml = format(reportInfo.design);
-
+                                        let xml = reportInfo.design;
+                                        
                                         // if the file doesn't exist then just write it out.
                                         if (!fs.existsSync(outputFile)) {
                                             fs.mkdirSync(extractLoc + "/" + reportInfo.reportFolder, { recursive: true });

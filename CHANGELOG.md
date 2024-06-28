@@ -1,4 +1,8 @@
 # Release Notes
+## 1.15.2
+- Fixed export formatting issues that could cause problems with re-imports.
+- Added application name to selection list.
+  
 ## 1.15.1
 - Documentation updates.
   

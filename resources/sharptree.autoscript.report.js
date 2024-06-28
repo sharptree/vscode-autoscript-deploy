@@ -2,30 +2,35 @@
 /* eslint-disable no-unused-vars */
 // @ts-nocheck
 
-RuntimeException = Java.type("java.lang.RuntimeException");
-System = Java.type("java.lang.System");
+var RuntimeException = Java.type("java.lang.RuntimeException");
+var System = Java.type("java.lang.System");
 
-JavaString = Java.type("java.lang.String");
-Base64 = Java.type("java.util.Base64");
-HashMap = Java.type("java.util.HashMap");
+var JavaString = Java.type("java.lang.String");
+var Base64 = Java.type("java.util.Base64");
+var HashMap = Java.type("java.util.HashMap");
 
-URLDecoder = Java.type("java.net.URLDecoder");
-StandardCharsets = Java.type("java.nio.charset.StandardCharsets");
+var URLDecoder = Java.type("java.net.URLDecoder");
+var StandardCharsets = Java.type("java.nio.charset.StandardCharsets");
 
-DBShortcut = Java.type("psdi.mbo.DBShortcut");
-SqlFormat = Java.type("psdi.mbo.SqlFormat");
-MXServer = Java.type("psdi.server.MXServer");
+var DBShortcut = Java.type("psdi.mbo.DBShortcut");
+var SqlFormat = Java.type("psdi.mbo.SqlFormat");
+var MXServer = Java.type("psdi.server.MXServer");
 
-MXException = Java.type("psdi.util.MXException");
-MXAccessException = Java.type("psdi.util.MXAccessException");
-MXApplicationException = Java.type("psdi.util.MXApplicationException");
+var MXException = Java.type("psdi.util.MXException");
+var MXAccessException = Java.type("psdi.util.MXAccessException");
+var MXApplicationException = Java.type("psdi.util.MXApplicationException");
 
-MXLoggerFactory = Java.type("psdi.util.logging.MXLoggerFactory");
-Version = Java.type("psdi.util.Version");
+var MXLoggerFactory = Java.type("psdi.util.logging.MXLoggerFactory");
+var Version = Java.type("psdi.util.Version");
 
-ReportImportInfo = Java.type("com.ibm.tivoli.maximo.report.birt.admin.ReportImportInfo");
-ReportImportParamInfo = Java.type("com.ibm.tivoli.maximo.report.birt.admin.ReportImportParamInfo");
+var ReportImportInfo = Java.type("com.ibm.tivoli.maximo.report.birt.admin.ReportImportInfo");
+var ReportImportParamInfo = Java.type("com.ibm.tivoli.maximo.report.birt.admin.ReportImportParamInfo");
 
+var ByteArrayInputStream = Java.type("java.io.ByteArrayInputStream");
+var ByteArrayOutputStream = Java.type("java.io.ByteArrayOutputStream");
+var ZipInputStream = Java.type("java.util.zip.ZipInputStream");
+var ZipEntry = Java.type("java.util.zip.ZipEntry");
+var ByteArray = Java.type("byte[]");
 System = Java.type("java.lang.System");
 
 var logger = MXLoggerFactory.getLogger("maximo.script." + service.getScriptName());
@@ -55,7 +60,8 @@ function main() {
                             reports.push({
                                 "reportId": report.getUniqueIDValue(),
                                 "report": report.getString("REPORTNAME"),
-                                "description": report.getString("DESCRIPTION")
+                                "description": report.getString("DESCRIPTION"),
+                                "app": report.getString("REPORTFOLDER"),
                             });
 
                             reportSet.remove(0);
@@ -242,6 +248,29 @@ function exportReport(reportId) {
         var report = reportSet.getMboForUniqueId(reportId);
 
         if (report) {
+            var reportService = MXServer.getMXServer().lookup("BIRTREPORT");
+            var reportExport = reportService.exportReport(userInfo, report.getString("REPORTNAME"), report.getString("REPORTFOLDER"));
+
+            var zis = new ZipInputStream(new ByteArrayInputStream(reportExport));
+            var design;
+            var entry;
+            while ((entry = zis.getNextEntry()) != null) {
+                if (entry.getName() == report.getString("REPORTNAME")) {
+                    var baos = new ByteArrayOutputStream();
+                    var buffer = new ByteArray(1024);;
+                    var count;
+                    while ((count = zis.read(buffer)) != -1) {
+                        baos.write(buffer, 0, count);
+                    }
+                    design = new JavaString(baos.toByteArray());
+                    System.out.println("+++ here:\n" + design);
+                    baos.close();
+                    break;
+                }
+                zis.closeEntry();
+            }
+            zis.close();
+
             var result = {};
             result.reportName = report.getString("REPORTNAME");
             result.description = report.getString("DESCRIPTION");
@@ -263,7 +292,7 @@ function exportReport(reportId) {
             result.printWithAttachmentsLocation = report.getString("PADLOC");
             result.priority = report.getInt("PRIORITY");
             result.scheduleOnly = report.getBoolean("SCHEDULEONLY");
-            result.design = report.getString("REPORT_DESIGN.DESIGN");
+            result.design = design ? design : report.getString("REPORT_DESIGN.DESIGN");
             result.displayOrder = report.getString("DISPLAYORDER");
             result.paramColumns = report.getString("PARAMCOLUMNS");
 

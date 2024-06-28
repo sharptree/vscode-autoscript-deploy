@@ -106,9 +106,6 @@ function getConfigurationMessages() {
             } catch (ignored) {}
         }
     }
-
-    var messages = configureService.getConfigurationMessages(userInfo);
-    return messages;
 }
 
 function setAdminModeOn() {

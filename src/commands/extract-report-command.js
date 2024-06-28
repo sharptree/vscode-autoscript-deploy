@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as crypto from "crypto";
 // @ts-ignore
-import * as format from "xml-formatter";
+
 import * as yauzl from "yauzl";
 
 import { parseString, Builder } from "xml2js";
@@ -37,7 +37,7 @@ export default async function extractReportCommand(client) {
 
     if (typeof reportNames !== "undefined" && reportNames.length > 0) {
         let mappedReportNames = reportNames.map((report) => {
-            return report.description + " (" + report.report + ")";
+            return report.description + " (" + report.report + " - " + report.app + ")";
         });
         await window.showQuickPick(mappedReportNames, { placeHolder: "Search for report" }).then(async (reportName) => {
             if (typeof reportName !== "undefined") {
@@ -48,13 +48,13 @@ export default async function extractReportCommand(client) {
                         cancellable: true
                     },
                     async (progress, cancelToken) => {
-                        var report = reportNames.find((x) => x.description + " (" + x.report + ")" == reportName);
+                        var report = reportNames.find((x) => x.description + " (" + x.report + " - " + x.app + ")" == reportName);
 
                         let reportInfo = await client.getReport(report.reportId);
 
                         let outputFile = extractLoc + "/" + reportInfo.reportFolder + "/" + report.report;
                         if (reportInfo.design) {
-                            let xml = format(reportInfo.design);
+                            let xml = reportInfo.design;
                             // if the file doesn't exist then just write it out.
                             if (!fs.existsSync(outputFile)) {
                                 // make sure the folder exists
