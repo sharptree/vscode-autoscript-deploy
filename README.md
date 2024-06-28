@@ -50,7 +50,8 @@ The `password` and `apiKey` attributes will be automatically encrypted on first 
     "maxauthOnly":true|false,
     "extractLocation":"Path to the script extract directory",
     "extractLocationScreens":"Path to the screens extract directory",
-    "extractLocationForms":"Path to the forms extract directory"
+    "extractLocationForms":"Path to the forms extract directory",
+    "extractLocationReports":"Path to the reports extract directory",
 }
 ```
 > Since `.devtools-config.json` may contain sensitive connection information it should *never* be checked into Git. A `.gitignore` entry for `.devtools-config.json` is automatically created the first time the `.devtools-config.json` is used by the extension to ensure that it is not accidentally included in a commit.
