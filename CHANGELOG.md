@@ -1,4 +1,7 @@
 # Release Notes
+## 1.15.5
+- Fixed error with deployment file path errors.
+  
 ## 1.15.4
 - Fixed errors related to toolbar position defaulting to zero.
 - Added nicer support for missing design files in Maximo.
