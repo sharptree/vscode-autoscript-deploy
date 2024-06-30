@@ -15,10 +15,10 @@ export default async function deployScript(client, filePath, script) {
     }
 
     let fileName = path.basename(filePath);
-    let deployFileName = fileName.substring(0, fileName.lastIndexOf(".")) + "-deploy" + fileName.substring(fileName.lastIndexOf("."));
-    let deployDotFileName = fileName.substring(0, fileName.lastIndexOf(".")) + ".deploy" + fileName.substring(fileName.lastIndexOf("."));
-    let deployJSONFileName = fileName.substring(0, fileName.lastIndexOf(".")) + ".json";
-    let preDeployJSONFileName = fileName.substring(0, fileName.lastIndexOf(".")) + ".predeploy.json";
+    let deployFileName = filePath.substring(0, filePath.lastIndexOf(".")) + "-deploy" + filePath.substring(filePath.lastIndexOf("."));
+    let deployDotFileName = filePath.substring(0, filePath.lastIndexOf(".")) + ".deploy" + filePath.substring(filePath.lastIndexOf("."));
+    let deployJSONFileName = filePath.substring(0, filePath.lastIndexOf(".")) + ".json";
+    let preDeployJSONFileName = filePath.substring(0, filePath.lastIndexOf(".")) + ".predeploy.json";
 
     if (!script || script === null || script.trim().length === 0) {
         script = fs.readFileSync(filePath, { encoding: "utf8" });
