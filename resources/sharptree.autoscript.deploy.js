@@ -64,7 +64,7 @@ function main() {
                 throw new ScriptError("no_script_source", "A script source must be the request body.");
             }
 
-            if (action && action.startsWith("source") && action.split("/").length == 2) {
+            if (action && action.startsWith("source") ) {
                 scriptSource = requestBody;
                 if (!scriptSource) {
                     throw new ScriptError("no_script_source", "A script source must be the request body.");
@@ -596,9 +596,9 @@ function isInAdminGroup() {
     }
 }
 
-function getConfigFromScript(scriptSource, language) {
+function getConfigFromScript(scriptSource, languageHint) {
     if (scriptSource) {
-        if (language === "python" || language === "jython") {
+        if (languageHint === "python" || languageHint === "jython") {
             // var regex = / *scriptConfig.*"""((.|\n|\r)*)"""/gm;
             var regex = /^(?!#).*scriptConfig.*"""(.|\n|\r)*?"""/gm;
             var found = scriptSource.match(regex);
@@ -614,8 +614,13 @@ function getConfigFromScript(scriptSource, language) {
             try {
                 ast = parse(scriptSource);
             } catch (error) {
-                log_error(JSON.stringify(error));
-                throw new ScriptError("parsing_error", "Error parsing script, please see log for details.");
+                // attempt to parse python script
+                try{
+                    return getConfigFromPythonScript(scriptSource);
+                }catch(error){
+                    log_error(JSON.stringify(error));
+                    throw new ScriptError("parsing_error", "Error parsing script, please see log for details.");
+                }
             }
             if (ast.type === "Program" && ast.body) {
                 var result;
@@ -642,6 +647,18 @@ function getConfigFromScript(scriptSource, language) {
         }
     } else {
         throw new ScriptError("no_script_source", "The script source is required to deploy the script.");
+    }
+}
+
+function getConfigFromPythonScript(source){
+    var regex = /^(?!#).*scriptConfig.*"""(.|\n|\r)*?"""/gm;
+    var found = scriptSource.match(regex);
+    if (found && found.length == 1) {
+        var config = found[0];
+        config = config.trim().substring(config.indexOf("{"), config.length - 3);
+        return JSON.parse(config);
+    } else {
+        throw new ScriptError("config_not_found", "Configuration variable scriptConfig was not found in the script.");
     }
 }
 

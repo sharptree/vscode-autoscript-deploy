@@ -342,7 +342,7 @@ export default class MaximoClient {
         progress.report({ increment: 33, message: "Getting script from the server." });
 
         const options = {
-            url: "script/sharptree.autoscript.deploy/source/" + (isPython ? "/python" : ""),
+            url: "script/sharptree.autoscript.deploy/source/" + (isPython ? "python" : ""),
             method: MaximoClient.Method.POST,
             headers: {
                 "Content-Type": "text/plain",
