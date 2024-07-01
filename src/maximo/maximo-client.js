@@ -35,8 +35,8 @@ export default class MaximoClient {
         // keep a reference to the config for later use.
         this.config = config;
 
-        this.requiredScriptVersion = "1.38.0";
-        this.currentScriptVersion = "1.38.0";
+        this.requiredScriptVersion = "1.39.0";
+        this.currentScriptVersion = "1.39.0";
 
         this.scriptEndpoint = "mxscript";
 
@@ -339,10 +339,10 @@ export default class MaximoClient {
         }
 
         let isPython = fileName.endsWith(".py");
-        progress.report({ increment: 10, message: "Getting script from the server." });
+        progress.report({ increment: 33, message: "Getting script from the server." });
 
         const options = {
-            url: "script/sharptree.autoscript.deploy/source/" + (isPython ? "/python" : ""),
+            url: "script/sharptree.autoscript.deploy/source/" + (isPython ? "python" : ""),
             method: MaximoClient.Method.POST,
             headers: {
                 "Content-Type": "text/plain",
@@ -351,12 +351,12 @@ export default class MaximoClient {
             data: script
         };
 
-        progress.report({ increment: 50, message: "Getting script from the server." });
+        progress.report({ increment: 33, message: "Getting script from the server." });
         await new Promise((resolve) => setTimeout(resolve, 100));
         // @ts-ignore
         const result = await this.client.request(options);
 
-        progress.report({ increment: 90, message: "Getting script from the server." });
+        progress.report({ increment: 100, message: "Getting script from the server." });
         return result.data;
     }
 
