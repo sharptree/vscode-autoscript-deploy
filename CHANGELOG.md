@@ -1,4 +1,7 @@
 # Release Notes
+## 1.15.6
+- Added compatibility to use MXAPIAUTOSCRIPT if MXSCRIPT is not available.
+  
 ## 1.15.5
 - Fixed error with deployment file path errors.
   
