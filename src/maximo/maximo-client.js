@@ -24,6 +24,9 @@ import MaximoConfig from "./maximo-config";
 import { TextDecoder } from "util";
 
 export default class MaximoClient {
+
+
+
     constructor(config) {
         if (!(config instanceof MaximoConfig)) {
             throw "config parameter must be an instance of MaximoConfig";
@@ -34,6 +37,8 @@ export default class MaximoClient {
 
         this.requiredScriptVersion = "1.38.0";
         this.currentScriptVersion = "1.38.0";
+
+        this.scriptEndpoint = "mxscript";
 
         if (config.ca) {
             https.globalAgent.options.ca = config.ca;
@@ -716,19 +721,26 @@ export default class MaximoClient {
         const headers = new Map();
         headers["Content-Type"] = "application/json";
         const options = {
-            url: 'os/mxscript?oslc.select=autoscript&oslc.where=autoscript="SHARPTREE.AUTOSCRIPT.DEPLOY"',
+            url: `os/${this.scriptEndpoint}?oslc.select=autoscript&oslc.where=autoscript="SHARPTREE.AUTOSCRIPT.DEPLOY"`,
             method: MaximoClient.Method.GET,
             headers: { common: headers }
         };
 
         // @ts-ignore
-        const response = await this.client.request(options);
+        try {
+            const response = await this.client.request(options);
+            if (!response || response.headers["content-type"] !== "application/json") {
+                throw new MaximoError("Received an unexpected response from the server. Content-Type header is not application/json.");
+            }
 
-        if (!response || response.headers["content-type"] !== "application/json") {
-            throw new MaximoError("Received an unexpected response from the server. Content-Type header is not application/json.");
+            return response.data.member.length !== 0;
+        } catch (e) {
+            if(e.reasonCode && e.reasonCode === "BMXAA9301E") {
+                this.scriptEndpoint = "mxapiautoscript";
+                return await this.installed();
+            }
+            
         }
-
-        return response.data.member.length !== 0;
     }
 
     async upgradeRequired() {
@@ -830,25 +842,25 @@ export default class MaximoClient {
         if (!this._isConnected) {
             throw new MaximoError("Maximo client is not connected.");
         }
+        
+        let increment = 100 / 13;
 
-        progress.report({ increment: 0 });
+        progress.report({ increment: increment });
 
         if (bootstrap) {
-            var result = await this._bootstrap(progress);
-
+            var result = await this._bootstrap(progress, increment);
+            
             if (result.status === "error") {
                 progress.report({ increment: 100 });
                 return result;
             }
-
-            progress.report({ increment: 20, message: "Performed bootstrap installation." });
+            
+            progress.report({ increment: increment, message: "Performed bootstrap installation." });
             await new Promise((resolve) => setTimeout(resolve, 500));
         }
 
-        let increment = 100 / 10;
-
         let source = fs.readFileSync(path.resolve(__dirname, "../resources/sharptree.autoscript.store.js")).toString();
-        await this._installOrUpdateScript("sharptree.autoscript.store", "Sharptree Automation Script Storage Script", source, progress, increment);
+        await this._installOrUpdateScript("sharptree.autoscript.store", "Sharptree Automation Script Storage Script", source, progress, increment );
 
         source = fs.readFileSync(path.resolve(__dirname, "../resources/sharptree.autoscript.extract.js")).toString();
         await this._installOrUpdateScript("sharptree.autoscript.extract", "Sharptree Automation Script Extract Script", source, progress, increment);
@@ -871,13 +883,13 @@ export default class MaximoClient {
 
         source = fs.readFileSync(path.resolve(__dirname, "../resources/sharptree.autoscript.form.js")).toString();
         await this._installOrUpdateScript("sharptree.autoscript.form", "Sharptree Inspection Forms Script", source, progress, increment);
-
+        
         source = fs.readFileSync(path.resolve(__dirname, "../resources/sharptree.autoscript.library.js")).toString();
         await this._installOrUpdateScript("sharptree.autoscript.library", "Sharptree Deployment Library Script", source, progress, increment);
-
+        
         source = fs.readFileSync(path.resolve(__dirname, "../resources/sharptree.autoscript.admin.js")).toString();
         await this._installOrUpdateScript("sharptree.autoscript.admin", "Sharptree Admin Script", source, progress, increment);
-
+        
         source = fs.readFileSync(path.resolve(__dirname, "../resources/sharptree.autoscript.report.js")).toString();
         await this._installOrUpdateScript(
             "sharptree.autoscript.report",
@@ -888,6 +900,7 @@ export default class MaximoClient {
         );
 
         await this._fixInspectionFormData();
+        progress.report({ increment: 100 });
     }
 
     // @ts-ignore
@@ -1053,7 +1066,7 @@ export default class MaximoClient {
         headers["Content-Type"] = "application/json";
 
         let options = {
-            url: "os/mxscript?oslc.select=autoscript&oslc.pageSize=10",
+            url: `os/${this.scriptEndpoint}?oslc.select=autoscript&oslc.pageSize=10`,
             method: MaximoClient.Method.GET,
             headers: { common: headers }
         };
@@ -1075,7 +1088,7 @@ export default class MaximoClient {
 
             if (hasMorePages) {
                 let pageNumber = response.data.responseInfo.pagenum + 1;
-                options.url = `os/mxscript?oslc.select=autoscript&oslc.pageSize=10&pageno=${pageNumber}`;
+                options.url = `os/${this.scriptEndpoint}?oslc.select=autoscript&oslc.pageSize=10&pageno=${pageNumber}`;
             }
         }
 
@@ -1297,7 +1310,7 @@ export default class MaximoClient {
             };
 
             const options = {
-                url: "os/mxscript",
+                url: `os/${this.scriptEndpoint}`,
                 method: MaximoClient.Method.POST,
                 headers: { common: headers },
                 data: deployScript
@@ -1315,7 +1328,7 @@ export default class MaximoClient {
         headers["Content-Type"] = "application/json";
 
         let options = {
-            url: `os/mxscript?oslc.select=autoscript&oslc.where=autoscript="${script}"`,
+            url: `os/${this.scriptEndpoint}?oslc.select=autoscript&oslc.where=autoscript="${script}"`,
             method: MaximoClient.Method.GET,
             headers: { common: headers }
         };
@@ -1329,7 +1342,7 @@ export default class MaximoClient {
         }
     }
 
-    async _bootstrap(progress) {
+    async _bootstrap(progress,increment) {
         if (!this._isConnected) {
             throw new MaximoError("Maximo client is not connected.");
         }
@@ -1343,7 +1356,7 @@ export default class MaximoClient {
             let source = fs.readFileSync(path.resolve(__dirname, "../resources/sharptree.autoscript.install.js")).toString();
 
             let options = {
-                url: 'os/mxscript?oslc.select=autoscript&oslc.where=autoscript="SHARPTREE.AUTOSCRIPT.INSTALL"',
+                url: `os/${this.scriptEndpoint}?oslc.select=autoscript&oslc.where=autoscript="SHARPTREE.AUTOSCRIPT.INSTALL"`,
                 method: MaximoClient.Method.GET,
                 headers: { common: headers }
             };
@@ -1355,7 +1368,7 @@ export default class MaximoClient {
                 href = response.data.member[0].href;
             }
 
-            progress.report({ increment: 20 });
+            progress.report({ increment: increment });
 
             if (href) {
                 let deployScript = {
@@ -1382,7 +1395,7 @@ export default class MaximoClient {
                     "source": source
                 };
                 options = {
-                    url: "os/mxscript",
+                    url: `os/${this.scriptEndpoint}`,
                     method: MaximoClient.Method.POST,
                     headers: { common: headers },
                     data: deployScript
@@ -1393,7 +1406,7 @@ export default class MaximoClient {
             response = await this.client.request(options);
             refUri = response.headers.location;
 
-            progress.report({ increment: 40 });
+            progress.report({ increment: increment });
 
             if (href && !refUri) {
                 refUri = href;
