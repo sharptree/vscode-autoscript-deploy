@@ -1,4 +1,7 @@
 # Release Notes
+## 1.15.7
+- Provide more flexible source fetching with fallback to check language.
+
 ## 1.15.6
 - Added compatibility to use MXAPIAUTOSCRIPT if MXSCRIPT is not available.
   
