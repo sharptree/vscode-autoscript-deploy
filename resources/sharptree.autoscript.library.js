@@ -2452,11 +2452,7 @@ function Domain(domain) {
         throw new Error('The domainType property is required and must a Maximo Domain field value.');
     } else if (typeof domain.domainId === 'undefined') {
         throw new Error('The domainId property is required and must a Maximo Domain field value.');
-    } //else if (typeof domain.maxType === 'undefined') {
-    //throw new Error('The maxType property is required and must a Maximo Domain field value.');
-    //}// else if (typeof domain.length === 'undefined') {
-    //    throw new Error('The length property is required and must a Maximo Domain field value.');
-    //}
+    }
     this.domainId = domain.domainId;
     this.domainType = domain.domainType;
     this.scale = typeof domain.scale === 'undefined' ? '' : domain.scale;
@@ -2464,7 +2460,6 @@ function Domain(domain) {
 
     switch (domain.domainType) {
         case 'ALN':
-            //ALN values
             if (typeof domain.length === 'undefined') {
                 throw new Error('The length property is required and must a Maximo Domain field value.');
             } else if (typeof domain.maxType === 'undefined') {
@@ -2480,7 +2475,6 @@ function Domain(domain) {
                     alnValue.description = typeof alnValue.description === 'undefined' ? '' : alnValue.description;
                     alnValue.orgId = typeof alnValue.orgId === 'undefined' ? '' : alnValue.orgId;
                     alnValue.siteId = typeof alnValue.siteId === 'undefined' ? '' : alnValue.siteId;
-                    //ALN domain value conditions
                     if (alnValue.maxDomValCond && Array.isArray(alnValue.maxDomValCond)) {
                         alnValue.maxDomValCond.forEach(function (valCond) {
                             valCond.domainId = domain.domainId;
@@ -2494,7 +2488,6 @@ function Domain(domain) {
                             }
                             valCond.objectName = typeof valCond.objectName === 'undefined' ? '' : valCond.objectName;
                         });
-                        //alnValue.maxDomValCond = alnValue.maxDomValCond;
                     } else {
                         alnValue.maxDomValCond = [];
                     }
@@ -2506,19 +2499,14 @@ function Domain(domain) {
 
             break;
         case 'NUMERIC':
-            //if (typeof domain.maxType === 'undefined') {
-            //    throw new Error('The maxType property is required and must a Maximo Domain field value.');
-            //} else if (typeof domain.length === 'undefined') {
-            //    throw new Error('The length property is required and must a Maximo Domain field value.');
-            //} else if (typeof domain.scale === 'undefined') {
-            //    throw new Error('The scale property is required and must a Maximo Domain field value.');
-            //}
             if (typeof domain.maxType === 'undefined') {
                 throw new Error('The maxType property is required and must a Maximo Domain field value.');
             }
             this.maxType = domain.maxType;
-
-            //NUMERIC values
+            if (domain.maxType == 'FLOAT' || domain.maxType == 'DECIMAL') {
+                this.length = typeof domain.length === 'undefined' ? '' : domain.length;
+                this.scale = typeof domain.scale === 'undefined' ? '' : domain.scale;
+            }
             if (typeof domain.numericDomain !== 'undefined' && Array.isArray(domain.numericDomain)) {
                 domain.numericDomain.forEach(function (numericValue) {
                     if (typeof numericValue.value === 'undefined' || !numericValue.value || isNaN(numericValue.value)) {
@@ -2556,12 +2544,12 @@ function Domain(domain) {
         case 'NUMRANGE':
             if (typeof domain.maxType === 'undefined') {
                 throw new Error('The maxType property is required and must a Maximo Domain field value.');
-            } else if (typeof domain.scale === 'undefined') {
-                throw new Error('The scale property is required and must a Maximo Domain field value.');
             }
             this.maxType = domain.maxType;
-
-            //NUMRANGE values
+            if (domain.maxType == 'FLOAT' || domain.maxType == 'DECIMAL') {
+                this.length = typeof domain.length === 'undefined' ? '' : domain.length;
+                this.scale = typeof domain.scale === 'undefined' ? '' : domain.scale;
+            }
             if (domain.numRangeDomain && Array.isArray(domain.numRangeDomain)) {
                 domain.numRangeDomain.forEach(function (numRangeValue) {
                     if (typeof numRangeValue.rangeSegment === 'undefined' || !numRangeValue.rangeSegment || isNaN(numRangeValue.rangeSegment)) {
@@ -2584,7 +2572,6 @@ function Domain(domain) {
             break;
         case 'SYNONYM':
             this.maxType = typeof domain.maxType === 'undefined' ? '' : domain.maxType;
-            //SYNONYM values
             if (domain.synonymDomain && Array.isArray(domain.synonymDomain)) {
                 domain.synonymDomain.forEach(function (synonymValue) {
                     if (typeof synonymValue.value === 'undefined' || !synonymValue.value) {
@@ -2596,7 +2583,6 @@ function Domain(domain) {
                     synonymValue.orgId = typeof synonymValue.orgId === 'undefined' ? '' : synonymValue.orgId;
                     synonymValue.siteId = typeof synonymValue.siteId === 'undefined' ? '' : synonymValue.siteId;
                     synonymValue.defaults = typeof synonymValue.defaults === 'undefined' ? false : synonymValue.defaults === true;
-                    //SYNONYM domain value conditions
                     if (synonymValue.maxDomValCond && Array.isArray(synonymValue.maxDomValCond)) {
                         synonymValue.maxDomValCond.forEach(function (valCond) {
                             valCond.domainId = domain.domainId;
@@ -2641,7 +2627,6 @@ function Domain(domain) {
             break;
         case 'CROSSOVER':
             this.maxType = typeof domain.maxType === 'undefined' ? '' : domain.maxType;
-            //crossover tables
             if (typeof domain.crossoverDomain !== 'undefined' && Array.isArray(domain.crossoverDomain)) {
                 domain.crossoverDomain.forEach(function (tableValue) {
                     if (typeof tableValue.objectName === 'undefined' || !tableValue.objectName) {
@@ -2654,8 +2639,6 @@ function Domain(domain) {
                     tableValue.errorAccessKey = typeof tableValue.errorAccessKey === 'undefined' ? '' : tableValue.errorAccessKey;
                     tableValue.orgId = typeof tableValue.orgId === 'undefined' ? '' : tableValue.orgId;
                     tableValue.siteId = typeof tableValue.siteId === 'undefined' ? '' : tableValue.siteId;
-
-                    //crossover fields (CROSSOVERDOMAIN)
                     if (typeof tableValue.crossoverFields !== 'undefined' && Array.isArray(tableValue.crossoverFields)) {
                         tableValue.crossoverFields.forEach(function (crossoverField) {
                             if (typeof crossoverField.sourceField === 'undefined' || !crossoverField.sourceField) {
@@ -2699,9 +2682,12 @@ Domain.prototype.setMboValues = function (mbo) {
         mbo.setValue('DOMAINTYPE', this.domainType);
         if (this.domainType != 'TABLE' && this.domainType != 'CROSSOVER') {
             mbo.setValue('MAXTYPE', this.maxType);
+        } else if (this.domainType == 'ALN') {
+            mbo.setValue('LENGTH', this.length);
+        } else if (this.maxType == 'FLOAT' || this.maxType == 'DECIMAL') {
+            mbo.setValue('LENGTH', this.length);
+            mbo.setValue('SCALE', this.scale);
         }
-        //mbo.setValue('LENGTH', this.length);
-        //mbo.setValue('SCALE', this.scale);
         mbo.setValue('DESCRIPTION', this.description);
     }
 
@@ -2717,7 +2703,7 @@ Domain.prototype.setMboValues = function (mbo) {
                 alnMbo.setValue('SITEID', alnValue.siteId);
 
                 var maxDomValCondSet = alnMbo.getMboSet('MAXDOMVALCOND');
-                alnValue.maxDomValCond.forEach(function (valCond){
+                alnValue.maxDomValCond.forEach(function (valCond) {
                     var maxDomValCondMbo = maxDomValCondSet.add();
                     maxDomValCondMbo.setValue('DOMAINID', valCond.domainId);
                     maxDomValCondMbo.setValue('VALUEID', valCond.valueId.toUpperCase());
@@ -2735,9 +2721,9 @@ Domain.prototype.setMboValues = function (mbo) {
                 numericMbo.setValue('DESCRIPTION', numericValue.description);
                 numericMbo.setValue('ORGID', numericValue.orgId);
                 numericMbo.setValue('SITEID', numericValue.siteId);
-                
+
                 var maxDomValCondSet = numericMbo.getMboSet('MAXDOMVALCOND');
-                numericValue.maxDomValCond.forEach(function (valCond){
+                numericValue.maxDomValCond.forEach(function (valCond) {
                     var maxDomValCondMbo = maxDomValCondSet.add();
                     maxDomValCondMbo.setValue('DOMAINID', valCond.domainId);
                     maxDomValCondMbo.setValue('VALUEID', valCond.valueId.toUpperCase());
@@ -2763,24 +2749,97 @@ Domain.prototype.setMboValues = function (mbo) {
             var synonymDomainSet = mbo.getMboSet('SYNONYMDOMAIN');
             //filter out default values since default values cannot be deleted.
             synonymDomainSet.setUserWhere('defaults = 0');
-            synonymDomainSet.deleteAll();
+            if(!synonymDomainSet.isEmpty()){
+                for(var synDomMbo = synonymDomainSet.moveFirst(); synDomMbo != null; synDomMbo = synonymDomainSet.moveNext()){
+                    var t = synDomMbo.getMboSet('MAXDOMVALCOND');
+                    logger.info('t: ' + t.count());
+                    t.deleteAll();
+                    if(!synDomMbo.getBoolean('DEFAULTS')){
+                        synDomMbo.delete();
+                    }
+                }
+            }
+            //delete child records first
+            //synonymDomainSet.deleteAll();
             this.synonymDomain.forEach(function (synonymValue) {
-                var synonymMbo = synonymDomainSet.add();
-                synonymMbo.setValue('VALUE', synonymValue.value);
-                synonymMbo.setValue('MAXVALUE', synonymValue.maxValue);
-                synonymMbo.setValue('DESCRIPTION', synonymValue.description);
-                synonymMbo.setValue('ORGID', synonymValue.orgId);
-                synonymMbo.setValue('SITEID', synonymValue.siteId);
-                synonymMbo.setValue('DEFAULTS', synonymValue.defaults);
-                
-                var maxDomValCondSet = synonymMbo.getMboSet('MAXDOMVALCOND');
-                synonymValue.maxDomValCond.forEach(function (valCond){
-                    var maxDomValCondMbo = maxDomValCondSet.add();
-                    maxDomValCondMbo.setValue('DOMAINID', valCond.domainId);
-                    maxDomValCondMbo.setValue('VALUEID', valCond.valueId.toUpperCase());
-                    maxDomValCondMbo.setValue('CONDITIONNUM', valCond.conditionNum);
-                    maxDomValCondMbo.setValue('OBJECTNAME', valCond.objectName);
-                });
+                var sqlFormat = new SqlFormat('value = :1 and maxvalue = :2');
+                sqlFormat.setObject(1, 'SYNONYMDOMAIN', 'VALUE', synonymValue.value);
+                sqlFormat.setObject(2, 'SYNONYMDOMAIN', 'MAXVALUE', synonymValue.maxValue);
+                synonymDomainSet.setUserWhere(sqlFormat.format());
+                if (synonymDomainSet.isEmpty()) {
+                    var synonymMbo = synonymDomainSet.add();
+                    synonymMbo.setValue('VALUE', synonymValue.value);
+                    synonymMbo.setValue('MAXVALUE', synonymValue.maxValue);
+                    synonymMbo.setValue('DESCRIPTION', synonymValue.description);
+                    synonymMbo.setValue('ORGID', synonymValue.orgId);
+                    synonymMbo.setValue('SITEID', synonymValue.siteId);
+                    synonymMbo.setValue('DEFAULTS', synonymValue.defaults);
+
+                    /*
+                    var tempMaxDomValCondSet = MXServer.getMXServer().getMboSet('MAXDOMVALCOND', MXServer.getMXServer().getSystemUserInfo());
+                    sqlFormat = new SqlFormat('domainid = :1');
+                    sqlFormat.setObject(1, 'MAXDOMVALCOND', 'DOMAINID', this.domainId);
+                    tempMaxDomValCondSet.setWhere(sqlFormat.format());
+                    logger.info('temp domainvalcond set contains ' + tempMaxDomValCondSet.count()  + ' records that will be deleted');
+                    */
+
+                    var maxDomValCondSet = synonymMbo.getMboSet('MAXDOMVALCOND');
+                    logger.info('new synonym value - maxdomvalconset count: ' + maxDomValCondSet.count());
+                    synonymValue.maxDomValCond.forEach(function (valCond) {
+                        var maxDomValCondMbo = maxDomValCondSet.add();
+                        logger.info('Adding record for value ' + valCond.valueId.toUpperCase());
+                        maxDomValCondMbo.setValue('DOMAINID', valCond.domainId);
+                        maxDomValCondMbo.setValue('VALUEID', valCond.valueId.toUpperCase());
+                        maxDomValCondMbo.setValue('CONDITIONNUM', valCond.conditionNum);
+                        maxDomValCondMbo.setValue('OBJECTNAME', valCond.objectName);
+                    });
+
+                    //After adding value, if defaults = 1 then mark other maxvalue records as defaults = 0
+                    if (synonymValue.defaults == 1 || synonymValue.defaults == '1' || synonymValue.defaults) {
+                        sqlFormat = new SqlFormat('maxvalue = :1 and value != :2');
+                        sqlFormat.setObject(1, 'SYNONYMDOMAIN', 'MAXVALUE', synonymValue.maxValue);
+                        sqlFormat.setObject(2, 'SYNONYMDOMAIN', 'VALUE', synonymValue.value);
+                        synonymDomainSet.setUserWhere(sqlFormat.format());
+                        if (!synonymDomainSet.isEmpty()) {
+                            for (var synDomMbo = synonymDomainSet.moveFirst(); synDomMbo != null; synDomMbo = synonymDomainSet.moveNext()) {
+                                synDomMbo.setValue('DEFAULTS', false);
+                            }
+                        }
+                    }
+                } else {
+                    //value exists - allow updating any info except value or maxvalue
+                    var synonymMbo = synonymDomainSet.getMbo(0);
+                    synonymMbo.setValue('DESCRIPTION', synonymValue.description);
+                    //synonymMbo.setValue('ORGID', synonymValue.orgId);
+                    //synonymMbo.setValue('SITEID', synonymValue.siteId);
+                    synonymMbo.setValue('DEFAULTS', synonymValue.defaults);
+                    //replace domain value conditions
+                    var maxDomValCondSet = synonymMbo.getMboSet('MAXDOMVALCOND');
+                    logger.info('existing synonym value - maxdomvalconset count before delete: ' + maxDomValCondSet.count());
+                    maxDomValCondSet.deleteAll();
+                    logger.info('existing synonym value - maxdomvalconset count after delete: ' + maxDomValCondSet.count());
+                    synonymValue.maxDomValCond.forEach(function (valCond) {
+                        var maxDomValCondMbo = maxDomValCondSet.add();
+                        logger.info('Adding record for value ' + valCond.valueId.toUpperCase());
+                        maxDomValCondMbo.setValue('DOMAINID', valCond.domainId);
+                        maxDomValCondMbo.setValue('VALUEID', valCond.valueId.toUpperCase());
+                        maxDomValCondMbo.setValue('CONDITIONNUM', valCond.conditionNum);
+                        maxDomValCondMbo.setValue('OBJECTNAME', valCond.objectName);
+                    });
+
+                    //After updating value, if defaults = 1 then mark other maxvalue records as defaults = 0
+                    if (synonymValue.defaults == 1 || synonymValue.defaults == '1' || synonymValue.defaults) {
+                        sqlFormat = new SqlFormat('maxvalue = :1 and value != :2');
+                        sqlFormat.setObject(1, 'SYNONYMDOMAIN', 'MAXVALUE', synonymValue.maxValue);
+                        sqlFormat.setObject(2, 'SYNONYMDOMAIN', 'VALUE', synonymValue.value);
+                        synonymDomainSet.setUserWhere(sqlFormat.format());
+                        if (!synonymDomainSet.isEmpty()) {
+                            for (var synDomMbo = synonymDomainSet.moveFirst(); synDomMbo != null; synDomMbo = synonymDomainSet.moveNext()) {
+                                synDomMbo.setValue('DEFAULTS', false);
+                            }
+                        }
+                    }
+                }
             });
             break;
         case 'TABLE':
@@ -2820,7 +2879,6 @@ Domain.prototype.setMboValues = function (mbo) {
                     crossoverMbo.setValue('DESTCONDITION', crossoverField.destCondition);
                     crossoverMbo.setValue('SEQUENCE', crossoverField.sequence);
                 });
-                
             });
             break;
         default:
