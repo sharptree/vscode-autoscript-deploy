@@ -2626,7 +2626,6 @@ function Domain(domain) {
             }
             break;
         case 'CROSSOVER':
-            this.maxType = typeof domain.maxType === 'undefined' ? '' : domain.maxType;
             if (typeof domain.crossoverDomain !== 'undefined' && Array.isArray(domain.crossoverDomain)) {
                 domain.crossoverDomain.forEach(function (tableValue) {
                     if (typeof tableValue.objectName === 'undefined' || !tableValue.objectName) {
@@ -2749,20 +2748,35 @@ Domain.prototype.setMboValues = function (mbo) {
             var synonymDomainSet = mbo.getMboSet('SYNONYMDOMAIN');
             //filter out default values since default values cannot be deleted.
             synonymDomainSet.setUserWhere('defaults = 0');
-            if(!synonymDomainSet.isEmpty()){
-                for(var synDomMbo = synonymDomainSet.moveFirst(); synDomMbo != null; synDomMbo = synonymDomainSet.moveNext()){
-                    var t = synDomMbo.getMboSet('MAXDOMVALCOND');
-                    logger.info('t: ' + t.count());
-                    t.deleteAll();
-                    if(!synDomMbo.getBoolean('DEFAULTS')){
-                        synDomMbo.delete();
-                    }
+            var tempMaxDomValCondSet;
+            var tempSynonymDomainSet;
+            var sqlFormat;
+            try {
+                tempMaxDomValCondSet = MXServer.getMXServer().getMboSet('MAXDOMVALCOND', MXServer.getMXServer().getSystemUserInfo());
+                sqlFormat = new SqlFormat('domainid = :1 and valueid IN (SELECT CONCAT(CONCAT(domainid,'|'),value) FROM synonymdomain WHERE domainid = :1 AND DEFAULTS = 0');
+                sqlFormat.setObject(1, 'MAXDOMVALCOND', 'DOMAINID', this.domainId);
+                tempMaxDomValCondSet.setWhere(sqlFormat.format());
+                logger.info('temp domainvalcond set contains ' + tempMaxDomValCondSet.count() + ' records that will be deleted');
+                tempMaxDomValCondSet.deleteAll();
+                tempMaxDomValCondSet.save();
+
+                tempSynonymDomainSet = MXServer.getMXServer().getMboSet('SYNONYMDOMAIN', MXServer.getMXServer().getSystemUserInfo());
+                sqlFormat = new SqlFormat('domainid = :1 and defaults = 0');
+                sqlFormat.setObject(1, 'SYNONYMDOMAIN', 'DOMAINID', this.domainId);
+                tempSynonymDomainSet.setWhere(sqlFormat.format());
+                logger.info('temp synonymdomain set contains ' + tempSynonymDomainSet.count() + ' records that will be deleted');
+                for(var tempSynonymDomainMbo = tempSynonymDomainSet.moveFirst(); tempSynonymDomainMbo != null; tempSynonymDomainMbo = synonymDomainSet.moveNext()){
+                    logger.info('deleteing value ' + tempSynonymDomainMbo.getString('VALUE') + ' with description ' + tempSynonymDomainMbo.getString('DESCRIPTION'));
+                    tempSynonymDomainMbo.delete();
+                    tempSynonymDomainSet.save();
                 }
+            } finally {
+                __libraryClose(tempMaxDomValCondSet);
+                __libraryClose(tempSynonymDomainSet);
             }
-            //delete child records first
-            //synonymDomainSet.deleteAll();
+
             this.synonymDomain.forEach(function (synonymValue) {
-                var sqlFormat = new SqlFormat('value = :1 and maxvalue = :2');
+                sqlFormat = new SqlFormat('value = :1 and maxvalue = :2');
                 sqlFormat.setObject(1, 'SYNONYMDOMAIN', 'VALUE', synonymValue.value);
                 sqlFormat.setObject(2, 'SYNONYMDOMAIN', 'MAXVALUE', synonymValue.maxValue);
                 synonymDomainSet.setUserWhere(sqlFormat.format());
@@ -2775,16 +2789,7 @@ Domain.prototype.setMboValues = function (mbo) {
                     synonymMbo.setValue('SITEID', synonymValue.siteId);
                     synonymMbo.setValue('DEFAULTS', synonymValue.defaults);
 
-                    /*
-                    var tempMaxDomValCondSet = MXServer.getMXServer().getMboSet('MAXDOMVALCOND', MXServer.getMXServer().getSystemUserInfo());
-                    sqlFormat = new SqlFormat('domainid = :1');
-                    sqlFormat.setObject(1, 'MAXDOMVALCOND', 'DOMAINID', this.domainId);
-                    tempMaxDomValCondSet.setWhere(sqlFormat.format());
-                    logger.info('temp domainvalcond set contains ' + tempMaxDomValCondSet.count()  + ' records that will be deleted');
-                    */
-
                     var maxDomValCondSet = synonymMbo.getMboSet('MAXDOMVALCOND');
-                    logger.info('new synonym value - maxdomvalconset count: ' + maxDomValCondSet.count());
                     synonymValue.maxDomValCond.forEach(function (valCond) {
                         var maxDomValCondMbo = maxDomValCondSet.add();
                         logger.info('Adding record for value ' + valCond.valueId.toUpperCase());
@@ -2810,17 +2815,12 @@ Domain.prototype.setMboValues = function (mbo) {
                     //value exists - allow updating any info except value or maxvalue
                     var synonymMbo = synonymDomainSet.getMbo(0);
                     synonymMbo.setValue('DESCRIPTION', synonymValue.description);
-                    //synonymMbo.setValue('ORGID', synonymValue.orgId);
-                    //synonymMbo.setValue('SITEID', synonymValue.siteId);
                     synonymMbo.setValue('DEFAULTS', synonymValue.defaults);
                     //replace domain value conditions
                     var maxDomValCondSet = synonymMbo.getMboSet('MAXDOMVALCOND');
-                    logger.info('existing synonym value - maxdomvalconset count before delete: ' + maxDomValCondSet.count());
                     maxDomValCondSet.deleteAll();
-                    logger.info('existing synonym value - maxdomvalconset count after delete: ' + maxDomValCondSet.count());
                     synonymValue.maxDomValCond.forEach(function (valCond) {
                         var maxDomValCondMbo = maxDomValCondSet.add();
-                        logger.info('Adding record for value ' + valCond.valueId.toUpperCase());
                         maxDomValCondMbo.setValue('DOMAINID', valCond.domainId);
                         maxDomValCondMbo.setValue('VALUEID', valCond.valueId.toUpperCase());
                         maxDomValCondMbo.setValue('CONDITIONNUM', valCond.conditionNum);
@@ -2858,7 +2858,6 @@ Domain.prototype.setMboValues = function (mbo) {
             break;
         case 'CROSSOVER':
             var tableDomainSet = mbo.getMboSet('MAXTABLEDOMAINFORCROSSOVER');
-            //tableDomainSet.deleteAll();
             this.crossoverDomain.forEach(function (tableValue) {
                 var tableMbo = tableDomainSet.add();
                 tableMbo.setValue('OBJECTNAME', tableValue.objectName);
