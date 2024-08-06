@@ -2881,7 +2881,7 @@ Domain.prototype.setMboValues = function (mbo) {
             });
             break;
         default:
-            throw new Error();
+            throw new Error('Provided domain type is not a valid value');
     }
 };
 
