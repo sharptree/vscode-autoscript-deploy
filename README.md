@@ -130,7 +130,7 @@ When using a script for deploy actions, that script file may be named the same a
 ### JSON Deploy File
 As of version `1.13.0` a JSON document can be used to define select objects to deploy along with the script. Providing a JSON file with the same name as the primary script, with a `.json` file extension will cause the tooling to deploy the objects defined in the JSON document along with the script. 
 
-Currently Cron Tasks, Loggers, Maximo Objects, Messages and Properties are available.  Additional Maximo data types will be added in future releases based on feedback and demand. The JSON schemas for these objects are provided below.
+Currently Cron Tasks, Domains, Loggers, Maximo Objects, Messages and Properties are available.  Additional Maximo data types will be added in future releases based on feedback and demand. The JSON schemas for these objects are provided below.
 
 #### JSON Pre-deploy File
 As of version `1.14.0` there is support for a JSON deploy file that is applied prior to deploying the automation script. To have the JSON deploy file applied prior to deploying the automation script, name the file the same as the primary script with `.predeploy.json` as the suffix. The extension will automatically find the file and apply it before deploying the automation script. 
@@ -140,6 +140,7 @@ As of version `1.14.0` there is support for a JSON deploy file that is applied p
 | Object Type       | Schema                                                                                                                                                                                                |  
 | :-----------------| :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------| 
 | Cron Task         | [https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/crontask.json](https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/crontask.json)    |
+| Domain            | [https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/domain.json](https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/domain.json)    |
 | Logger            | [https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/logger.json](https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/logger.json)        |
 | MaxObject         | [https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/maxobject.json](https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/maxobject.json)  |
 | Message           | [https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/message.json](https://raw.githubusercontent.com/sharptree/vscode-autoscript-deploy/main/schemas/message.json)      |
