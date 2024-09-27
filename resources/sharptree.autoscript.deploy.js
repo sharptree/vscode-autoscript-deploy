@@ -64,7 +64,7 @@ function main() {
                 throw new ScriptError("no_script_source", "A script source must be the request body.");
             }
 
-            if (action && action.startsWith("source") ) {
+            if (action && action.startsWith("source")) {
                 scriptSource = requestBody;
                 if (!scriptSource) {
                     throw new ScriptError("no_script_source", "A script source must be the request body.");
@@ -216,6 +216,7 @@ function deployScript(scriptSource, language) {
             setValueIfAvailable(autoscript, "VERSION", scriptConfig.version);
             setValueIfAvailable(autoscript, "ACTIVE", scriptConfig.active);
             setValueIfAvailable(autoscript, "LOGLEVEL", scriptConfig.logLevel);
+            setValueIfAvailable(autoscript, "INTERFACE", scriptConfig.allowInvokingScriptFunctions);
 
             if (typeof scriptConfig.autoScriptVars !== "undefined") {
                 scriptConfig.autoScriptVars.forEach(function (element) {
@@ -615,9 +616,9 @@ function getConfigFromScript(scriptSource, languageHint) {
                 ast = parse(scriptSource);
             } catch (error) {
                 // attempt to parse python script
-                try{
+                try {
                     return getConfigFromPythonScript(scriptSource);
-                }catch(error){
+                } catch (error) {
                     log_error(JSON.stringify(error));
                     throw new ScriptError("parsing_error", "Error parsing script, please see log for details.");
                 }
@@ -650,7 +651,7 @@ function getConfigFromScript(scriptSource, languageHint) {
     }
 }
 
-function getConfigFromPythonScript(source){
+function getConfigFromPythonScript(source) {
     var regex = /^(?!#).*scriptConfig.*"""(.|\n|\r)*?"""/gm;
     var found = scriptSource.match(regex);
     if (found && found.length == 1) {
@@ -793,7 +794,7 @@ function createOrUpdateMaxVar(maxvar) {
             if (maxvarTypeSet.isEmpty()) {
                 maxvarType = maxvarTypeSet.add();
                 maxvarType.setValue("VARNAME", maxvar.varName);
-                maxvarType.setValue("VARTYPE", maxvar.maxType);
+                maxvarType.setValue("VARTYPE", maxvar.varType);
                 var id = maxvarType.getUniqueIDValue();
                 maxvarTypeSet.save();
                 maxvarTypeSet.reset();

@@ -1,4 +1,7 @@
 # Release Notes
+## 1.15.8
+- Add domains, added support for Allow Invoking Script Functions? and fixed a bug with MaxVars handling.
+  
 ## 1.15.7
 - Provide more flexible source fetching with fallback to check language.
 
