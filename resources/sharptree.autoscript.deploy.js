@@ -216,6 +216,7 @@ function deployScript(scriptSource, language) {
             setValueIfAvailable(autoscript, "VERSION", scriptConfig.version);
             setValueIfAvailable(autoscript, "ACTIVE", scriptConfig.active);
             setValueIfAvailable(autoscript, "LOGLEVEL", scriptConfig.logLevel);
+            setValueIfAvailable(autoscript, "INTERFACE", scriptConfig.allowInvokingScriptFunctions);
 
             if (typeof scriptConfig.autoScriptVars !== "undefined") {
                 scriptConfig.autoScriptVars.forEach(function (element) {

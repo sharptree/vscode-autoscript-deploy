@@ -207,6 +207,7 @@ var scriptConfig = {
     "description":"An example script for deployment",
     "version":"1.0.4",
     "active":true,
+    "allowInvokingScriptFunctions":true,
     "logLevel":"INFO",
     "autoScriptVars":[
         {
@@ -252,6 +253,7 @@ scriptConfig = """{
     "description":"An example script for deployment",
     "version":"1.0.4",
     "active":true,
+    "allowInvokingScriptFunctions":true,
     "logLevel":"INFO",
     "autoScriptVars":[
         {
