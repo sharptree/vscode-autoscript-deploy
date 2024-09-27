@@ -833,7 +833,7 @@ function createOrUpdateMaxVar(maxvar) {
                 maxvarsValue = maxvarsValueSet.moveFirst();
             }
 
-            if (typeof maxvar.varvalue !== "undefined") {
+            if (typeof maxvar.varValue !== "undefined") {
                 maxvarsValue.setValue("VARVALUE", maxvar.varValue);
             } else {
                 maxvarsValue.setValueNull("VARVALUE");
