@@ -24,9 +24,6 @@ import MaximoConfig from "./maximo-config";
 import { TextDecoder } from "util";
 
 export default class MaximoClient {
-
-
-
     constructor(config) {
         if (!(config instanceof MaximoConfig)) {
             throw "config parameter must be an instance of MaximoConfig";
@@ -735,11 +732,10 @@ export default class MaximoClient {
 
             return response.data.member.length !== 0;
         } catch (e) {
-            if(e.reasonCode && e.reasonCode === "BMXAA9301E") {
+            if (e.reasonCode && e.reasonCode === "BMXAA9301E") {
                 this.scriptEndpoint = "mxapiautoscript";
                 return await this.installed();
             }
-            
         }
     }
 
@@ -842,25 +838,25 @@ export default class MaximoClient {
         if (!this._isConnected) {
             throw new MaximoError("Maximo client is not connected.");
         }
-        
+
         let increment = 100 / 13;
 
         progress.report({ increment: increment });
 
         if (bootstrap) {
             var result = await this._bootstrap(progress, increment);
-            
+
             if (result.status === "error") {
                 progress.report({ increment: 100 });
                 return result;
             }
-            
+
             progress.report({ increment: increment, message: "Performed bootstrap installation." });
             await new Promise((resolve) => setTimeout(resolve, 500));
         }
 
         let source = fs.readFileSync(path.resolve(__dirname, "../resources/sharptree.autoscript.store.js")).toString();
-        await this._installOrUpdateScript("sharptree.autoscript.store", "Sharptree Automation Script Storage Script", source, progress, increment );
+        await this._installOrUpdateScript("sharptree.autoscript.store", "Sharptree Automation Script Storage Script", source, progress, increment);
 
         source = fs.readFileSync(path.resolve(__dirname, "../resources/sharptree.autoscript.extract.js")).toString();
         await this._installOrUpdateScript("sharptree.autoscript.extract", "Sharptree Automation Script Extract Script", source, progress, increment);
@@ -883,13 +879,13 @@ export default class MaximoClient {
 
         source = fs.readFileSync(path.resolve(__dirname, "../resources/sharptree.autoscript.form.js")).toString();
         await this._installOrUpdateScript("sharptree.autoscript.form", "Sharptree Inspection Forms Script", source, progress, increment);
-        
+
         source = fs.readFileSync(path.resolve(__dirname, "../resources/sharptree.autoscript.library.js")).toString();
         await this._installOrUpdateScript("sharptree.autoscript.library", "Sharptree Deployment Library Script", source, progress, increment);
-        
+
         source = fs.readFileSync(path.resolve(__dirname, "../resources/sharptree.autoscript.admin.js")).toString();
         await this._installOrUpdateScript("sharptree.autoscript.admin", "Sharptree Admin Script", source, progress, increment);
-        
+
         source = fs.readFileSync(path.resolve(__dirname, "../resources/sharptree.autoscript.report.js")).toString();
         await this._installOrUpdateScript(
             "sharptree.autoscript.report",
@@ -1273,6 +1269,8 @@ export default class MaximoClient {
     async _installOrUpdateScript(script, description, source, progress, increment) {
         let scriptURI = await this._getScriptURI(script);
 
+        let activeStatus = await this._synonymdomainToExternalDefaultValue("AUTOSCRPHASE", "Production", "Active");
+
         let headers = new Map();
         headers["Content-Type"] = "application/json";
 
@@ -1280,7 +1278,7 @@ export default class MaximoClient {
         if (scriptURI) {
             let deployScript = {
                 "description": description,
-                "status": "Active",
+                "status": activeStatus,
                 "version": this.currentScriptVersion,
                 "source": source
             };
@@ -1303,7 +1301,7 @@ export default class MaximoClient {
             const deployScript = {
                 "autoscript": script,
                 "description": description,
-                "status": "Active",
+                "status": activeStatus,
                 "version": this.currentScriptVersion,
                 "scriptlanguage": "nashorn",
                 "source": source
@@ -1342,12 +1340,38 @@ export default class MaximoClient {
         }
     }
 
-    async _bootstrap(progress,increment) {
+    async _synonymdomainToExternalDefaultValue(domain, maxvalue, defaultValue) {
+        if (!this._isConnected) {
+            throw new MaximoError("Maximo client is not connected.");
+        }
+
+        const headers = new Map();
+        headers["Content-Type"] = "application/json";
+
+        let options = {
+            url: `os/MXAPIDOMAIN?oslc.select=*&oslc.where=domainid="${domain}"`,
+            method: MaximoClient.Method.GET,
+            headers: { common: headers }
+        };
+
+        // @ts-ignore
+        let response = await this.client.request(options);
+        for (var i = 0; i < response.data.member[0].synonymdomain.length; i++) {
+            if (response.data.member[0].synonymdomain[i].maxvalue === maxvalue && response.data.member[0].synonymdomain[i].defaults === true) {
+                return response.data.member[0].synonymdomain[i].value;
+            }
+        }
+        return defaultValue;
+    }
+
+    async _bootstrap(progress, increment) {
         if (!this._isConnected) {
             throw new MaximoError("Maximo client is not connected.");
         }
 
         let refUri;
+
+        let activeStatus = await this._synonymdomainToExternalDefaultValue("AUTOSCRPHASE", "Production", "Active");
         try {
             const headers = new Map();
             headers["Content-Type"] = "application/json";
@@ -1373,7 +1397,7 @@ export default class MaximoClient {
             if (href) {
                 let deployScript = {
                     "description": "Sharptree AutoScript Deploy Bootstrap",
-                    "status": "Active",
+                    "status": activeStatus,
                     "version": this.currentScriptVersion,
                     "scriptlanguage": "nashorn",
                     "source": source
@@ -1389,7 +1413,7 @@ export default class MaximoClient {
                 let deployScript = {
                     "autoscript": "sharptree.autoscript.install",
                     "description": "Sharptree AutoScript Deploy Bootstrap",
-                    "status": "Active",
+                    "status": activeStatus,
                     "version": "1.0.0",
                     "scriptlanguage": "nashorn",
                     "source": source
