@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 /* eslint-disable indent */
 /* eslint-disable no-redeclare */
 import axios from 'axios';
@@ -24,9 +25,6 @@ import MaximoConfig from './maximo-config';
 import { TextDecoder } from 'util';
 
 export default class MaximoClient {
-
-
-
     constructor(config) {
         if (!(config instanceof MaximoConfig)) {
             throw 'config parameter must be an instance of MaximoConfig';
@@ -726,8 +724,9 @@ export default class MaximoClient {
             headers: { common: headers }
         };
 
-        // @ts-ignore
+        
         try {
+            // @ts-ignore
             const response = await this.client.request(options);
             if (!response || response.headers['content-type'] !== 'application/json') {
                 throw new MaximoError('Received an unexpected response from the server. Content-Type header is not application/json.');
@@ -739,7 +738,6 @@ export default class MaximoClient {
                 this.scriptEndpoint = 'mxapiautoscript';
                 return await this.installed();
             }
-            
         }
     }
 
@@ -842,7 +840,7 @@ export default class MaximoClient {
         if (!this._isConnected) {
             throw new MaximoError('Maximo client is not connected.');
         }
-        
+
         let increment = 100 / 13;
 
         progress.report({ increment: increment });
@@ -1273,6 +1271,8 @@ export default class MaximoClient {
     async _installOrUpdateScript(script, description, source, progress, increment) {
         let scriptURI = await this._getScriptURI(script);
 
+        let activeStatus = await this._synonymdomainToExternalDefaultValue('AUTOSCRPHASE', 'Production', 'Active');
+
         let headers = new Map();
         headers['Content-Type'] = 'application/json';
 
@@ -1280,7 +1280,7 @@ export default class MaximoClient {
         if (scriptURI) {
             let deployScript = {
                 'description': description,
-                'status': 'Active',
+                'status': activeStatus,
                 'version': this.currentScriptVersion,
                 'source': source
             };
@@ -1295,7 +1295,7 @@ export default class MaximoClient {
             };
 
             // @ts-ignore
-            let result = await this.client.request(options);
+            await this.client.request(options);
 
             progress.report({ increment: increment, message: `Updated ${script}.` });
             await new Promise((resolve) => setTimeout(resolve, 500));
@@ -1303,7 +1303,7 @@ export default class MaximoClient {
             const deployScript = {
                 'autoscript': script,
                 'description': description,
-                'status': 'Active',
+                'status': activeStatus,
                 'version': this.currentScriptVersion,
                 'scriptlanguage': 'nashorn',
                 'source': source
@@ -1317,7 +1317,7 @@ export default class MaximoClient {
             };
 
             // @ts-ignore
-            let result = await this.client.request(options);
+            await this.client.request(options);
             progress.report({ increment: increment, message: `Installed ${script}.` });
             await new Promise((resolve) => setTimeout(resolve, 500));
         }
@@ -1342,12 +1342,38 @@ export default class MaximoClient {
         }
     }
 
-    async _bootstrap(progress,increment) {
+    async _synonymdomainToExternalDefaultValue(domain, maxvalue, defaultValue) {
+        if (!this._isConnected) {
+            throw new MaximoError('Maximo client is not connected.');
+        }
+
+        const headers = new Map();
+        headers['Content-Type'] = 'application/json';
+
+        let options = {
+            url: `os/MXAPIDOMAIN?oslc.select=*&oslc.where=domainid="${domain}"`,
+            method: MaximoClient.Method.GET,
+            headers: { common: headers }
+        };
+
+        // @ts-ignore
+        let response = await this.client.request(options);
+        for (var i = 0; i < response.data.member[0].synonymdomain.length; i++) {
+            if (response.data.member[0].synonymdomain[i].maxvalue === maxvalue && response.data.member[0].synonymdomain[i].defaults === true) {
+                return response.data.member[0].synonymdomain[i].value;
+            }
+        }
+        return defaultValue;
+    }
+
+    async _bootstrap(progress, increment) {
         if (!this._isConnected) {
             throw new MaximoError('Maximo client is not connected.');
         }
 
         let refUri;
+
+        let activeStatus = await this._synonymdomainToExternalDefaultValue('AUTOSCRPHASE', 'Production', 'Active');
         try {
             const headers = new Map();
             headers['Content-Type'] = 'application/json';
@@ -1373,7 +1399,7 @@ export default class MaximoClient {
             if (href) {
                 let deployScript = {
                     'description': 'Sharptree AutoScript Deploy Bootstrap',
-                    'status': 'Active',
+                    'status': activeStatus,
                     'version': this.currentScriptVersion,
                     'scriptlanguage': 'nashorn',
                     'source': source
@@ -1389,7 +1415,7 @@ export default class MaximoClient {
                 let deployScript = {
                     'autoscript': 'sharptree.autoscript.install',
                     'description': 'Sharptree AutoScript Deploy Bootstrap',
-                    'status': 'Active',
+                    'status': activeStatus,
                     'version': '1.0.0',
                     'scriptlanguage': 'nashorn',
                     'source': source
