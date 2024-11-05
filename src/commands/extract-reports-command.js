@@ -1,19 +1,19 @@
-import * as fs from "fs";
-import * as crypto from "crypto";
+import * as fs from 'fs';
+import * as crypto from 'crypto';
 
-import { ProgressLocation, window, workspace } from "vscode";
-import { writeResources, writeMetaData } from "./extract-report-command";
+import { ProgressLocation, window, workspace } from 'vscode';
+import { writeResources, writeMetaData } from './extract-report-command';
 // get a reference to the Maximo configuration object
-import { getMaximoConfig, asyncForEach } from "../extension";
+import { getMaximoConfig, asyncForEach } from '../extension';
 
 export default async function extractReportsCommand(client) {
     let extractLoc = (await getMaximoConfig()).extractLocationReports;
     // if the extract location has not been specified use the workspace folder.
-    if (typeof extractLoc === "undefined" || !extractLoc) {
+    if (typeof extractLoc === 'undefined' || !extractLoc) {
         if (workspace.workspaceFolders !== undefined) {
             extractLoc = workspace.workspaceFolders[0].uri.fsPath;
         } else {
-            window.showErrorMessage("A working folder must be selected or an export folder configured before exporting reports.", {
+            window.showErrorMessage('A working folder must be selected or an export folder configured before exporting reports.', {
                 modal: true
             });
             return;
@@ -25,26 +25,26 @@ export default async function extractReportsCommand(client) {
         return;
     }
 
-    let reportNames = await window.withProgress({ title: "Getting report names", location: ProgressLocation.Notification }, async () => {
+    let reportNames = await window.withProgress({ title: 'Getting report names', location: ProgressLocation.Notification }, async () => {
         return await client.getAllReports();
     });
 
-    if (typeof reportNames !== "undefined" && reportNames.length > 0) {
+    if (typeof reportNames !== 'undefined' && reportNames.length > 0) {
         let mappedReportNames = reportNames.map((report) => {
-            return report.description + " (" + report.report + ")";
+            return report.description + ' (' + report.report + ')';
         });
 
         await window
             .showInformationMessage(
-                "Do you want to extract " + (reportNames.length > 1 ? "the " + reportNames.length + " reports?" : " the one report?"),
+                'Do you want to extract ' + (reportNames.length > 1 ? 'the ' + reportNames.length + ' reports?' : ' the one report?'),
                 { modal: true },
-                ...["Yes"]
+                ...['Yes']
             )
             .then(async (response) => {
-                if (response === "Yes") {
+                if (response === 'Yes') {
                     await window.withProgress(
                         {
-                            title: "Extracting Reports",
+                            title: 'Extracting Reports',
                             location: ProgressLocation.Notification,
                             cancellable: true
                         },
@@ -57,21 +57,21 @@ export default async function extractReportsCommand(client) {
                             await asyncForEach(mappedReportNames, async (reportName) => {
                                 if (!cancelToken.isCancellationRequested) {
                                     progress.report({ increment: percent, message: `Extracting ${reportName}` });
-                                    var report = reportNames.find((x) => x.description + " (" + x.report + ")" == reportName);
+                                    var report = reportNames.find((x) => x.description + ' (' + x.report + ')' == reportName);
                                     let reportInfo;
                                     try {
                                         reportInfo = await client.getReport(report.reportId);
                                     } catch (e) {
-                                        if (e.message && e.message.includes("BMXAA5478E")) {
+                                        if (e.message && e.message.includes('BMXAA5478E')) {
                                             if (!ignoreMissingDesign) {
                                                 let response = await window.showInformationMessage(
                                                     `The report design for ${reportName} is not present in Maximo.\n\nContinue extract reports?`,
                                                     { modal: true },
-                                                    ...["Yes", "Yes to All"]
+                                                    ...['Yes', 'Yes to All']
                                                 );
-                                                if (response === "Yes to All") {
+                                                if (response === 'Yes to All') {
                                                     ignoreMissingDesign = true;
-                                                } else if (response !== "Yes") {
+                                                } else if (response !== 'Yes') {
                                                     // @ts-ignore
                                                     cancelToken.cancel();
                                                 }
@@ -81,17 +81,17 @@ export default async function extractReportsCommand(client) {
                                         }
                                     }
                                     if (reportInfo) {
-                                        let outputFile = extractLoc + "/" + reportInfo.reportFolder + "/" + report.report;
+                                        let outputFile = extractLoc + '/' + reportInfo.reportFolder + '/' + report.report;
                                         if (reportInfo.design) {
                                             let xml = reportInfo.design;
 
                                             // if the file doesn't exist then just write it out.
                                             if (!fs.existsSync(outputFile)) {
-                                                fs.mkdirSync(extractLoc + "/" + reportInfo.reportFolder, { recursive: true });
+                                                fs.mkdirSync(extractLoc + '/' + reportInfo.reportFolder, { recursive: true });
                                                 fs.writeFileSync(outputFile, xml);
                                             } else {
-                                                let incomingHash = crypto.createHash("sha256").update(xml).digest("hex");
-                                                let fileHash = crypto.createHash("sha256").update(fs.readFileSync(outputFile)).digest("hex");
+                                                let incomingHash = crypto.createHash('sha256').update(xml).digest('hex');
+                                                let fileHash = crypto.createHash('sha256').update(fs.readFileSync(outputFile)).digest('hex');
 
                                                 if (fileHash !== incomingHash) {
                                                     if (!overwriteAll) {
@@ -99,14 +99,14 @@ export default async function extractReportsCommand(client) {
                                                             .showInformationMessage(
                                                                 `The report ${reportName} exists. \nReplace?`,
                                                                 { modal: true },
-                                                                ...["Replace", "Replace All", "Skip"]
+                                                                ...['Replace', 'Replace All', 'Skip']
                                                             )
                                                             .then(async (response) => {
-                                                                if (response === "Replace") {
+                                                                if (response === 'Replace') {
                                                                     overwrite = true;
-                                                                } else if (response === "Replace All") {
+                                                                } else if (response === 'Replace All') {
                                                                     overwriteAll = true;
-                                                                } else if (response === "Skip") {
+                                                                } else if (response === 'Skip') {
                                                                     // do nothing
                                                                     overwrite = false;
                                                                 } else {
@@ -133,13 +133,13 @@ export default async function extractReportsCommand(client) {
                             });
 
                             if (!cancelToken.isCancellationRequested) {
-                                window.showInformationMessage("Reports extracted.", { modal: true });
+                                window.showInformationMessage('Reports extracted.', { modal: true });
                             }
                         }
                     );
                 }
             });
     } else {
-        window.showErrorMessage("No reports were found to extract.", { modal: true });
+        window.showErrorMessage('No reports were found to extract.', { modal: true });
     }
 }
