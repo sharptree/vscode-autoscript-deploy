@@ -150,7 +150,27 @@
 					"type": "number",
 					"default": 30,
 					"description": "Number of seconds between logging requests. The value should be no more than 30 seconds, to avoid server side timeouts."
-				}
+				},
+				"sharptree.maximo.proxy.host": {
+					"type": "string",
+					"default": "",
+					"description": "The proxy host name."
+				},
+				"sharptree.maximo.proxy.port": {
+					"type": "number",
+					"default": 3128,
+					"description": "The proxy port number."
+				},
+				"sharptree.maximo.proxy.user": {
+					"type": "string",
+					"default": "",
+					"description": "The proxy username for proxy authentication."
+				},						
+				"sharptree.maximo.proxy.password": {
+					"type": "string",
+					"default": "",
+					"description": "The proxy password for proxy authentication."
+				}					
 			}
 		},
 		"commands": [

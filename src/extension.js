@@ -1,28 +1,28 @@
-import { window, commands, workspace, ProgressLocation, Uri, StatusBarAlignment, TextEditorRevealType, Range, Position } from "vscode";
+import { window, commands, workspace, ProgressLocation, Uri, StatusBarAlignment, TextEditorRevealType, Range, Position } from 'vscode';
 
-import MaximoConfig from "./maximo/maximo-config";
-import MaximoClient from "./maximo/maximo-client";
-import ServerSourceProvider from "./maximo/provider";
+import MaximoConfig from './maximo/maximo-config';
+import MaximoClient from './maximo/maximo-client';
+import ServerSourceProvider from './maximo/provider';
 
-import deployCommand from "./commands/deploy-command";
-import compareCommand from "./commands/compare-command";
-import extractScriptsCommand from "./commands/extract-scripts-command";
-import extractScriptCommand from "./commands/extract-script-command";
-import extractScreensCommand from "./commands/extract-screens-command";
-import extractScreenCommand from "./commands/extract-screen-command";
-import extractFormsCommand from "./commands/extract-forms-command";
-import extractFormCommand from "./commands/extract-form-command";
-import extractReportCommand from "./commands/extract-report-command";
-import extractReportsCommand from "./commands/extract-reports-command";
+import deployCommand from './commands/deploy-command';
+import compareCommand from './commands/compare-command';
+import extractScriptsCommand from './commands/extract-scripts-command';
+import extractScriptCommand from './commands/extract-script-command';
+import extractScreensCommand from './commands/extract-screens-command';
+import extractScreenCommand from './commands/extract-screen-command';
+import extractFormsCommand from './commands/extract-forms-command';
+import extractFormCommand from './commands/extract-form-command';
+import extractReportCommand from './commands/extract-report-command';
+import extractReportsCommand from './commands/extract-reports-command';
 
-import { validateSettings } from "./settings";
-import * as path from "path";
-import * as fs from "fs";
+import { validateSettings } from './settings';
+import * as path from 'path';
+import * as fs from 'fs';
 
-import * as temp from "temp";
-import { TextDecoder, TextEncoder } from "text-encoding";
+import * as temp from 'temp';
+import { TextDecoder, TextEncoder } from 'text-encoding';
 
-import LocalConfiguration from "./config";
+import LocalConfiguration from './config';
 
 temp.track();
 
@@ -46,7 +46,7 @@ export function activate(context) {
 
     context.subscriptions.push(workspace.onDidChangeConfiguration(_onConfigurationChange.bind(workspace)));
     currentWindow = window;
-    const logCommandId = "maximo-script-deploy.log";
+    const logCommandId = 'maximo-script-deploy.log';
     context.subscriptions.push(commands.registerCommand(logCommandId, toggleLog));
 
     // create a new status bar item that we can now manage
@@ -60,59 +60,59 @@ export function activate(context) {
 
     context.subscriptions.push(statusBar);
 
-    let globalSettings = context.globalStoragePath + path.sep + "userprefs.json";
+    let globalSettings = context.globalStoragePath + path.sep + 'userprefs.json';
 
-    context.subscriptions.push(workspace.registerTextDocumentContentProvider("vscode-autoscript-deploy", new ServerSourceProvider(fetchedSource)));
+    context.subscriptions.push(workspace.registerTextDocumentContentProvider('vscode-autoscript-deploy', new ServerSourceProvider(fetchedSource)));
 
     let commandList = [
         {
-            command: "maximo-script-deploy.deploy",
+            command: 'maximo-script-deploy.deploy',
             function: deployCommand
         },
         {
-            command: "maximo-script-deploy.compare",
+            command: 'maximo-script-deploy.compare',
             function: compareCommand
         },
         {
-            command: "maximo-script-deploy.extract",
+            command: 'maximo-script-deploy.extract',
             function: extractScriptsCommand
         },
         {
-            command: "maximo-script-deploy.extractOne",
+            command: 'maximo-script-deploy.extractOne',
             function: extractScriptCommand
         },
         {
-            command: "maximo-script-deploy.screens",
+            command: 'maximo-script-deploy.screens',
             function: extractScreensCommand
         },
         {
-            command: "maximo-script-deploy.screensOne",
+            command: 'maximo-script-deploy.screensOne',
             function: extractScreenCommand
         },
         {
-            command: "maximo-script-deploy.forms",
+            command: 'maximo-script-deploy.forms',
             function: extractFormsCommand
         },
         {
-            command: "maximo-script-deploy.formsOne",
+            command: 'maximo-script-deploy.formsOne',
             function: extractFormCommand
         },
         {
-            command: "maximo-script-deploy.reports",
+            command: 'maximo-script-deploy.reports',
             function: extractReportsCommand
         },
         {
-            command: "maximo-script-deploy.reportsOne",
+            command: 'maximo-script-deploy.reportsOne',
             function: extractReportCommand
         }
     ];
 
     context.subscriptions.push(
-        commands.registerTextEditorCommand("maximo-script-deploy.id", (editor, edit) => {
+        commands.registerTextEditorCommand('maximo-script-deploy.id', (editor, edit) => {
             let fileName = path.basename(editor.document.fileName);
 
             // if we are not dealing with an XML file do nothing.
-            if (!fileName.endsWith(".xml")) {
+            if (!fileName.endsWith('.xml')) {
                 return;
             }
 
@@ -152,7 +152,7 @@ export function activate(context) {
                         if (data) {
                             let settings = JSON.parse(new TextDecoder().decode(data));
                             if (settings && !settings.suppressXMLIdMessage) {
-                                window.showWarningMessage("Select an XML tag to insert an Id.", "Don't Show Again").then((selection) => {
+                                window.showWarningMessage('Select an XML tag to insert an Id.', "Don't Show Again").then((selection) => {
                                     if (selection == "Don't Show Again") {
                                         settings.suppressXMLIdMessage = true;
                                         // @ts-ignore
@@ -163,7 +163,7 @@ export function activate(context) {
                         }
                     });
                 } else {
-                    window.showWarningMessage("Select an XML tag to insert an Id.", "Don't Show Again").then((selection) => {
+                    window.showWarningMessage('Select an XML tag to insert an Id.', "Don't Show Again").then((selection) => {
                         if (selection == "Don't Show Again") {
                             let settings = { suppressXMLIdMessage: true };
                             workspace.fs
@@ -194,13 +194,13 @@ export function activate(context) {
                         await command.function(client);
                     }
                 } catch (error) {
-                    if (error && typeof error.reasonCode !== "undefined" && error.reasonCode === "BMXAA0021E") {
+                    if (error && typeof error.reasonCode !== 'undefined' && error.reasonCode === 'BMXAA0021E') {
                         password = undefined;
                         window.showErrorMessage(error.message, { modal: true });
-                    } else if (error && typeof error.message !== "undefined") {
+                    } else if (error && typeof error.message !== 'undefined') {
                         window.showErrorMessage(error.message, { modal: true });
                     } else {
-                        window.showErrorMessage("An unexpected error occurred: " + error, { modal: true });
+                        window.showErrorMessage('An unexpected error occurred: ' + error, { modal: true });
                     }
                 } finally {
                     // if the client exists then disconnect it.
@@ -251,7 +251,7 @@ async function toggleLog() {
                             logFilePath = workspace.workspaceFolders[0].uri.fsPath + path.sep + logFilePath;
                         } else {
                             window.showErrorMessage(
-                                "A working folder must be selected or an absolute log file path configured before retrieving the Maximo logs. ",
+                                'A working folder must be selected or an absolute log file path configured before retrieving the Maximo logs. ',
                                 { modal: true }
                             );
                             return;
@@ -265,7 +265,7 @@ async function toggleLog() {
                     }
                 } else {
                     // @ts-ignore
-                    logFilePath = temp.path({ suffix: ".log", defaultPrefix: "maximo" });
+                    logFilePath = temp.path({ suffix: '.log', defaultPrefix: 'maximo' });
                 }
 
                 // eslint-disable-next-line no-undef
@@ -286,7 +286,7 @@ async function toggleLog() {
                     try {
                         fs.utimesSync(logFile, time, time);
                     } catch (err) {
-                        fs.closeSync(fs.openSync(logFile, "w"));
+                        fs.closeSync(fs.openSync(logFile, 'w'));
                     }
 
                     workspace.openTextDocument(logFile).then((doc) => {
@@ -328,14 +328,14 @@ async function toggleLog() {
                 }
 
                 logClient.startLogging(logFile, timeout).catch((error) => {
-                    if (typeof error !== "undefined" && typeof error.toJSON === "function") {
+                    if (typeof error !== 'undefined' && typeof error.toJSON === 'function') {
                         let jsonError = error.toJSON();
-                        if (typeof jsonError.message !== "undefined") {
+                        if (typeof jsonError.message !== 'undefined') {
                             window.showErrorMessage(jsonError.message, { modal: true });
                         } else {
                             window.showErrorMessage(JSON.stringify(jsonError), { modal: true });
                         }
-                    } else if (typeof error !== "undefined" && typeof error.Error !== "undefined" && typeof error.Error.message !== "undefined") {
+                    } else if (typeof error !== 'undefined' && typeof error.Error !== 'undefined' && typeof error.Error.message !== 'undefined') {
                         window.showErrorMessage(error.Error.message, { modal: true });
                     } else if (error instanceof Error) {
                         window.showErrorMessage(error.message, { modal: true });
@@ -354,13 +354,13 @@ async function toggleLog() {
                 toggleLog();
             }
 
-            if (error && typeof error.reasonCode !== "undefined" && error.reasonCode === "BMXAA0021E") {
+            if (error && typeof error.reasonCode !== 'undefined' && error.reasonCode === 'BMXAA0021E') {
                 password = undefined;
                 window.showErrorMessage(error.message, { modal: true });
-            } else if (error && typeof error.message !== "undefined") {
+            } else if (error && typeof error.message !== 'undefined') {
                 window.showErrorMessage(error.message, { modal: true });
             } else {
-                window.showErrorMessage("An unexpected error occurred: " + error, { modal: true });
+                window.showErrorMessage('An unexpected error occurred: ' + error, { modal: true });
             }
 
             if (logClient) {
@@ -371,20 +371,20 @@ async function toggleLog() {
     }
 
     if (logState) {
-        statusBar.text = "$(sync~spin) Maximo Log";
+        statusBar.text = '$(sync~spin) Maximo Log';
     } else {
-        statusBar.text = "$(book) Maximo Log";
+        statusBar.text = '$(book) Maximo Log';
     }
 }
 
 function _onConfigurationChange(e) {
     if (this) {
-        if (e.affectsConfiguration("sharptree.maximo.logging.follow")) {
+        if (e.affectsConfiguration('sharptree.maximo.logging.follow')) {
             if (currentFollow) {
                 currentFollow.dispose();
             }
 
-            if (this.getConfiguration("sharptree").get("maximo.logging.follow")) {
+            if (this.getConfiguration('sharptree').get('maximo.logging.follow')) {
                 currentFollow = this.onDidChangeTextDocument((e) => {
                     let document = e.document;
 
@@ -408,24 +408,28 @@ export async function getMaximoConfig() {
             localConfig = {};
         }
 
-        let settings = workspace.getConfiguration("sharptree");
+        let settings = workspace.getConfiguration('sharptree');
 
-        let host = localConfig.host ?? settings.get("maximo.host");
-        let userName = localConfig.username ?? settings.get("maximo.user");
-        let useSSL = typeof localConfig.useSSL !== "undefined" ? localConfig.useSSL : settings.get("maximo.useSSL");
-        let port = localConfig.port ?? settings.get("maximo.port");
-        let apiKey = localConfig.apiKey ?? settings.get("maximo.apiKey");
+        let host = localConfig.host ?? settings.get('maximo.host');
+        let userName = localConfig.username ?? settings.get('maximo.user');
+        let useSSL = typeof localConfig.useSSL !== 'undefined' ? localConfig.useSSL : settings.get('maximo.useSSL');
+        let port = localConfig.port ?? settings.get('maximo.port');
+        let apiKey = localConfig.apiKey ?? settings.get('maximo.apiKey');
 
         let allowUntrustedCerts =
-            typeof localConfig.allowUntrustedCerts !== "undefined" ? localConfig.allowUntrustedCerts : settings.get("maximo.allowUntrustedCerts");
-        let maximoContext = localConfig.context ?? settings.get("maximo.context");
-        let timeout = localConfig.timeout ?? settings.get("maximo.timeout");
-        let ca = localConfig.ca ?? settings.get("maximo.customCA");
-        let maxauthOnly = typeof localConfig.maxauthOnly !== "undefined" ? localConfig.maxauthOnly : settings.get("maximo.maxauthOnly");
-        let extractLocation = localConfig.extractLocation ?? settings.get("maximo.extractLocation");
-        let extractLocationScreens = localConfig.extractLocationScreens ?? settings.get("maximo.extractScreenLocation");
-        let extractLocationForms = localConfig.extractLocationForms ?? settings.get("maximo.extractInspectionFormsLocation");
-        let extractLocationReports = localConfig.extractLocationForms ?? settings.get("maximo.extractReportsLocation");
+            typeof localConfig.allowUntrustedCerts !== 'undefined' ? localConfig.allowUntrustedCerts : settings.get('maximo.allowUntrustedCerts');
+        let maximoContext = localConfig.context ?? settings.get('maximo.context');
+        let timeout = localConfig.timeout ?? settings.get('maximo.timeout');
+        let ca = localConfig.ca ?? settings.get('maximo.customCA');
+        let maxauthOnly = typeof localConfig.maxauthOnly !== 'undefined' ? localConfig.maxauthOnly : settings.get('maximo.maxauthOnly');
+        let extractLocation = localConfig.extractLocation ?? settings.get('maximo.extractLocation');
+        let extractLocationScreens = localConfig.extractLocationScreens ?? settings.get('maximo.extractScreenLocation');
+        let extractLocationForms = localConfig.extractLocationForms ?? settings.get('maximo.extractInspectionFormsLocation');
+        let extractLocationReports = localConfig.extractLocationForms ?? settings.get('maximo.extractReportsLocation');
+        let proxyHost = localConfig.proxyHost ?? settings.get('maximo.proxy.host');
+        let proxyPort = localConfig.proxyPort ?? settings.get('maximo.proxy.port');
+        let proxyUsername = localConfig.proxyUsername ?? settings.get('maximo.proxy.user');
+        let proxyPassword = localConfig.proxyPassword ?? settings.get('maximo.proxy.password');
 
         // make sure we have all the settings.
         if (!validateSettings({ host: host, username: userName, port: port, apiKey: apiKey })) {
@@ -449,7 +453,7 @@ export async function getMaximoConfig() {
             password = null;
         }
 
-        if (typeof localConfig.password !== "undefined") {
+        if (typeof localConfig.password !== 'undefined') {
             password = localConfig.password;
             apiKey = localConfig.apiKey;
         }
@@ -460,15 +464,15 @@ export async function getMaximoConfig() {
                     prompt: `Enter ${userName}'s password`,
                     password: true,
                     validateInput: (text) => {
-                        if (!text || text.trim() === "") {
-                            return "A password is required";
+                        if (!text || text.trim() === '') {
+                            return 'A password is required';
                         }
                     }
                 });
             }
 
             // if the password has not been set then just return.
-            if (!password || password.trim() === "") {
+            if (!password || password.trim() === '') {
                 return undefined;
             }
         }
@@ -489,11 +493,15 @@ export async function getMaximoConfig() {
             extractLocation: extractLocation,
             extractLocationScreens: extractLocationScreens,
             extractLocationForms: extractLocationForms,
-            extractLocationReports: extractLocationReports
+            extractLocationReports: extractLocationReports,
+            proxyHost: proxyHost,
+            proxyPort: proxyPort,
+            proxyUsername: proxyUsername,
+            proxyPassword: proxyPassword
         });
     } catch (error) {
-        if (error.reason == "WRONG_FINAL_BLOCK_LENGTH") {
-            window.showErrorMessage("An error occurred decrypting the password or API Key from the .devtools-config.json file.", { modal: true });
+        if (error.reason == 'WRONG_FINAL_BLOCK_LENGTH') {
+            window.showErrorMessage('An error occurred decrypting the password or API Key from the .devtools-config.json file.', { modal: true });
         } else {
             window.showErrorMessage(error.message, { modal: true });
         }
@@ -504,7 +512,7 @@ export async function getMaximoConfig() {
 
 async function getLocalConfig() {
     if (workspace.workspaceFolders !== undefined) {
-        let workspaceConfigPath = workspace.workspaceFolders[0].uri.fsPath + path.sep + ".devtools-config.json";
+        let workspaceConfigPath = workspace.workspaceFolders[0].uri.fsPath + path.sep + '.devtools-config.json';
         if (fs.existsSync(workspaceConfigPath)) {
             let localConfig = new LocalConfiguration(workspaceConfigPath, secretStorage);
             if (localConfig.configAvailable) {
@@ -517,19 +525,19 @@ async function getLocalConfig() {
 }
 
 function getLoggingConfig() {
-    let settings = workspace.getConfiguration("sharptree");
-    let outputFile = settings.get("maximo.logging.outputFile");
-    let openEditorOnStart = settings.get("maximo.logging.openEditorOnStart");
-    let append = settings.get("maximo.logging.append");
-    let timeout = settings.get("maximo.logging.timeout");
-    let follow = settings.get("maximo.logging.follow");
+    let settings = workspace.getConfiguration('sharptree');
+    let outputFile = settings.get('maximo.logging.outputFile');
+    let openEditorOnStart = settings.get('maximo.logging.openEditorOnStart');
+    let append = settings.get('maximo.logging.append');
+    let timeout = settings.get('maximo.logging.timeout');
+    let follow = settings.get('maximo.logging.follow');
 
     return {
-        "outputFile": outputFile,
-        "openOnStart": openEditorOnStart,
-        "append": append,
-        "timeout": timeout,
-        "follow": follow
+        'outputFile': outputFile,
+        'openOnStart': openEditorOnStart,
+        'append': append,
+        'timeout': timeout,
+        'follow': follow
     };
 }
 
@@ -547,25 +555,25 @@ async function login(client) {
             password = undefined;
             lastUser = undefined;
             // show the error message to the user.
-            if (error.message.includes("ENOTFOUND")) {
+            if (error.message.includes('ENOTFOUND')) {
                 window.showErrorMessage('The host name "' + client.config.host + '" cannot be found.', { modal: true });
-            } else if (typeof error.code !== "undefined" && error.code == "ECONNRESET") {
+            } else if (typeof error.code !== 'undefined' && error.code == 'ECONNRESET') {
                 window.showErrorMessage(error.message, { modal: true });
-            } else if (error.message.includes("ECONNREFUSED")) {
-                window.showErrorMessage("Connection refused to host " + client.config.host + " on port " + client.config.port, { modal: true });
-            } else if (error.message.includes("EPROTO")) {
+            } else if (error.message.includes('ECONNREFUSED')) {
+                window.showErrorMessage('Connection refused to host ' + client.config.host + ' on port ' + client.config.port, { modal: true });
+            } else if (error.message.includes('EPROTO')) {
                 window.showErrorMessage(
-                    "Connection refused to host " +
+                    'Connection refused to host ' +
                         client.config.host +
-                        " on port " +
+                        ' on port ' +
                         client.config.port +
-                        " because of an SSL connection error.\nAre you sure your server is using SSL or did you specify a non-SSL port?.",
+                        ' because of an SSL connection error.\nAre you sure your server is using SSL or did you specify a non-SSL port?.',
                     { modal: true }
                 );
             } else if (error.isAxiosError && error.response && error.response.status && error.response.status == 401) {
-                window.showErrorMessage("User name and password combination are not valid. Try again.", { modal: true });
+                window.showErrorMessage('User name and password combination are not valid. Try again.', { modal: true });
             } else if (client.config.apiKey && error.response.status == 400) {
-                window.showErrorMessage("The provided API Key is invalid. Try again.", { modal: true });
+                window.showErrorMessage('The provided API Key is invalid. Try again.', { modal: true });
             } else {
                 window.showErrorMessage(error.message, { modal: true });
             }
@@ -589,24 +597,24 @@ async function installed(client) {
     if (!(await client.installed())) {
         return await window
             .showInformationMessage(
-                "Configurations are required to deploy automation scripts.  Do you want to configure Maximo now?",
+                'Configurations are required to deploy automation scripts.  Do you want to configure Maximo now?',
                 { modal: true },
-                ...["Yes"]
+                ...['Yes']
             )
             .then(async (response) => {
-                if (response === "Yes") {
+                if (response === 'Yes') {
                     return await window.withProgress(
                         {
-                            title: "Configuring Maximo",
+                            title: 'Configuring Maximo',
                             location: ProgressLocation.Notification
                         },
                         async (progress) => {
                             var result = await client.installOrUpgrade(progress, true);
-                            if (result && result.status === "error") {
+                            if (result && result.status === 'error') {
                                 window.showErrorMessage(result.message, { modal: true });
                                 return false;
                             } else {
-                                window.showInformationMessage("Maximo configuration successful.", { modal: true });
+                                window.showInformationMessage('Maximo configuration successful.', { modal: true });
                                 return true;
                             }
                         }
@@ -623,24 +631,24 @@ async function upgraded(client) {
     if (await client.upgradeRequired()) {
         return await window
             .showInformationMessage(
-                "Updated configurations are required to deploy automation scripts.  Do you want to configure Maximo now?",
+                'Updated configurations are required to deploy automation scripts.  Do you want to configure Maximo now?',
                 { modal: true },
-                ...["Yes"]
+                ...['Yes']
             )
             .then(async (response) => {
-                if (response === "Yes") {
+                if (response === 'Yes') {
                     return await window.withProgress(
                         {
-                            title: "Configuring Maximo",
+                            title: 'Configuring Maximo',
                             location: ProgressLocation.Notification
                         },
                         async (progress) => {
                             var result = await client.installOrUpgrade(progress);
-                            if (result && result.status === "error") {
+                            if (result && result.status === 'error') {
                                 window.showErrorMessage(result.message, { modal: true });
                                 return false;
                             } else {
-                                window.showInformationMessage("Maximo configuration successful.", { modal: true });
+                                window.showInformationMessage('Maximo configuration successful.', { modal: true });
                                 return true;
                             }
                         }

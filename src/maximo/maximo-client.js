@@ -62,6 +62,21 @@ export default class MaximoClient {
 
         this.client.interceptors.request.use(
             function (request) {
+                if (this.config.proxyConfigured) {
+                    request.proxy = {
+                        protocol: config.useSSL ? 'https' : 'http',
+                        host: this.config.proxyHost,
+                        port: this.config.proxyPort
+                    };
+
+                    if(this.config.proxyUsername && this.config.proxyPassword) {
+                        request.proxy.auth = {
+                            username: this.config.proxyUsername,
+                            password: this.config.proxyPassword
+                        };
+                    }
+                }
+
                 // If the requested URL is the login endpoint, the inject the auth headers.
                 if (request.url === 'login') {
                     this._addAuthHeaders(request);
@@ -94,6 +109,11 @@ export default class MaximoClient {
                 this.jar.getCookiesSync(request.baseURL, function (err, cookies) {
                     request.headers['cookie'] = cookies.join('; ');
                 });
+                if (this.config.proxyConfigured) {
+                    this.jar.getCookiesSync(this.config.baseProxyURL, function (err, cookies) {
+                        request.headers['cookie'] = cookies.join('; ');
+                    });
+                }
 
                 return request;
             }.bind(this)
@@ -724,7 +744,6 @@ export default class MaximoClient {
             headers: { common: headers }
         };
 
-        
         try {
             // @ts-ignore
             const response = await this.client.request(options);
@@ -734,7 +753,7 @@ export default class MaximoClient {
 
             return response.data.member.length !== 0;
         } catch (e) {
-            if(e.reasonCode && e.reasonCode === 'BMXAA9301E') {
+            if (e.reasonCode && e.reasonCode === 'BMXAA9301E') {
                 this.scriptEndpoint = 'mxapiautoscript';
                 return await this.installed();
             }
@@ -847,18 +866,18 @@ export default class MaximoClient {
 
         if (bootstrap) {
             var result = await this._bootstrap(progress, increment);
-            
+
             if (result.status === 'error') {
                 progress.report({ increment: 100 });
                 return result;
             }
-            
+
             progress.report({ increment: increment, message: 'Performed bootstrap installation.' });
             await new Promise((resolve) => setTimeout(resolve, 500));
         }
 
         let source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.store.js')).toString();
-        await this._installOrUpdateScript('sharptree.autoscript.store', 'Sharptree Automation Script Storage Script', source, progress, increment );
+        await this._installOrUpdateScript('sharptree.autoscript.store', 'Sharptree Automation Script Storage Script', source, progress, increment);
 
         source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.extract.js')).toString();
         await this._installOrUpdateScript('sharptree.autoscript.extract', 'Sharptree Automation Script Extract Script', source, progress, increment);
@@ -881,13 +900,13 @@ export default class MaximoClient {
 
         source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.form.js')).toString();
         await this._installOrUpdateScript('sharptree.autoscript.form', 'Sharptree Inspection Forms Script', source, progress, increment);
-        
+
         source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.library.js')).toString();
         await this._installOrUpdateScript('sharptree.autoscript.library', 'Sharptree Deployment Library Script', source, progress, increment);
-        
+
         source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.admin.js')).toString();
         await this._installOrUpdateScript('sharptree.autoscript.admin', 'Sharptree Admin Script', source, progress, increment);
-        
+
         source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.report.js')).toString();
         await this._installOrUpdateScript(
             'sharptree.autoscript.report',
