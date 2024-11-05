@@ -17,15 +17,20 @@ The following are settings available under the `Sharptree > Maximo` group.
 | API Key                              |                       | The Maximo API key that will be used to access Maximo. If provided, the user name and password are ignored if configured.                                                     |
 | Context                              | maximo                | The part of the URL that follows the hostname, by default it is `maximo`.                                                                                                     |
 | Custom CA                            |                       | The full chain for the server CA in PEM format.                                                                                                                               |
-| Extract Inspection Forms Location    | Current open folder   | Directory where extracted inspection files will be stored.  
-| Extract Location                     | Current open folder   | Directory where extracted script files will be stored.                                                                                                                               |
-| Extract Screen Location              | Current open folder   | Directory where extracted screen XML files will be stored.                                                                                                                               |
+| Extract Inspection Forms Location    | Current open folder   | Directory where extracted inspection files will be stored.                                                                                                                    |
+| Extract Location                     | Current open folder   | Directory where extracted script files will be stored.                                                                                                                        |
+| Extract Screen Location              | Current open folder   | Directory where extracted screen XML files will be stored.                                                                                                                    |
 | Host                                 |                       | The Maximo host name *without* the http/s protocol prefix.                                                                                                                    |
 | Maxauth Only                         | false                 | Both Maxauth and Basic headers are usually sent for login, however on WebLogic if Basic fails the Maxauth header is ignored. When checked, only the Maxauth header is sent.   |
 | Port                                 | 443                   | The Maximo port number, 80 for http, 443 for https or your custom port such as 9080.                                                                                          |
+| Proxy Host                           |                       | The proxy host name.                                                                                                                                                          | 
+| Proxy Port                           | 3128                  | The proxy port number.                                                                                                                                                        | 
+| Proxy User                           |                       | The proxy username for proxy authentication.                                                                                                                                  | 
+| Proxy Password                       |                       | The proxy password for proxy authentication.                                                                                                                                  | 
 | Timeout                              | 30                    | The time in seconds to wait for Maximo to respond.                                                                                                                            |
 | User                                 |                       | The user that will be used to connect to Maximo.                                                                                                                              |
-| Use SSL                              | true                  | When checked, SSL will be used, the provided port must be configured for SSL                                                                                                  | 
+| Use SSL                              | true                  | When checked, SSL will be used, the provided port must be configured for SSL.                                                                                                 | 
+
 
 > The Authentication Type setting has been removed and replaced with automatic detection of authentication type.
 
@@ -52,6 +57,10 @@ The `password` and `apiKey` attributes will be automatically encrypted on first 
     "extractLocationScreens":"Path to the screens extract directory",
     "extractLocationForms":"Path to the forms extract directory",
     "extractLocationReports":"Path to the reports extract directory",
+    "proxyHost":"The proxy host",
+    "proxyPort": "The proxy port number",
+    "proxyUsername": "The proxy authentication user name",
+    "proxyPassword": "The proxy authentication password"
 }
 ```
 > Since `.devtools-config.json` may contain sensitive connection information it should *never* be checked into Git. A `.gitignore` entry for `.devtools-config.json` is automatically created the first time the `.devtools-config.json` is used by the extension to ensure that it is not accidentally included in a commit.
@@ -69,7 +78,7 @@ The following are settings available under the `Sharptree > Maximo > Logging` gr
 
 
 ## Maximo Configuration
-The very first time you connect to Maximo, this extension will add several required automation scripts to Maximo. To deploy these scripts, the extension requires that you be in the Maximo Administrators group and have access to the `MXSCRIPT` object structure. To perform the configuration, bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Deploy Automation Script`. You will be prompted for a password and then a dialog will be displayed prompting you to configure Maximo.
+The very first time you connect to Maximo, this extension will add several required automation scripts to Maximo. To deploy these scripts, the extension requires that you be in the Maximo Administrators group and have access to the `MXSCRIPT` and `MXAPIDOMAIN` object structures. To perform the configuration, bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Deploy Automation Script`. You will be prompted for a password and then a dialog will be displayed prompting you to configure Maximo.
 
 ![Configure Maximo Prompt](images/install_scripts.png)
 

@@ -1,4 +1,8 @@
 # Release Notes
+## 1.16.0
+- Fixed reports.xml multilookup value from true/false to 1/0
+- Added support for specifying a proxy.
+- Added support for non-English script status.
 ## 1.15.9
 - Fixed a bug with MaxVars handling (again).
   

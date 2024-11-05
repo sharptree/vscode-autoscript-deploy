@@ -1,4 +1,4 @@
-import { Buffer } from "buffer";
+import { Buffer } from 'buffer';
 
 export default class MaximoConfig {
     constructor({
@@ -7,7 +7,7 @@ export default class MaximoConfig {
         host,
         port = 443,
         useSSL = true,
-        context = "maximo",
+        context = 'maximo',
         allowUntrustedCerts = false,
         connectTimeout = 5000,
         responseTimeout = 30000,
@@ -18,7 +18,11 @@ export default class MaximoConfig {
         extractLocation,
         extractLocationScreens,
         extractLocationForms,
-        extractLocationReports
+        extractLocationReports,
+        proxyHost,
+        proxyPort = 3128,
+        proxyUsername, 
+        proxyPassword
     }) {
         this.username = username;
         this.password = password;
@@ -37,31 +41,47 @@ export default class MaximoConfig {
         this.extractLocationScreens = extractLocationScreens;
         this.extractLocationForms = extractLocationForms;
         this.extractLocationReports = extractLocationReports;
+        this.proxyHost = proxyHost;
+        this.proxyPort = proxyPort;
+        this.proxyUsername = proxyUsername;
+        this.proxyPassword = proxyPassword;
     }
 
     get maxauth() {
-        return Buffer.from(this.username + ":" + this.password).toString("base64");
+        return Buffer.from(this.username + ':' + this.password).toString('base64');
     }
 
     get baseURL() {
         return (
-            (this.useSSL ? "https://" : "http://") +
+            (this.useSSL ? 'https://' : 'http://') +
             this.host +
-            ((this.port === 443 && this.useSSL) || (this.port === 80 && !this.useSSL) ? "" : ":" + this.port) +
-            "/" +
+            ((this.port === 443 && this.useSSL) || (this.port === 80 && !this.useSSL) ? '' : ':' + this.port) +
+            '/' +
             this.context +
-            (this.apiKey ? "/api" : "/oslc")
+            (this.apiKey ? '/api' : '/oslc')
         );
+    }
+
+    get baseProxyURL() {
+        if (!this.proxyHost) {
+            return null;
+        } else {
+            return (this.useSSL ? 'https://' : 'http://') + this.proxyHost + ':' + this.proxyPort + '/' + this.context + (this.apiKey ? '/api' : '/oslc');
+        }
     }
 
     get formLoginURL() {
         return (
-            (this.useSSL ? "https://" : "http://") +
+            (this.useSSL ? 'https://' : 'http://') +
             this.host +
-            ((this.port === 443 && this.useSSL) || (this.port === 80 && !this.useSSL) ? "" : ":" + this.port) +
-            "/" +
+            ((this.port === 443 && this.useSSL) || (this.port === 80 && !this.useSSL) ? '' : ':' + this.port) +
+            '/' +
             this.context +
-            "/j_security_check"
+            '/j_security_check'
         );
+    }
+
+    get proxyConfigured(){
+        return this.proxyHost && this.proxyPort && this.proxyPort > 0 && this.proxyPort < 65536;
     }
 }
