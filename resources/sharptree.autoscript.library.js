@@ -3583,13 +3583,13 @@ function addOrUpdateCronTask(cronTask) {
         var cronTaskObj = new CronTask(cronTask);
         set = MXServer.getMXServer().getMboSet("CRONTASKDEF", userInfo);
         var sqlFormat = new SqlFormat("crontaskname = :1");
-        sqlFormat.setObject(1, "CRONTASKDEF", "CRONTASKNAME", "TESTCRON");
+        sqlFormat.setObject(1, "CRONTASKDEF", "CRONTASKNAME", cronTask.cronTaskName);
 
         var obj;
         set.setWhere(sqlFormat.format());
         obj = set.moveFirst();
 
-        if (obj) {
+        if (obj) {                   
             var cronTaskInstanceSet = obj.getMboSet("CRONTASKINSTANCE");
             var cronTaskInstance = cronTaskInstanceSet.moveFirst();
 
@@ -3602,7 +3602,9 @@ function addOrUpdateCronTask(cronTask) {
             set.save();
             set.setWhere(sqlFormat.format());
             set.reset();
-            set.deleteAll();
+            set.deleteAll();   
+            set.save();
+            set.reset();                        
         }
 
         obj = set.add();
