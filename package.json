@@ -68,7 +68,7 @@
 					"type": "string",
 					"default": null,
 					"description": "The Maximo user name."
-				},
+				},	
 				"sharptree.maximo.context": {
 					"type": "string",
 					"default": "maximo",
@@ -110,7 +110,7 @@
 					"description": "The timeout in seconds.",
 					"minimum": 0,
 					"maximum": 300
-				},
+				},			
 				"sharptree.maximo.allowUntrustedCerts": {
 					"type": "boolean",
 					"default": false,
@@ -125,6 +125,13 @@
 					"type": "string",
 					"default": "",
 					"description": "The Maximo API Key."
+				},
+				"sharptree.maximo.configurationTimeout": {
+					"type": "number",
+					"default": 5,
+					"description": "The Maximo script configuration timeout in minutes.",
+					"minimum": 0,
+					"maximum": 60
 				},
 				"sharptree.maximo.logging.outputFile": {
 					"type": "string",
@@ -150,7 +157,7 @@
 					"type": "number",
 					"default": 30,
 					"description": "Number of seconds between logging requests. The value should be no more than 30 seconds, to avoid server side timeouts."
-				},
+				},			
 				"sharptree.maximo.proxy.host": {
 					"type": "string",
 					"default": "",

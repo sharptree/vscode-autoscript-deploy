@@ -27,8 +27,11 @@ ScriptException = Java.type("javax.script.ScriptException");
 
 Integer = Java.type("java.lang.Integer");
 RuntimeException = Java.type("java.lang.RuntimeException");
+Runnable = Java.type("java.lang.Runnable");
 System = Java.type("java.lang.System");
+Thread = Java.type("java.lang.Thread");
 
+Calendar = Java.type("java.util.Calendar");
 HashMap = Java.type("java.util.HashMap");
 
 NoSuchMethodException = Java.type("java.lang.NoSuchMethodException");
@@ -47,6 +50,22 @@ if (typeof httpMethod !== "undefined") {
 }
 
 function main() {
+
+    if (typeof request !== "undefined" && httpMethod == "GET" && request.getQueryParam("deployId")) {
+        var deploying = false;
+
+        try {
+            var bulletinBoardSet = MXServer.getMXServer().getMboSet("BULLETINBOARD", userInfo);
+            deploying = bulletinBoardSet.getMboForUniqueId(request.getQueryParam("deployId")) != null;
+        } finally {
+            _close(bulletinBoardSet);
+        }
+        
+        responseBody = JSON.stringify({ "deploying": deploying });
+        return;
+    }
+
+
     var response = {};
     try {
         checkPermissions("SHARPTREE_UTILS", "DEPLOYSCRIPT");
@@ -110,7 +129,7 @@ function main() {
         // if the script source is available then call the deploy script.
         // This allows the deployScript function to be called from the context directly if the script it loaded from another script.
         if (scriptSource) {
-            var response = { scriptName: deployScript(scriptSource, action) };
+            var response = deployScript(scriptSource, action);
             responseBody = JSON.stringify(response);
         }
     } catch (error) {
@@ -150,7 +169,8 @@ function main() {
     }
 
     response.status = "success";
-    if (requestBody) {
+
+    if (typeof requestBody !=='undefined' && requestBody) {
         responseBody = JSON.stringify(response);
     }
     return;
@@ -158,7 +178,7 @@ function main() {
 
 function deployScript(scriptSource, language) {
     var scriptConfig = getConfigFromScript(scriptSource, language);
-
+    var deployId = -1;
     if (scriptConfig) {
         validateScriptConfig(scriptConfig);
         var autoScriptSet;
@@ -510,29 +530,73 @@ function deployScript(scriptSource, language) {
             } else {
                 var deployScript = ScriptCache.getInstance().getScriptInfo(scriptConfig.autoscript + ".DEPLOY");
                 if (deployScript) {
+                    var bulletinBoardSet = MXServer.getMXServer().getMboSet("BULLETINBOARD", userInfo);
+
+                    try {
+                        var bulletinBoard = bulletinBoardSet.add();
+                        bulletinBoard.setValue("SUBJECT", "Deploy script configuration");
+                        bulletinBoard.setValue("MESSAGE", "Deploy script configuration " + scriptConfig.autoscript);
+                        var calendar = Calendar.getInstance();
+                        calendar.setTime(bulletinBoard.getDate("POSTDATE"));
+                        calendar.add(Calendar.MINUTE, 30);
+                        bulletinBoard.setValue("EXPIREDATE", calendar.getTime());
+                        bulletinBoardSet.save();
+                        deployId = bulletinBoard.getUniqueIDValue();
+                    } finally {
+                        _close(bulletinBoardSet);
+                    }
+
                     var ctx = new HashMap();
                     ctx.put("service", service);
                     ctx.put("request", request);
                     ctx.put("userInfo", userInfo);
                     ctx.put("onDeploy", true);
 
-                    ScriptDriverFactory.getInstance().getScriptDriver(deployScript.getName()).runScript(deployScript.getName(), ctx);
+                    var backgroundUserInfo = userInfo;
+                    var ScriptDeployRunner = Java.extend(Runnable, {
+                        run: function () {
+                            ScriptDriverFactory.getInstance().getScriptDriver(deployScript.getName()).runScript(deployScript.getName(), ctx);
 
-                    if (typeof scriptConfig.deleteDeployScript === "undefined" || scriptConfig.deleteDeployScript == null || scriptConfig.deleteDeployScript) {
-                        var deployAutoScriptSet;
-                        try {
-                            deployAutoScriptSet = MXServer.getMXServer().getMboSet("AUTOSCRIPT", userInfo);
-                            var deploySqlf = new SqlFormat("autoscript = :1");
-                            deploySqlf.setObject(1, "AUTOSCRIPT", "AUTOSCRIPT", deployScript.getName());
+                            var bulletinBoardSet = MXServer.getMXServer().getMboSet("BULLETINBOARD", backgroundUserInfo);
 
-                            deployAutoScriptSet.setWhere(deploySqlf.format());
-                            var deployAutoScript = deployAutoScriptSet.moveFirst();
-                            if (deployAutoScript) {
-                                deployAutoScript.delete();
-                                deployAutoScriptSet.save();
+                            try {
+                                var bulletinBoard = bulletinBoardSet.getMboForUniqueId(deployId);
+                                if (bulletinBoard) {
+                                    bulletinBoard.delete();
+                                    bulletinBoardSet.save();
+                                }
+                            } finally {
+                                _close(bulletinBoardSet);
                             }
-                        } finally {
-                            _close(deployAutoScriptSet);
+                        }
+                    });
+
+                    var scriptDeployRunner = new Thread(new ScriptDeployRunner());
+                    scriptDeployRunner.start();
+                    scriptDeployRunner.join(10000);
+
+                    if (!scriptDeployRunner.isAlive()) {
+                        deployId = -1;
+                        if (
+                            typeof scriptConfig.deleteDeployScript === "undefined" ||
+                            scriptConfig.deleteDeployScript == null ||
+                            scriptConfig.deleteDeployScript
+                        ) {
+                            var deployAutoScriptSet;
+                            try {
+                                deployAutoScriptSet = MXServer.getMXServer().getMboSet("AUTOSCRIPT", userInfo);
+                                var deploySqlf = new SqlFormat("autoscript = :1");
+                                deploySqlf.setObject(1, "AUTOSCRIPT", "AUTOSCRIPT", deployScript.getName());
+
+                                deployAutoScriptSet.setWhere(deploySqlf.format());
+                                var deployAutoScript = deployAutoScriptSet.moveFirst();
+                                if (deployAutoScript) {
+                                    deployAutoScript.delete();
+                                    deployAutoScriptSet.save();
+                                }
+                            } finally {
+                                _close(deployAutoScriptSet);
+                            }
                         }
                     }
                 }
@@ -541,7 +605,11 @@ function deployScript(scriptSource, language) {
             _close(autoScriptSet);
         }
 
-        return scriptConfig.autoscript;
+        var result = { "scriptName": scriptConfig.autoscript };
+        if (deployId > -1) {
+            result.deployid = deployId;
+        }
+        return result;
     } else {
         throw new ScriptError("config_not_found", "Configuration variable scriptConfig was not found in the script.");
     }
@@ -1068,3 +1136,12 @@ function ScriptError(reason, message) {
 ScriptError.prototype = Object.create(Error.prototype);
 ScriptError.prototype.constructor = ScriptError;
 ScriptError.prototype.element;
+
+// eslint-disable-next-line no-unused-vars
+var scriptConfig = {
+    "autoscript": "SHARPTREE.AUTOSCRIPT.DEPLOY",
+    "description": "Sharptree Automation Script Deploy Script",
+    "version": "1.41.0",
+    "active": true,
+    "logLevel": "INFO"
+};

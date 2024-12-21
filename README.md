@@ -15,6 +15,7 @@ The following are settings available under the `Sharptree > Maximo` group.
 | :------------------------------------| :---------------------| :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Allow Untrusted Certs                | false                 | When checked, ignores SSL validation rules.                                                                                                                                   |
 | API Key                              |                       | The Maximo API key that will be used to access Maximo. If provided, the user name and password are ignored if configured.                                                     |
+| Configuration Timeout                | 5                     | The number of minutes to wait for the configuration to complete.                                                                                                              |
 | Context                              | maximo                | The part of the URL that follows the hostname, by default it is `maximo`.                                                                                                     |
 | Custom CA                            |                       | The full chain for the server CA in PEM format.                                                                                                                               |
 | Extract Inspection Forms Location    | Current open folder   | Directory where extracted inspection files will be stored.                                                                                                                    |
@@ -50,6 +51,7 @@ The `password` and `apiKey` attributes will be automatically encrypted on first 
     "password":"The Maximo user's password",
     "apiKey":"A Maximo API key",
     "allowUntrustedCerts":true|false,
+    "configurationTimeout": 5,
     "timeout":30,
     "ca":"A PEM formatted CA",
     "maxauthOnly":true|false,
