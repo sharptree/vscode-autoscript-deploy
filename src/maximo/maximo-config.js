@@ -9,6 +9,7 @@ export default class MaximoConfig {
         useSSL = true,
         context = 'maximo',
         allowUntrustedCerts = false,
+        configurationTimeout = 5000 * 60000, // 5 minutes
         connectTimeout = 5000,
         responseTimeout = 30000,
         lean = true,
@@ -29,7 +30,8 @@ export default class MaximoConfig {
         this.host = host;
         this.port = port;
         this.useSSL = useSSL;
-        this.context = context;
+        this.configurationTimeout = configurationTimeout;
+        this.context = context;        
         this.allowUntrustedCerts = allowUntrustedCerts;
         this.connectTimeout = connectTimeout;
         this.responseTimeout = responseTimeout;

@@ -415,11 +415,11 @@ export async function getMaximoConfig() {
         let useSSL = typeof localConfig.useSSL !== 'undefined' ? localConfig.useSSL : settings.get('maximo.useSSL');
         let port = localConfig.port ?? settings.get('maximo.port');
         let apiKey = localConfig.apiKey ?? settings.get('maximo.apiKey');
-
-        let allowUntrustedCerts =
-            typeof localConfig.allowUntrustedCerts !== 'undefined' ? localConfig.allowUntrustedCerts : settings.get('maximo.allowUntrustedCerts');
+        
+        let allowUntrustedCerts = typeof localConfig.allowUntrustedCerts !== 'undefined' ? localConfig.allowUntrustedCerts : settings.get('maximo.allowUntrustedCerts');
         let maximoContext = localConfig.context ?? settings.get('maximo.context');
         let timeout = localConfig.timeout ?? settings.get('maximo.timeout');
+        let configurationTimeout = localConfig.configurationTimeout ?? settings.get('maximo.configurationTimeout');
         let ca = localConfig.ca ?? settings.get('maximo.customCA');
         let maxauthOnly = typeof localConfig.maxauthOnly !== 'undefined' ? localConfig.maxauthOnly : settings.get('maximo.maxauthOnly');
         let extractLocation = localConfig.extractLocation ?? settings.get('maximo.extractLocation');
@@ -429,7 +429,7 @@ export async function getMaximoConfig() {
         let proxyHost = localConfig.proxyHost ?? settings.get('maximo.proxy.host');
         let proxyPort = localConfig.proxyPort ?? settings.get('maximo.proxy.port');
         let proxyUsername = localConfig.proxyUsername ?? settings.get('maximo.proxy.user');
-        let proxyPassword = localConfig.proxyPassword ?? settings.get('maximo.proxy.password');
+        let proxyPassword = localConfig.proxyPassword ?? settings.get('maximo.proxy.password');        
 
         // make sure we have all the settings.
         if (!validateSettings({ host: host, username: userName, port: port, apiKey: apiKey })) {
@@ -487,6 +487,7 @@ export async function getMaximoConfig() {
             connectTimeout: timeout * 1000,
             responseTimeout: timeout * 1000,
             allowUntrustedCerts: allowUntrustedCerts,
+            configurationTimeout: configurationTimeout * 60000,
             ca: ca,
             maxauthOnly: maxauthOnly,
             apiKey: apiKey,
