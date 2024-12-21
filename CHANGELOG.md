@@ -1,4 +1,8 @@
 # Release Notes
+## 1.17.0
+- Add support for specifying a configuration script timeout.
+- Add CSRF support.
+  
 ## 1.16.0
 - Fixed reports.xml multilookup value from true/false to 1/0
 - Added support for specifying a proxy.

@@ -1136,12 +1136,3 @@ function ScriptError(reason, message) {
 ScriptError.prototype = Object.create(Error.prototype);
 ScriptError.prototype.constructor = ScriptError;
 ScriptError.prototype.element;
-
-// eslint-disable-next-line no-unused-vars
-var scriptConfig = {
-    "autoscript": "SHARPTREE.AUTOSCRIPT.DEPLOY",
-    "description": "Sharptree Automation Script Deploy Script",
-    "version": "1.41.0",
-    "active": true,
-    "logLevel": "INFO"
-};
