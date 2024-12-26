@@ -675,8 +675,9 @@ export default class MaximoClient {
 
         var nextProgress = 50;
         if(result.data && result.data.status == 'success' && typeof result.data.deployid !== 'undefined') {
-            progress.report({ increment: 25, message: `Waiting for ${fileName} post deploy configuration to complete` });
             nextProgress = 25;
+            progress.report({ increment: nextProgress, message: `Waiting for ${fileName} post deploy configuration to complete` });
+            
             const checkOptions = {
                 url: 'script/sharptree.autoscript.deploy' ,
                 method: MaximoClient.Method.GET,
@@ -701,10 +702,15 @@ export default class MaximoClient {
                     throw new MaximoError(`The script deployed, but the configuration script exceed the time out of ${minutes} minute${minutes>1?'s':''}. The configuration script may continue to execute in the background.`);
                 }
             }
+
+            progress.report({ increment: nextProgress, message: `Deploying script ${fileName}` });
+            return checkResult.data;
+        }else{
+            progress.report({ increment: nextProgress, message: `Deploying script ${fileName}` });
+            return result.data;
         }
 
-        progress.report({ increment: nextProgress, message: `Deploying script ${fileName}` });
-        return result.data;
+    
     }
     async postScreen(screen, progress, fileName) {
         if (!this._isConnected) {

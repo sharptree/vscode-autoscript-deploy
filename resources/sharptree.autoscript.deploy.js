@@ -50,22 +50,6 @@ if (typeof httpMethod !== "undefined") {
 }
 
 function main() {
-
-    if (typeof request !== "undefined" && httpMethod == "GET" && request.getQueryParam("deployId")) {
-        var deploying = false;
-
-        try {
-            var bulletinBoardSet = MXServer.getMXServer().getMboSet("BULLETINBOARD", userInfo);
-            deploying = bulletinBoardSet.getMboForUniqueId(request.getQueryParam("deployId")) != null;
-        } finally {
-            _close(bulletinBoardSet);
-        }
-        
-        responseBody = JSON.stringify({ "deploying": deploying });
-        return;
-    }
-
-
     var response = {};
     try {
         checkPermissions("SHARPTREE_UTILS", "DEPLOYSCRIPT");
@@ -115,13 +99,18 @@ function main() {
                 deployConfig(JSON.parse(requestBody));
                 return;
             }
-        } else if (httpMethod === "GET") {
-            action = getRequestAction();
-            if (action) {
-                if (action.startsWith("version")) {
-                    var response = { version: getScriptVersion("SHARPTREE.AUTOSCRIPT.DEPLOY") };
-                    responseBody = JSON.stringify(response);
-                    return;
+        } else if (typeof request !== "undefined" && typeof httpMethod !== "undefined" && httpMethod === "GET") {
+            if (request.getQueryParam("deployId")) {
+                responseBody = JSON.stringify(getDeploymentResult(request.getQueryParam("deployId")));
+                return;
+            } else {
+                action = getRequestAction();
+                if (action) {
+                    if (action.startsWith("version")) {
+                        var response = { version: getScriptVersion("SHARPTREE.AUTOSCRIPT.DEPLOY") };
+                        responseBody = JSON.stringify(response);
+                        return;
+                    }
                 }
             }
         }
@@ -168,9 +157,11 @@ function main() {
         return;
     }
 
-    response.status = "success";
+    if(typeof response.status === "undefined" || response.status == null){ 
+        response.status = "success";
+    }
 
-    if (typeof requestBody !=='undefined' && requestBody) {
+    if (typeof requestBody !== "undefined" && requestBody) {
         responseBody = JSON.stringify(response);
     }
     return;
@@ -179,6 +170,7 @@ function main() {
 function deployScript(scriptSource, language) {
     var scriptConfig = getConfigFromScript(scriptSource, language);
     var deployId = -1;
+    var result = { "scriptName": scriptConfig.autoscript };
     if (scriptConfig) {
         validateScriptConfig(scriptConfig);
         var autoScriptSet;
@@ -555,18 +547,51 @@ function deployScript(scriptSource, language) {
                     var backgroundUserInfo = userInfo;
                     var ScriptDeployRunner = Java.extend(Runnable, {
                         run: function () {
-                            ScriptDriverFactory.getInstance().getScriptDriver(deployScript.getName()).runScript(deployScript.getName(), ctx);
-
                             var bulletinBoardSet = MXServer.getMXServer().getMboSet("BULLETINBOARD", backgroundUserInfo);
-
+                            var bulletinBoard = bulletinBoardSet.getMboForUniqueId(deployId);
                             try {
-                                var bulletinBoard = bulletinBoardSet.getMboForUniqueId(deployId);
+                                
+                                ScriptDriverFactory.getInstance().getScriptDriver(deployScript.getName()).runScript(deployScript.getName(), ctx);
+
                                 if (bulletinBoard) {
                                     bulletinBoard.delete();
                                     bulletinBoardSet.save();
                                 }
+                            } catch (error) {
+                                if (bulletinBoard) {
+                                    bulletinBoard.setValue("STATUS", "REJECTED");
+                                    bulletinBoard.setValue("MESSAGE", error.getMessage());
+                                    bulletinBoardSet.save();
+                                }
+                                Java.type("java.lang.System").out.println(error);
+                                if(typeof service !== 'undefined') {
+                                    service.log_error("Script Deployment Error", error);
+                                }
                             } finally {
                                 _close(bulletinBoardSet);
+
+                                // remove the deploy script.
+                                if (
+                                    typeof scriptConfig.deleteDeployScript === "undefined" ||
+                                    scriptConfig.deleteDeployScript == null ||
+                                    scriptConfig.deleteDeployScript
+                                ) {
+                                    var deployAutoScriptSet;
+                                    try {
+                                        deployAutoScriptSet = MXServer.getMXServer().getMboSet("AUTOSCRIPT", userInfo);
+                                        var deploySqlf = new SqlFormat("autoscript = :1");
+                                        deploySqlf.setObject(1, "AUTOSCRIPT", "AUTOSCRIPT", deployScript.getName());
+
+                                        deployAutoScriptSet.setWhere(deploySqlf.format());
+                                        var deployAutoScript = deployAutoScriptSet.moveFirst();
+                                        if (deployAutoScript) {
+                                            deployAutoScript.delete();
+                                            deployAutoScriptSet.save();
+                                        }
+                                    } finally {
+                                        _close(deployAutoScriptSet);
+                                    }
+                                }
                             }
                         }
                     });
@@ -575,43 +600,47 @@ function deployScript(scriptSource, language) {
                     scriptDeployRunner.start();
                     scriptDeployRunner.join(10000);
 
-                    if (!scriptDeployRunner.isAlive()) {
-                        deployId = -1;
-                        if (
-                            typeof scriptConfig.deleteDeployScript === "undefined" ||
-                            scriptConfig.deleteDeployScript == null ||
-                            scriptConfig.deleteDeployScript
-                        ) {
-                            var deployAutoScriptSet;
-                            try {
-                                deployAutoScriptSet = MXServer.getMXServer().getMboSet("AUTOSCRIPT", userInfo);
-                                var deploySqlf = new SqlFormat("autoscript = :1");
-                                deploySqlf.setObject(1, "AUTOSCRIPT", "AUTOSCRIPT", deployScript.getName());
-
-                                deployAutoScriptSet.setWhere(deploySqlf.format());
-                                var deployAutoScript = deployAutoScriptSet.moveFirst();
-                                if (deployAutoScript) {
-                                    deployAutoScript.delete();
-                                    deployAutoScriptSet.save();
-                                }
-                            } finally {
-                                _close(deployAutoScriptSet);
-                            }
-                        }
+                    result = getDeploymentResult(deployId);
+                    if (result.deploying) {
+                        result.deployid = deployId;                        
                     }
+                    result.scriptName = scriptConfig.autoscript;
+                    return result;
                 }
             }
         } finally {
             _close(autoScriptSet);
         }
 
-        var result = { "scriptName": scriptConfig.autoscript };
-        if (deployId > -1) {
-            result.deployid = deployId;
-        }
         return result;
     } else {
         throw new ScriptError("config_not_found", "Configuration variable scriptConfig was not found in the script.");
+    }
+}
+
+function getDeploymentResult(deployId) {
+    try {
+        var bulletinBoardSet = MXServer.getMXServer().getMboSet("BULLETINBOARD", userInfo);
+        var entry = bulletinBoardSet.getMboForUniqueId(deployId);
+
+        if (entry) {
+            if (entry.getString("STATUS") == "REJECTED") {     
+                var message = entry.getString("MESSAGE");
+                entry.delete();
+                bulletinBoardSet.save();   
+                return {
+                    "deploying": false,
+                    "status": "error",
+                    "message": message
+                };
+            } else {
+                return { "deploying": true, "status":"success" };
+            }
+        } else {
+            return { "deploying": false };
+        }
+    } finally {
+        _close(bulletinBoardSet);
     }
 }
 
@@ -1122,7 +1151,9 @@ function _close(set) {
         try {
             set.cleanup();
             set.close();
-        } catch (ignore) {}
+        } catch (ignore) {
+            // ignored
+        }
     }
 }
 
