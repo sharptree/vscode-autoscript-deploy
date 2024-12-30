@@ -392,6 +392,6 @@ Pressing `ctrl+space` will bring up help information for each snippet, describin
 # Requirements
 
 - Maximo 7.6.0.8 or higher, Maximo Application Suite 8 is supported.
-- Files must have a `.js` of `.py` extension for scripts, `xml` for screens, `rptdesign` for BIRT reports and `json` for inspection forms.
+- Files must have a `.js` of `.py` extension for scripts, `.xml` for screens, `.rptdesign` for BIRT reports and `.json` for inspection forms.
 - This extension requires Maximo to support Nashorn scripts, which requires Java 8.
 - Initial configuration must be done by a user in the administrative group defined by `ADMINGROUP` `MAXVARS` entry. Typically this is `MAXADMIN`.
