@@ -1,4 +1,7 @@
 # Release Notes
+## 1.17.1
+- Enhanced error reporting on long running configuration tasks.
+  
 ## 1.17.0
 - Add support for specifying a configuration script timeout.
 - Add CSRF support.
