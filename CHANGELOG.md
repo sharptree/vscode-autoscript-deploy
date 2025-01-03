@@ -1,4 +1,7 @@
 # Release Notes
+## 1.17.2
+- Fixed CSRF handling during the installation bootstrap process.
+  
 ## 1.17.1
 - Enhanced error reporting on long running configuration tasks.
   
