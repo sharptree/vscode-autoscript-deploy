@@ -1353,6 +1353,10 @@ export default class MaximoClient {
 
         let headers = new Map();
         headers['Content-Type'] = 'application/json';
+        
+        if(this._csrfToken){
+            headers['csrftoken'] = this._csrfToken;
+        }
 
         // update if a script uri was found.
         if (scriptURI) {
@@ -1364,9 +1368,7 @@ export default class MaximoClient {
             };
 
             headers['x-method-override'] = 'PATCH';
-            if(this._csrfToken){
-                headers['csrftoken'] = this._csrfToken;
-            }
+    
             let options = {
                 url: scriptURI,
                 method: MaximoClient.Method.POST,
@@ -1458,6 +1460,10 @@ export default class MaximoClient {
             const headers = new Map();
             headers['Content-Type'] = 'application/json';
 
+            if(this._csrfToken){
+                headers['csrftoken'] = this._csrfToken;
+            }
+            
             // eslint-disable-next-line no-undef
             let source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.install.js')).toString();
 
@@ -1529,8 +1535,14 @@ export default class MaximoClient {
             return result.data;
         } finally {
             if (refUri) {
+                const headers = new Map();
+                headers['Content-Type'] = 'application/json';
+                if(this._csrfToken){
+                    headers['csrftoken'] = this._csrfToken;
+                }
                 let options = {
                     url: refUri,
+                    headers: { common: headers },
                     method: MaximoClient.Method.DELETE
                 };
 
