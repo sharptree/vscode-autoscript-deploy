@@ -1,4 +1,8 @@
 # Release Notes
+## 1.17.3
+- Support for MAS 9 log streaming.
+- Handling for cleaning up log streaming sessions if a client disconnects unexpectedly.
+  
 ## 1.17.2
 - Fixed CSRF handling during the installation bootstrap process.
   
