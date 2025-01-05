@@ -4,26 +4,22 @@
 /* eslint-disable no-undef */
 // @ts-nocheck
 
-RESTRequest = Java.type("com.ibm.tivoli.oslc.RESTRequest");
+var Thread = Java.type("java.lang.Thread");
 
-Thread = Java.type("java.lang.Thread");
-
-// eslint-disable-next-line no-global-assign
-Date = Java.type("java.util.Date");
-
-System = Java.type("java.lang.System");
+var System = Java.type("java.lang.System");
 
 // eslint-disable-next-line no-global-assign
-File = Java.type("java.io.File");
-RandomAccessFile = Java.type("java.io.RandomAccessFile");
+var File = Java.type("java.io.File");
+var RandomAccessFile = Java.type("java.io.RandomAccessFile");
 
-BufferedReader = Java.type("java.io.BufferedReader");
-OutputStreamWriter = Java.type("java.io.OutputStreamWriter");
-InputStreamReader = Java.type("java.io.InputStreamReader");
+var OutputStreamWriter = Java.type("java.io.OutputStreamWriter");
 
-SqlFormat = Java.type("psdi.mbo.SqlFormat");
-MXServer = Java.type("psdi.server.MXServer");
-Version = Java.type("psdi.util.Version");
+var FixedLoggers = Java.type("psdi.util.logging.FixedLoggers");
+
+var MboConstants = Java.type("psdi.mbo.MboConstants");
+var SqlFormat = Java.type("psdi.mbo.SqlFormat");
+var MXServer = Java.type("psdi.server.MXServer");
+var Version = Java.type("psdi.util.Version");
 
 var log4ShellFix = true;
 try {
@@ -60,7 +56,22 @@ function main() {
             responseBody = JSON.stringify(result);
             return;
         } else {
-            // try {
+            // Check for permissions to do remote log streaming.
+            if (!hasAppOption(SECURITY_APP, SECURITY_OPTION) && !isAdmin()) {
+                responseBody = JSON.stringify({
+                    "status": "error",
+                    "message":
+                        "The user " +
+                        userInfo.getUserName() +
+                        " does not have permission to stream the Maximo log. The security option " +
+                        SECURITY_OPTION +
+                        " on the " +
+                        SECURITY_APP +
+                        " application is required."
+                });
+                return;
+            }
+            
             var timeout = request.getQueryParam("timeout");
 
             //TODO check that timeout is a number
@@ -69,13 +80,33 @@ function main() {
             }
 
             timeout = timeout * 1000;
-
-            if (Version.majorVersion == "8") {
-                _handleV8(timeout);
-            } else if (Version.majorVersion == "7") {
-                _handleV7(timeout);
-            } else {
-                responseBody = JSON.stringify({ "status": "error", "message": "The major Maximo version " + Version.majorVersion + " is not supported." });
+            try {
+                if (Version.majorVersion == "8" || Version.majorVersion == "9") {
+                    _handleV8(timeout);
+                } else if (Version.majorVersion == "7") {
+                    _handleV7(timeout);
+                } else {
+                    responseBody = JSON.stringify({ "status": "error", "message": "The major Maximo version " + Version.majorVersion + " is not supported." });
+                }
+            } finally {
+                try{
+                    // test if the client output stream is still available.  If not, close the session.
+                    servletOutputStream.write(0);                    
+                }catch(error){
+                    // if an error occurs, make sure that the user session is closed.
+                    var maxSessionSet = MXServer.getMXServer().getMboSet("MAXSESSION", MXServer.getMXServer().getSystemUserInfo());
+                    try{
+                        var maxSession = maxSessionSet.getMboForUniqueId(userInfo.getMaxSessionID());
+                        Java.type("java.lang.System").out.println("Session: " + maxSession);
+                        if(maxSession){
+                            FixedLoggers.MAXIMOLOGGER.error("Closing user session due to client disconnect while streaming the Maximo log for user: " + userInfo.getUserName());
+                            maxSession.setValue("logout", true, MboConstants.NOACCESSCHECK|MboConstants.NOVALIDATION); 
+                        }
+                        maxSessionSet.save();
+                    }finally{
+                        _close(maxSessionSet);
+                    }
+                }                
             }
         }
     }
@@ -146,22 +177,6 @@ function _handleV8(timeout) {
 
 function _handleV7(timeout) {
     var appenderName = APPENDER_NAME + "_" + userInfo.getUserName();
-
-    // Check for permissions to do remote log streaming.
-    if (!hasAppOption(SECURITY_APP, SECURITY_OPTION) && !isAdmin()) {
-        responseBody = JSON.stringify({
-            "status": "error",
-            "message":
-                "The user " +
-                userInfo.getUserName() +
-                " does not have permission to stream the Maximo log. The security option " +
-                SECURITY_OPTION +
-                " on the " +
-                SECURITY_APP +
-                " application is required."
-        });
-        return;
-    }
 
     var response = request.getHttpServletResponse();
     var output = response.getOutputStream();
@@ -333,7 +348,9 @@ function _close(set) {
         try {
             set.cleanup();
             set.close();
-        } catch (ignored) {}
+        } catch (ignored) {
+            // Ignore the exception.
+        }
     }
 }
 
