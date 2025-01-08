@@ -1,4 +1,9 @@
 # Release Notes
+## 1.18.0
+- Deployments are now cancellable.
+- Logging handles disconnects properly.
+- Deployment scripts can now provide progress updates using the deployId.
+  
 ## 1.17.3
 - Support for MAS 9 log streaming.
 - Handling for cleaning up log streaming sessions if a client disconnects unexpectedly.
