@@ -33,8 +33,8 @@ export default class MaximoClient {
         // keep a reference to the config for later use.
         this.config = config;
 
-        this.requiredScriptVersion = '1.44.0';
-        this.currentScriptVersion = '1.44.0';
+        this.requiredScriptVersion = '1.45.0';
+        this.currentScriptVersion = '1.45.0';
 
         this.scriptEndpoint = 'mxscript';
 
@@ -69,7 +69,7 @@ export default class MaximoClient {
                         port: this.config.proxyPort
                     };
 
-                    if(this.config.proxyUsername && this.config.proxyPassword) {
+                    if (this.config.proxyUsername && this.config.proxyPassword) {
                         request.proxy.auth = {
                             username: this.config.proxyUsername,
                             password: this.config.proxyPassword
@@ -83,21 +83,20 @@ export default class MaximoClient {
 
                     if (this.config.apiKey) {
                         if (request.params) {
-                            request.params['apikey'] =  config.apiKey;
+                            request.params['apikey'] = config.apiKey;
                         } else {
                             request.params = { 'apikey': config.apiKey };
                         }
                     }
 
                     if (request.params) {
-                        request.params['csrf'] ='1';
-                    }else{
-                        request.params = {'csrf' :'1'};
-                    }                        
-                    
+                        request.params['csrf'] = '1';
+                    } else {
+                        request.params = { 'csrf': '1' };
+                    }
 
                     request.maxRedirects = 0;
-                    
+
                     request.validateStatus = function (status) {
                         return status == 200 || status == 302;
                     };
@@ -107,19 +106,18 @@ export default class MaximoClient {
                     request.headers['x-public-uri'] = this.config.baseURL;
 
                     if (this.config.apiKey) {
-                        if(request.params) {
+                        if (request.params) {
                             request.params['apikey'] = config.apiKey;
-                            request.params['lean'] =  this.config.lean ? 'true' : 'false';
-                        }else{
+                            request.params['lean'] = this.config.lean ? 'true' : 'false';
+                        } else {
                             request.params = { 'lean': this.config.lean ? 'true' : 'false', 'apikey': this.config.apiKey };
                         }
                     } else {
-                        if(request.params) {
+                        if (request.params) {
                             request.params['lean'] = this.config.lean ? 'true' : 'false';
-                        }else{
+                        } else {
                             request.params = { 'lean': this.config.lean ? 'true' : 'false' };
                         }
-                        
                     }
                 }
 
@@ -168,8 +166,8 @@ export default class MaximoClient {
                         this.jar.setCookieSync(cookie, response.request.protocol + '//' + response.request.host);
                     });
                 }
-                
-                if(response.headers['csrftoken']) {
+
+                if (response.headers['csrftoken']) {
                     this._csrfToken = response.headers['csrftoken'];
                 }
 
@@ -635,7 +633,7 @@ export default class MaximoClient {
         }
     }
 
-    async postScript(script, progress, fileName, deployScript) {
+    async postScript(script, progress, fileName, deployScript, cancelToken) {
         if (!this._isConnected) {
             await this.connect();
         }
@@ -674,43 +672,76 @@ export default class MaximoClient {
         const result = await this.client.request(options);
 
         var nextProgress = 50;
-        if(result.data && result.data.status == 'success' && typeof result.data.deployid !== 'undefined') {
+        var deployId = null;
+
+        if (cancelToken) {
+            cancelToken.onCancellationRequested(async () => {
+                if (deployId != null) {
+                    const cancelOptions = {
+                        url: 'script/sharptree.autoscript.deploy',
+                        method: MaximoClient.Method.PUT,
+                        headers: {                            
+                            Accept: 'application/json'
+                        },
+                        params: { 'deployId': result.data.deployid, 'cancel': 'true' }
+                    };
+
+                    // @ts-ignore
+                    this.client.request(cancelOptions);
+                }
+            });
+        }
+
+        if (result.data && result.data.status == 'success' && typeof result.data.deployid !== 'undefined') {
             nextProgress = 25;
+            deployId = result.data.deployid;
+
             progress.report({ increment: nextProgress, message: `Waiting for ${fileName} post deploy configuration to complete` });
-            
+
             const checkOptions = {
-                url: 'script/sharptree.autoscript.deploy' ,
+                url: 'script/sharptree.autoscript.deploy',
                 method: MaximoClient.Method.GET,
                 headers: {
                     'Content-Type': 'text/plain',
                     Accept: 'application/json'
                 },
-                params: {'deployId' :result.data.deployid},
-                data: script
+                params: { 'deployId': result.data.deployid }
             };
+
+            // give the server a second to process the request.
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+
             // @ts-ignore
             var checkResult = await this.client.request(checkOptions);
             var checkCount = 0;
 
-            while(checkResult.data.deploying) {
+            while (checkResult.data.deploying) {
                 checkCount++;
                 await new Promise((resolve) => setTimeout(resolve, 5000));
+
                 // @ts-ignore
-                checkResult = await this.client.request(checkOptions);                            
-                if(checkCount * 5000 > this.config.configurationTimeout) {
-                    var minutes  = this.config.configurationTimeout / 60000;
-                    throw new MaximoError(`The script deployed, but the configuration script exceed the time out of ${minutes} minute${minutes>1?'s':''}. The configuration script may continue to execute in the background.`);
+                checkResult = await this.client.request(checkOptions);
+                if (checkCount * 5000 > this.config.configurationTimeout) {
+                    var minutes = this.config.configurationTimeout / 60000;
+                    throw new MaximoError(
+                        `The script deployed, but the configuration script exceed the time out of ${minutes} minute${
+                            minutes > 1 ? 's' : ''
+                        }. The configuration script may continue to execute in the background.`
+                    );
+                } else {
+                    if (typeof checkResult.data.progress !== 'undefined' && Array.isArray(checkResult.data.progress) && checkResult.data.progress.length > 0) {
+                        const lastMessage = checkResult.data.progress[checkResult.data.progress.length - 1];
+                        progress.report({ increment: 0, message: `Waiting for ${fileName} post deploy configuration to complete: ${lastMessage.message}` });
+                    }
                 }
             }
 
             progress.report({ increment: nextProgress, message: `Deploying script ${fileName}` });
             return checkResult.data;
-        }else{
+        } else {
             progress.report({ increment: nextProgress, message: `Deploying script ${fileName}` });
             return result.data;
         }
-
-    
     }
     async postScreen(screen, progress, fileName) {
         if (!this._isConnected) {
@@ -1059,6 +1090,7 @@ export default class MaximoClient {
                                     if (data && data instanceof Uint8Array) {
                                         let decoder = new TextDecoder('utf-8');
                                         let sData = decoder.decode(data);
+
                                         if (sData.startsWith('log-lkp=')) {
                                             internalLKP = sData.substring(8);
                                         } else if (sData.indexOf('WARNING: Cannot set status. Response already committed.') > 0) {
@@ -1066,6 +1098,7 @@ export default class MaximoClient {
                                         } else if (sData === '') {
                                             // do nothing on a blank line
                                         } else {
+                                            sData = sData.replace(/\s{50}/g, ' ');
                                             fs.appendFileSync(filePath, sData);
                                         }
                                     }
@@ -1353,8 +1386,8 @@ export default class MaximoClient {
 
         let headers = new Map();
         headers['Content-Type'] = 'application/json';
-        
-        if(this._csrfToken){
+
+        if (this._csrfToken) {
             headers['csrftoken'] = this._csrfToken;
         }
 
@@ -1368,7 +1401,7 @@ export default class MaximoClient {
             };
 
             headers['x-method-override'] = 'PATCH';
-    
+
             let options = {
                 url: scriptURI,
                 method: MaximoClient.Method.POST,
@@ -1460,10 +1493,10 @@ export default class MaximoClient {
             const headers = new Map();
             headers['Content-Type'] = 'application/json';
 
-            if(this._csrfToken){
+            if (this._csrfToken) {
                 headers['csrftoken'] = this._csrfToken;
             }
-            
+
             // eslint-disable-next-line no-undef
             let source = fs.readFileSync(path.resolve(__dirname, '../resources/sharptree.autoscript.install.js')).toString();
 
@@ -1537,7 +1570,7 @@ export default class MaximoClient {
             if (refUri) {
                 const headers = new Map();
                 headers['Content-Type'] = 'application/json';
-                if(this._csrfToken){
+                if (this._csrfToken) {
                     headers['csrftoken'] = this._csrfToken;
                 }
                 let options = {

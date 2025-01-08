@@ -18,6 +18,7 @@ var FixedLoggers = Java.type("psdi.util.logging.FixedLoggers");
 
 var MboConstants = Java.type("psdi.mbo.MboConstants");
 var SqlFormat = Java.type("psdi.mbo.SqlFormat");
+var SecurityService = Java.type("psdi.security.SecurityService");
 var MXServer = Java.type("psdi.server.MXServer");
 var Version = Java.type("psdi.util.Version");
 
@@ -91,13 +92,16 @@ function main() {
             } finally {
                 try{
                     // test if the client output stream is still available.  If not, close the session.
-                    servletOutputStream.write(0);                    
+                    var response = request.getHttpServletResponse();
+                    response.getOutputStream().print(0);                    
                 }catch(error){
+                    MXServer.getMXServer().lookup("SECURITY").disconnectUser(userInfo.getUserName(), userInfo.getMaxSessionID(),SecurityService.BROWSER_TIMEOUT , MXServer.getMXServer().getSystemUserInfo().getUserName());
+
                     // if an error occurs, make sure that the user session is closed.
                     var maxSessionSet = MXServer.getMXServer().getMboSet("MAXSESSION", MXServer.getMXServer().getSystemUserInfo());
                     try{
                         var maxSession = maxSessionSet.getMboForUniqueId(userInfo.getMaxSessionID());
-                        Java.type("java.lang.System").out.println("Session: " + maxSession);
+                        
                         if(maxSession){
                             FixedLoggers.MAXIMOLOGGER.error("Closing user session due to client disconnect while streaming the Maximo log for user: " + userInfo.getUserName());
                             maxSession.setValue("logout", true, MboConstants.NOACCESSCHECK|MboConstants.NOVALIDATION); 

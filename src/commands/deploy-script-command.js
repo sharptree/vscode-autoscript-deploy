@@ -57,11 +57,13 @@ export default async function deployScript(client, filePath, script) {
             }
         }
 
-        await window.withProgress({ cancellable: false, title: 'Script', location: ProgressLocation.Notification }, async (progress) => {
+        await window.withProgress({ cancellable: true, title: 'Script', location: ProgressLocation.Notification}, async (progress, token) => {
             progress.report({ message: `Deploying script ${fileName}`, increment: 0 });
 
             await new Promise((resolve) => setTimeout(resolve, 500));
-            let result = await client.postScript(script, progress, fileName, scriptDeploy);
+
+
+            let result = await client.postScript(script, progress, fileName, scriptDeploy, token);
 
             if (result) {
                 if (result.status === 'error') {
@@ -69,6 +71,12 @@ export default async function deployScript(client, filePath, script) {
                         window.showErrorMessage(result.message, { modal: true });
                     } else if (result.cause) {
                         window.showErrorMessage(`Error: ${JSON.stringify(result.cause)}`, { modal: true });
+                    }else if (result.error) {
+                        if(result.error.startsWith('Error:')){
+                            window.showErrorMessage(JSON.stringify(result.error), { modal: true });
+                        }else{
+                            window.showErrorMessage(`Error: ${JSON.stringify(result.error)}`, { modal: true });
+                        }
                     } else {
                         window.showErrorMessage('An unknown error occurred: ' + JSON.stringify(result), { modal: true });
                     }
