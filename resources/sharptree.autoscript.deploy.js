@@ -99,17 +99,34 @@ function main() {
                 deployConfig(JSON.parse(requestBody));
                 return;
             }
-        } else if (typeof request !== "undefined" && typeof httpMethod !== "undefined" && httpMethod === "GET") {
-            if (request.getQueryParam("deployId")) {
-                responseBody = JSON.stringify(getDeploymentResult(request.getQueryParam("deployId")));
-                return;
-            } else {
-                action = getRequestAction();
-                if (action) {
-                    if (action.startsWith("version")) {
-                        var response = { version: getScriptVersion("SHARPTREE.AUTOSCRIPT.DEPLOY") };
-                        responseBody = JSON.stringify(response);
+        } else if (typeof request !== "undefined" && typeof httpMethod !== "undefined") {
+            if (httpMethod === "GET") {
+                if (request.getQueryParam("deployId")) {
+                    responseBody = JSON.stringify(getDeploymentResult(request.getQueryParam("deployId")));
+                    return;
+                } else {
+                    action = getRequestAction();
+                    if (action) {
+                        if (action.startsWith("version")) {
+                            var response = { version: getScriptVersion("SHARPTREE.AUTOSCRIPT.DEPLOY") };
+                            responseBody = JSON.stringify(response);
+                            return;
+                        }
+                    }
+                }
+            } else if (httpMethod == "PUT") {
+                if (request.getQueryParam("deployId") && request.getQueryParam("cancel") == "true") {
+                    var bulletinBoardSet = MXServer.getMXServer().getMboSet("BULLETINBOARD", userInfo);
+                    try {
+                        var bulletinBoard = bulletinBoardSet.getMboForUniqueId(request.getQueryParam("deployId"));
+                        if (bulletinBoard) {
+                            bulletinBoard.delete();
+                            bulletinBoardSet.save();
+                        }
+                        responseBody = JSON.stringify({ "deploying": false, "status": "success" });
                         return;
+                    } finally {
+                        _close(bulletinBoardSet);
                     }
                 }
             }
@@ -157,7 +174,7 @@ function main() {
         return;
     }
 
-    if(typeof response.status === "undefined" || response.status == null){ 
+    if (typeof response.status === "undefined" || response.status == null) {
         response.status = "success";
     }
 
@@ -526,8 +543,15 @@ function deployScript(scriptSource, language) {
 
                     try {
                         var bulletinBoard = bulletinBoardSet.add();
-                        bulletinBoard.setValue("SUBJECT", "Deploy script configuration");
-                        bulletinBoard.setValue("MESSAGE", "Deploy script configuration " + scriptConfig.autoscript);
+                        bulletinBoard.setValue("SUBJECT", "Deploy script configuration " + scriptConfig.autoscript);
+                        bulletinBoard.setValue("MESSAGE", "Deployment progress is being tracked in the associated Communication Log.");
+                        var progress = {
+                            "description": "Deploying script configuration " + scriptConfig.autoscript,
+                            "progress": []
+                        };
+                        var commlog = bulletinBoard.getMboSet("COMMLOG").add();
+                        commlog.setValue("SENDFROM", service.getProperty("mxe.adminEmail"));
+                        commlog.setValue("MESSAGE", JSON.stringify(progress, null, 4));
                         var calendar = Calendar.getInstance();
                         calendar.setTime(bulletinBoard.getDate("POSTDATE"));
                         calendar.add(Calendar.MINUTE, 30);
@@ -543,28 +567,39 @@ function deployScript(scriptSource, language) {
                     ctx.put("request", request);
                     ctx.put("userInfo", userInfo);
                     ctx.put("onDeploy", true);
+                    ctx.put("deployId", deployId);
 
                     var backgroundUserInfo = userInfo;
                     var ScriptDeployRunner = Java.extend(Runnable, {
                         run: function () {
                             var bulletinBoardSet = MXServer.getMXServer().getMboSet("BULLETINBOARD", backgroundUserInfo);
-                            var bulletinBoard = bulletinBoardSet.getMboForUniqueId(deployId);
+
                             try {
-                                
                                 ScriptDriverFactory.getInstance().getScriptDriver(deployScript.getName()).runScript(deployScript.getName(), ctx);
 
+                                var bulletinBoard = bulletinBoardSet.getMboForUniqueId(deployId);
                                 if (bulletinBoard) {
                                     bulletinBoard.delete();
                                     bulletinBoardSet.save();
                                 }
                             } catch (error) {
+                                var bulletinBoard = bulletinBoardSet.getMboForUniqueId(deployId);
                                 if (bulletinBoard) {
+                                    var progress = JSON.parse(bulletinBoard.getString("COMMLOG.MESSAGE"));
+                                    
+                                    if(error.getErrorGroup() == "script" && error.getErrorKey() == "errorrunningscript"){
+                                        progress.error =  Java.type("psdi.util.MXExceptionMediator").getMessage(error.getDetail(), MXServer.getMXServer().getBaseLang()) + " of script " + error.getParameters()[0];
+                                    }else{
+                                        progress.error = error.getMessage();
+                                    }
+                                    
                                     bulletinBoard.setValue("STATUS", "REJECTED");
-                                    bulletinBoard.setValue("MESSAGE", error.getMessage());
+                                    bulletinBoard.setValue("COMMLOG.MESSAGE", JSON.stringify(progress, null, 4));
                                     bulletinBoardSet.save();
                                 }
+
                                 Java.type("java.lang.System").out.println(error);
-                                if(typeof service !== 'undefined') {
+                                if (typeof service !== "undefined") {
                                     service.log_error("Script Deployment Error", error);
                                 }
                             } finally {
@@ -581,7 +616,7 @@ function deployScript(scriptSource, language) {
                                         deployAutoScriptSet = MXServer.getMXServer().getMboSet("AUTOSCRIPT", userInfo);
                                         var deploySqlf = new SqlFormat("autoscript = :1");
                                         deploySqlf.setObject(1, "AUTOSCRIPT", "AUTOSCRIPT", deployScript.getName());
-
+                                        
                                         deployAutoScriptSet.setWhere(deploySqlf.format());
                                         var deployAutoScript = deployAutoScriptSet.moveFirst();
                                         if (deployAutoScript) {
@@ -598,11 +633,10 @@ function deployScript(scriptSource, language) {
 
                     var scriptDeployRunner = new Thread(new ScriptDeployRunner());
                     scriptDeployRunner.start();
-                    scriptDeployRunner.join(10000);
-
+                    
                     result = getDeploymentResult(deployId);
                     if (result.deploying) {
-                        result.deployid = deployId;                        
+                        result.deployid = deployId;
                     }
                     result.scriptName = scriptConfig.autoscript;
                     return result;
@@ -624,17 +658,16 @@ function getDeploymentResult(deployId) {
         var entry = bulletinBoardSet.getMboForUniqueId(deployId);
 
         if (entry) {
-            if (entry.getString("STATUS") == "REJECTED") {     
-                var message = entry.getString("MESSAGE");
-                entry.delete();
-                bulletinBoardSet.save();   
-                return {
-                    "deploying": false,
-                    "status": "error",
-                    "message": message
-                };
+            var message = JSON.parse(entry.getString("COMMLOG.MESSAGE"));
+            if (entry.getString("STATUS") == "REJECTED") {
+                message.status = "error";
+                message.error = JSON.parse(entry.getString("COMMLOG.MESSAGE")).error;
+                message.deploying = false;
+                return message;
             } else {
-                return { "deploying": true, "status":"success" };
+                message.deploying = true;
+                message.status = "success";
+                return message;
             }
         } else {
             return { "deploying": false };
