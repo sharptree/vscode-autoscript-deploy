@@ -135,6 +135,7 @@ The following four global variables are provided to the deployment scripts.
 | request          | com.ibm.tivoli.maximo.oslc.provider.OslcRequest | The OslcRequest object for the process deploying the script.                                 |
 | service          | com.ibm.tivoli.maximo.script.ScriptService      | The standard service class provided to all automation scripts.                               |
 | userInfo         | psdi.security.UserInfo                          | The UserInfo object for the current user.                                                    |
+| updateProgress   | function                                        | Function that takes a string parameter and updates the deployment progress message.     |
 
 When using a script for deploy actions, that script file may be named the same as the primary script with `-deploy` or `.deploy` appended to the file name and with the same extension to have it automatically deployed with the primary script.  For example if a script is contained in a file named `example.js` the deployment script can be saved in a file named `example-deploy.js` or `example.deploy.js` and the deployment script will be deployed to Maximo first so it is available to be called by the primary script at deploy time. 
 

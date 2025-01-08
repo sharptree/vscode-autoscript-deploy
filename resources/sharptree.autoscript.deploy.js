@@ -562,12 +562,45 @@ function deployScript(scriptSource, language) {
                         _close(bulletinBoardSet);
                     }
 
+                    var updateProgress = function (progress) {
+                        if (typeof deployId !== "undefined") {
+                            var bulletinBoardSet;
+
+                            try {
+                                bulletinBoardSet = MXServer.getMXServer().getMboSet("BULLETINBOARD", MXServer.getMXServer().getSystemUserInfo());
+
+                                var bulletinBoard = bulletinBoardSet.getMboForUniqueId(deployId);
+
+                                if (bulletinBoard) {
+                                    var message = JSON.parse(bulletinBoard.getString("COMMLOG.MESSAGE"));
+                                    message.progress.push({
+                                        "message": progress,
+                                        "timestamp": Java.type("psdi.util.MXFormat").dateTimeToString(MXServer.getMXServer().getDate())
+                                    });
+
+                                    bulletinBoard.setValue("COMMLOG.MESSAGE", JSON.stringify(message, null, 4));
+                                    bulletinBoardSet.save();
+                                } else {
+                                    throw Error("The script deployment bulletin board record with id " + deployId + " was not found. Cancelling deployment.");
+                                }
+                            } catch (error) {
+                                Java.type("java.lang.System").out.println("Error updating progress: " + error);
+                                throw error;
+                            } finally {
+                                if(bulletinBoardSet){
+                                    bulletinBoardSet.cleanup();
+                                    bulletinBoardSet.close();
+                                }
+                            }
+                        }
+                    };
+
                     var ctx = new HashMap();
                     ctx.put("service", service);
                     ctx.put("request", request);
                     ctx.put("userInfo", userInfo);
                     ctx.put("onDeploy", true);
-                    ctx.put("deployId", deployId);
+                    ctx.put("updateProgress", updateProgress);
 
                     var backgroundUserInfo = userInfo;
                     var ScriptDeployRunner = Java.extend(Runnable, {
@@ -586,13 +619,16 @@ function deployScript(scriptSource, language) {
                                 var bulletinBoard = bulletinBoardSet.getMboForUniqueId(deployId);
                                 if (bulletinBoard) {
                                     var progress = JSON.parse(bulletinBoard.getString("COMMLOG.MESSAGE"));
-                                    
-                                    if(error.getErrorGroup() == "script" && error.getErrorKey() == "errorrunningscript"){
-                                        progress.error =  Java.type("psdi.util.MXExceptionMediator").getMessage(error.getDetail(), MXServer.getMXServer().getBaseLang()) + " of script " + error.getParameters()[0];
-                                    }else{
+
+                                    if (error.getErrorGroup() == "script" && error.getErrorKey() == "errorrunningscript") {
+                                        progress.error =
+                                            Java.type("psdi.util.MXExceptionMediator").getMessage(error.getDetail(), MXServer.getMXServer().getBaseLang()) +
+                                            " of script " +
+                                            error.getParameters()[0];
+                                    } else {
                                         progress.error = error.getMessage();
                                     }
-                                    
+
                                     bulletinBoard.setValue("STATUS", "REJECTED");
                                     bulletinBoard.setValue("COMMLOG.MESSAGE", JSON.stringify(progress, null, 4));
                                     bulletinBoardSet.save();
@@ -616,7 +652,7 @@ function deployScript(scriptSource, language) {
                                         deployAutoScriptSet = MXServer.getMXServer().getMboSet("AUTOSCRIPT", userInfo);
                                         var deploySqlf = new SqlFormat("autoscript = :1");
                                         deploySqlf.setObject(1, "AUTOSCRIPT", "AUTOSCRIPT", deployScript.getName());
-                                        
+
                                         deployAutoScriptSet.setWhere(deploySqlf.format());
                                         var deployAutoScript = deployAutoScriptSet.moveFirst();
                                         if (deployAutoScript) {
@@ -633,7 +669,7 @@ function deployScript(scriptSource, language) {
 
                     var scriptDeployRunner = new Thread(new ScriptDeployRunner());
                     scriptDeployRunner.start();
-                    
+
                     result = getDeploymentResult(deployId);
                     if (result.deploying) {
                         result.deployid = deployId;
