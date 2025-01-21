@@ -3,7 +3,7 @@
 	"displayName": "Maximo Development Tools",
 	"description": "An extension for developing and deploying Maximo automation scripts and screens from Visual Studio Code.",
 	"publisher": "Sharptree",
-	"version": "1.18.0",
+	"version": "1.19.0",
 	"galleryBanner": {
 		"color": "#372063",
 		"theme": "dark"
@@ -25,7 +25,7 @@
 		"Other"
 	],
 	"engines": {
-		"vscode": "^1.57.0"
+		"vscode": "^1.73.0"
 	},
 	"activationEvents": [
 		"onCommand:maximo-script-deploy.extract",
@@ -36,6 +36,7 @@
 		"onCommand:maximo-script-deploy.compare",
 		"onCommand:maximo-script-deploy.forms",
 		"onCommand:maximo-script-deploy.formsOne",
+		"onCommand:maximo-script-deploy.selectEnvironment",
 		"onStartupFinished"
 	],
 	"main": "./dist/extension",
@@ -224,6 +225,10 @@
 			{
 				"command": "maximo-script-deploy.reportsOne",
 				"title": "Extract BIRT Report"
+			}, 
+			{
+				"command": "maximo-script-deploy.selectEnvironment",
+				"title": "Select Maximo Environment"
 			}
 		],
 		"keybindings": [

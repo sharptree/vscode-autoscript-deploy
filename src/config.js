@@ -47,6 +47,17 @@ export default class LocalConfiguration {
     }
 
     async encrypt(config) {
+
+        if(Array.isArray(config)){
+            config = await Promise.all(config.map(async (item) => {
+                return await this._encrypt(item);
+            }));
+        }
+
+        fs.writeFileSync(this.path, JSON.stringify(config, null, 4));
+    }
+
+    async _encrypt(config){
         let encryptKey = await this.secretStorage.get('encryptKey');
 
         if (!encryptKey) {
@@ -79,15 +90,28 @@ export default class LocalConfiguration {
 
             config.proxyPassword = '{encrypted}' + encProxyPassword;
         }
-        fs.writeFileSync(this.path, JSON.stringify(config, null, 4));
+        return config;
     }
+    
 
     async decrypt(config) {
+        if(Array.isArray(config)){
+            return await Promise.all(config.map(async (item) => {
+                return await this._decrypt(item);
+            }));
+        }else{
+            return await this._decrypt(config);
+        }
+    }
+
+
+    async _decrypt(config){
         let encryptKey = await this.secretStorage.get('encryptKey');
 
         if (!encryptKey) {
             return config;
         }
+
 
         const iv = Buffer.from(encryptKey.slice(0, 32), 'hex');
         const key = Buffer.from(encryptKey.slice(32), 'hex');
