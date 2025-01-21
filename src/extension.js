@@ -7,7 +7,7 @@ import {
     StatusBarAlignment,
     TextEditorRevealType,
     Range,
-    Position    
+    Position,
 } from 'vscode';
 
 import MaximoConfig from './maximo/maximo-config';
@@ -83,19 +83,19 @@ export function activate(context) {
         0
     );
     let globalSettings =
-    context.globalStoragePath + path.sep + 'userprefs.json';
+        context.globalStoragePath + path.sep + 'userprefs.json';
 
     selectedEnvironment.command = 'maximo-script-deploy.selectEnvironment';
     context.subscriptions.push(selectedEnvironment);
-    
+
     setupEnvironmentSelection();
     let workspaceConfigPath =
-    workspace.workspaceFolders[0].uri.fsPath +
-    path.sep +
-    '.devtools-config.json';
+        workspace.workspaceFolders[0].uri.fsPath +
+        path.sep +
+        '.devtools-config.json';
 
     // Watch for changes to a specific file
-    const fileWatcher = workspace.createFileSystemWatcher(workspaceConfigPath );
+    const fileWatcher = workspace.createFileSystemWatcher(workspaceConfigPath);
 
     fileWatcher.onDidCreate((uri) => {
         setupEnvironmentSelection();
@@ -111,7 +111,6 @@ export function activate(context) {
     });
 
     context.subscriptions.push(saveWatcher);
- 
 
     context.subscriptions.push(
         workspace.registerTextDocumentContentProvider(
@@ -794,13 +793,15 @@ async function setupEnvironmentSelection() {
     ) {
         if (selectedConfig.length > 1) {
             selectedConfig =
-                selectedConfig.find((config) => config.selected ) || {};
+                selectedConfig.find((config) => config.selected) || {};
             if (typeof selectedConfig.selected !== 'undefined') {
-                if(typeof selectedConfig.name !== 'string'){
-                    selectedEnvironment.text = 'Missing Maximo Environment Name';
-                    selectedEnvironment.tooltip = 'The selected Maximo environment is missing the name attribute';
+                if (typeof selectedConfig.name !== 'string') {
+                    selectedEnvironment.text =
+                        'Missing Maximo Environment Name';
+                    selectedEnvironment.tooltip =
+                        'The selected Maximo environment is missing the name attribute';
                     selectedEnvironment.show();
-                }else{
+                } else {
                     selectedEnvironment.text = selectedConfig.name;
                     selectedEnvironment.tooltip =
                         typeof selectedConfig.description === 'string'
