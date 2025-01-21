@@ -36,13 +36,16 @@ The following are settings available under the `Sharptree > Maximo` group.
 > The Authentication Type setting has been removed and replaced with automatic detection of authentication type.
 
 ### .devtools-config.json
-A file named `.devtools-config.json` can be created in the root directory of the project folder to override the VS Code settings. This file is a JSON formatted and contains the setting attributes to override, any settings not included in the file will be taken from the VS Code settings. 
+A file named `.devtools-config.json` can be created in the root directory of the project folder to override the VS Code settings. This file is a JSON formatted file and contains the setting attributes to override, any settings not included in the file will be taken from the VS Code settings. 
 
-The `password` and `apiKey` attributes will be automatically encrypted on first use. If the `password` or `apiKey` needs to be updated, the encrypted value can be replaced with the new plain text value, which will again be automatically encrypted on first use.
+The `password` and `apiKey` attributes will be automatically encrypted on save. If the `password` or `apiKey` needs to be updated, the encrypted value can be replaced with the new plain text value, which will again be automatically encrypted on save.
 
-### Sample
+#### Sample
 ```json
 {
+    "name": "Short name to identify the environment",
+    "description": "Longer description of the configured environment", 
+    "selected":"Optional attribute that indicates that the environment is currently selected when multiple configurations are available",
     "host":"The Maximo host name",
     "port":80|443,
     "context":"maximo",
@@ -66,6 +69,13 @@ The `password` and `apiKey` attributes will be automatically encrypted on first 
 }
 ```
 > Since `.devtools-config.json` may contain sensitive connection information it should *never* be checked into Git. A `.gitignore` entry for `.devtools-config.json` is automatically created the first time the `.devtools-config.json` is used by the extension to ensure that it is not accidentally included in a commit.
+
+### Multiple Configurations
+The `.devtools-config.json` may contain a single configuration or a JSON array of configurations. If an array of environment configurations is provided then the selected environment is displayed in the status bar. Clicking the status bar environment name opens a quick pick list to select the active environment. In the image below the `Test` environment has been selected as can be seen in the status bar and the leading checkbox for the `Test` entry in the quick pick.
+
+![Select Environment](images/select_environment.png)
+
+> Note that the `name` attribute is required when defining multiple environments. Configurations without the `name` attribute will be excluded from the selection.
 
 ### Logging Settings
 The following are settings available under the `Sharptree > Maximo > Logging` group.
