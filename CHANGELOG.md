@@ -1,4 +1,7 @@
 # Release Notes
+## 1.19.0
+- Multiple environment configurations selection support.
+
 ## 1.18.0
 - Deployments are now cancellable.
 - Logging handles disconnects properly.
