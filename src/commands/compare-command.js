@@ -18,7 +18,7 @@ export default async function compareCommand(client) {
         if (document) {
             let fileName = path.basename(document.fileName);
             let fileExt = path.extname(fileName);
-            if (fileExt === ".js" || fileExt === ".py") {
+            if (fileExt === ".js" || fileExt === ".py" || fileExt === ".jy") {
                 // Get the document text
                 const script = document.getText();
                 if (script && script.trim().length > 0) {
@@ -135,7 +135,7 @@ export default async function compareCommand(client) {
                 }
             } else {
                 window.showErrorMessage(
-                    "The selected file must have a Javascript ('.js') or Python ('.py') file extension for an automation script or ('.xml') for a Screen Definition.",
+                    "The selected file must have a Javascript ('.js'), Python ('.py') or Jython ('.jy') file extension for an automation script or ('.xml') for a Screen Definition.",
                     { modal: true }
                 );
             }
