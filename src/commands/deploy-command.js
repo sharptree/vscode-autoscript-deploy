@@ -18,7 +18,7 @@ export default async function deployCommand(client) {
             let filePath = document.fileName;
             let fileExt = path.extname(filePath);
 
-            if (fileExt === '.js' || fileExt === '.py') {
+            if (fileExt === '.js' || fileExt === '.py' || fileExt === '.jy') {
                 await deployScript(client, filePath, document.getText());
             } else if (fileExt === '.xml') {
                 await deployScreen(client, filePath, document.getText());

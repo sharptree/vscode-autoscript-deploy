@@ -1,4 +1,7 @@
 # Release Notes
+## 1.19.1
+- Add support for jy Python files.
+- 
 ## 1.19.0
 - Multiple environment configurations selection support.
 
