@@ -1,3 +1,4 @@
+/* eslint-disable no-empty */
 /* eslint-disable no-redeclare */
 /* eslint-disable indent */
 /* eslint-disable quotes */
@@ -296,6 +297,7 @@ function extractScriptConfiguration(autoScript) {
     scriptConfig.version = autoScript.getString("VERSION");
     scriptConfig.active = autoScript.getBoolean("ACTIVE");
     scriptConfig.logLevel = autoScript.getString("LOGLEVEL");
+    scriptConfig.allowInvokingScriptFunctions = autoScript.getBoolean("INTERFACE");
 
     var autoScriptVarsSet = autoScript.getMboSet("AUTOSCRIPTVARS");
 
@@ -601,6 +603,7 @@ ScriptError.prototype = Object.create(Error.prototype);
 ScriptError.prototype.constructor = ScriptError;
 ScriptError.prototype.element;
 
+// eslint-disable-next-line no-unused-vars
 var scriptConfig = {
     "autoscript": "SHARPTREE.AUTOSCRIPT.EXTRACT",
     "description": "Sharptree Automation Script Extract Script",
