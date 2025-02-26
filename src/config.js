@@ -52,6 +52,8 @@ export default class LocalConfiguration {
             config = await Promise.all(config.map(async (item) => {
                 return await this._encrypt(item);
             }));
+        }else{
+            await this._encrypt(config);
         }
 
         fs.writeFileSync(this.path, JSON.stringify(config, null, 4));
