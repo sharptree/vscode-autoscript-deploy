@@ -1,7 +1,12 @@
 # Release Notes
+## 1.19.2
+- Fixed issue where single environment configurations would not encrypt the password on save.
+- Added extract support for the allowInvokingScriptFunctions (INTERFACE) attribute.
+- Added support for automatically setting the allowInvokingScriptFunctions (INTERFACE) attribute to true for APPBEAN and DATABEAN scripts.
+  
 ## 1.19.1
 - Add support for jy Python files.
-- 
+  
 ## 1.19.0
 - Multiple environment configurations selection support.
 
