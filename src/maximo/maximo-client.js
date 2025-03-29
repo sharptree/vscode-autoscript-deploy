@@ -1775,7 +1775,7 @@ export default class MaximoClient {
                 description: description,
                 status: activeStatus,
                 version: this.currentScriptVersion,
-                scriptlanguage: 'nashorn',
+                scriptlanguage: 'javascript',
                 source: source,
             };
 
@@ -1893,7 +1893,7 @@ export default class MaximoClient {
                     description: 'Sharptree AutoScript Deploy Bootstrap',
                     status: activeStatus,
                     version: this.currentScriptVersion,
-                    scriptlanguage: 'nashorn',
+                    scriptlanguage: 'javascript',
                     source: source,
                 };
                 headers['x-method-override'] = 'PATCH';
@@ -1909,7 +1909,7 @@ export default class MaximoClient {
                     description: 'Sharptree AutoScript Deploy Bootstrap',
                     status: activeStatus,
                     version: '1.0.0',
-                    scriptlanguage: 'nashorn',
+                    scriptlanguage: 'javascript',
                     source: source,
                 };
                 options = {

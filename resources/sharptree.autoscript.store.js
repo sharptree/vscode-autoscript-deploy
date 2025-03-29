@@ -207,7 +207,7 @@ function _initConfigScript() {
                 'DESCRIPTION',
                 'Automation Script Deploy History'
             );
-            autoscript.setValue('SCRIPTLANGUAGE', 'nashorn');
+            autoscript.setValue('SCRIPTLANGUAGE', 'javascript');
             autoscript.setValue('SOURCE', 'config={};');
             autoScriptSet.save();
         }
