@@ -333,6 +333,22 @@ When deploying a report, the report must be registered in the `reports.xml` file
 
 > When a report is deployed its request page is automatically generated.
 
+
+### Deployment Manifest
+As of version `1.20` a JSON document may be used to define multiple files to deploy in order.  The file must have a `.json` file extension and contain a JSON object with a property named `manifest` that is an array of `string` type file paths.  The file paths may be relative or fully qualified. Using the `Deploy to Maximo` command will deploy each file in the manifest in order.
+
+#### Example Manifest
+```json
+{
+    "manifest": [
+        "file_1.js", 
+        "subfolder/file_1.js", 
+        "subfolder/file_2.js", 
+        "c:/fully/qualified/path/file_1.js"
+    ]
+}
+```
+
 ## Extract Automation Scripts
 To extract the scripts currently deployed to Maximo, bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Extract All Automation Scripts`. The extension will query Maximo for the available scripts and then prompt for confirmation to extract the scripts as shown below. Scripts are saved to the directory specified in the `Extract Location` setting. If the setting has not been configured, the scripts are extracted to the current workspace folder.
 
