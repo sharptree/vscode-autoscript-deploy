@@ -1,3 +1,5 @@
+/* eslint-disable quotes */
+// @ts-nocheck
 import {
     window,
     commands,

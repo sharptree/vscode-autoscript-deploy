@@ -273,6 +273,18 @@ function deployScript(scriptSource, language) {
                 autoscript.setValue('ACTIVE', true);
             } else {
                 autoscript = autoScriptSet.getMbo(0);
+                if (
+                    typeof scriptConfig._delete !== 'undefined' &&
+                    scriptConfig._delete === true
+                ) {
+                    autoscript.delete();
+                    autoScriptSet.save();
+                    result.scriptName = scriptConfig.autoscript;
+                    result.deploying = false;
+                    result.deleted = true;
+                    result.status = 'success';
+                    return result;
+                }
             }
             autoscript.setValue('SOURCE', scriptSource);
 
@@ -1326,7 +1338,7 @@ function getConfigFromScript(scriptSource, languageHint) {
     }
 }
 
-function getConfigFromPythonScript(source) {
+function getConfigFromPythonScript(scriptSource) {
     var regex = /^(?!#).*scriptConfig.*"""(.|\n|\r)*?"""/gm;
     var found = scriptSource.match(regex);
     if (found && found.length == 1) {

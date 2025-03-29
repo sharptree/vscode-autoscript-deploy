@@ -1,3 +1,4 @@
+/* eslint-disable no-redeclare */
 /* eslint-disable indent */
 /* eslint-disable no-undef */
 /* eslint-disable no-unused-vars */
@@ -2014,7 +2015,7 @@ function EnterpriseService(enterpriseService) {
             ) {
                 ifaceProc.maxProcCols = [];
                 if (
-                    typeof ifaceProc.maxReplaceProc !== 'undefined ' &&
+                    typeof ifaceProc.maxReplaceProc !== 'undefined' &&
                     ifaceProc.maxReplaceProc &&
                     Array.isArray(ifaceProc.maxReplaceProc)
                 ) {
@@ -2750,7 +2751,7 @@ function PublishChannel(publishChannel) {
             ) {
                 ifaceProc.maxProcCols = [];
                 if (
-                    typeof ifaceProc.maxReplaceProc !== 'undefined ' &&
+                    typeof ifaceProc.maxReplaceProc !== 'undefined' &&
                     ifaceProc.maxReplaceProc &&
                     Array.isArray(ifaceProc.maxReplaceProc)
                 ) {
@@ -4616,7 +4617,7 @@ function Domain(domain) {
                             'An object name is missing or has an empty value for the required object name property.'
                         );
                     }
-                    tableValue.objectName = tableValue.objectName;
+
                     tableValue.validtnWhereClause =
                         typeof tableValue.validtnWhereClause === 'undefined'
                             ? ''
@@ -4661,7 +4662,7 @@ function Domain(domain) {
                             'An object name is missing or has an empty value for the required object name property.'
                         );
                     }
-                    tableValue.objectName = tableValue.objectName;
+
                     tableValue.validtnWhereClause =
                         typeof tableValue.validtnWhereClause === 'undefined'
                             ? ''

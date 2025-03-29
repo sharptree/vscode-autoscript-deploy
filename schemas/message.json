@@ -5,10 +5,10 @@
     "description": "A Maximo message",
     "type": "object",
     "properties": {
-        "delete":{
-            "description":"Flag to indicate that the message should be deleted if it exists from the target system.",
-            "type":"boolean",
-            "default":false
+        "delete": {
+            "description": "Flag to indicate that the message should be deleted if it exists from the target system.",
+            "type": "boolean",
+            "default": false
         },
         "msgGroup": {
             "description": "The group for the Maximo message (MAXMESSAGES.MSGGROUP)",
@@ -50,6 +50,23 @@
             "enum": ["E", "I", "W"],
             "default": "E"
         },
+        "explanation": {
+            "description": "The value for the Maximo message explanation (MAXMESSAGES.EXPLANATION)",
+            "type": "string"
+        },
+        "operatorResponse": {
+            "description": "The value for the Maximo message operator response (MAXMESSAGES.OPERATORRESPONSE)",
+            "type": "string"
+        },
+        "adminResponse": {
+            "description": "The value for the Maximo message admin response (MAXMESSAGES.ADMINRESPONSE)",
+            "type": "string"
+        },
+        "systemAction": {
+            "description": "The value for the Maximo message system action (MAXMESSAGES.SYSTEMACTION)",
+            "type": "string"
+        },
+
         "required": ["msgGroup", "msgKey", "value"]
     }
 }
