@@ -3777,7 +3777,15 @@ MaxObject.prototype.setMboValues = function (mbo) {
         mbo.setValue('OBJECTNAME', this.object);
     }
 
-    mbo.setValue('DESCRIPTION', this.description);
+    // if the description is null or empty and the mbo is null, set the description to the object name + Table
+    if (
+        (this.description == null || this.description == '') &&
+        mbo.isNull('DESCRIPTION')
+    ) {
+        mbo.setValue('DESCRIPTION', this.object + 'Table');
+    } else if (this.description != null) {
+        mbo.setValue('DESCRIPTION', this.description);
+    }
 
     if (this.service != null) {
         mbo.setValue('SERVICENAME', this.service);
