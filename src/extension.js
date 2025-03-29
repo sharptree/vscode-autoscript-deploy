@@ -91,21 +91,25 @@ export function activate(context) {
     context.subscriptions.push(selectedEnvironment);
 
     setupEnvironmentSelection();
-    let workspaceConfigPath =
-        workspace.workspaceFolders[0].uri.fsPath +
-        path.sep +
-        '.devtools-config.json';
 
-    // Watch for changes to a specific file
-    const fileWatcher = workspace.createFileSystemWatcher(workspaceConfigPath);
+    if (workspace.workspaceFolders !== undefined) {
+        let workspaceConfigPath =
+            workspace.workspaceFolders[0].uri.fsPath +
+            path.sep +
+            '.devtools-config.json';
 
-    fileWatcher.onDidCreate((uri) => {
-        setupEnvironmentSelection();
-    });
+        // Watch for changes to a specific file
+        const fileWatcher =
+            workspace.createFileSystemWatcher(workspaceConfigPath);
 
-    fileWatcher.onDidDelete((uri) => {
-        setupEnvironmentSelection();
-    });
+        fileWatcher.onDidCreate((uri) => {
+            setupEnvironmentSelection();
+        });
+
+        fileWatcher.onDidDelete((uri) => {
+            setupEnvironmentSelection();
+        });
+    }
 
     // Get notified when a file is saved
     const saveWatcher = workspace.onDidSaveTextDocument((document) => {
