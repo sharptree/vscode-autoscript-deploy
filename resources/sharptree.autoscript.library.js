@@ -2,7 +2,6 @@
 /* eslint-disable indent */
 /* eslint-disable no-undef */
 /* eslint-disable no-unused-vars */
-
 // @ts-nocheck
 
 MboConstants = Java.type('psdi.mbo.MboConstants');
@@ -4604,48 +4603,45 @@ function Domain(domain) {
         case 'TABLE':
             this.maxType =
                 typeof domain.maxType === 'undefined' ? '' : domain.maxType;
-            if (
-                typeof domain.tableDomain !== 'undefined' &&
-                Array.isArray(domain.tableDomain)
-            ) {
-                domain.tableDomain.forEach(function (tableValue) {
-                    if (
-                        typeof tableValue.objectName === 'undefined' ||
-                        !tableValue.objectName
-                    ) {
-                        throw new Error(
-                            'An object name is missing or has an empty value for the required object name property.'
-                        );
-                    }
+            if (typeof domain.tableDomain !== 'undefined') {
+                tableValue = domain.tableDomain;
+                if (
+                    typeof tableValue.objectName === 'undefined' ||
+                    !tableValue.objectName
+                ) {
+                    throw new Error(
+                        'An object name is missing or has an empty value for the required object name property.'
+                    );
+                }
 
-                    tableValue.validtnWhereClause =
-                        typeof tableValue.validtnWhereClause === 'undefined'
-                            ? ''
-                            : tableValue.validtnWhereClause;
-                    tableValue.listWhereClause =
-                        typeof tableValue.listWhereClause === 'undefined'
-                            ? ''
-                            : tableValue.listWhereClause;
-                    tableValue.errorResourcBundle =
-                        typeof tableValue.errorResourcBundle === 'undefined'
-                            ? ''
-                            : tableValue.errorResourcBundle;
-                    tableValue.errorAccessKey =
-                        typeof tableValue.errorAccessKey === 'undefined'
-                            ? ''
-                            : tableValue.errorAccessKey;
-                    tableValue.orgId =
-                        typeof tableValue.orgId === 'undefined'
-                            ? ''
-                            : tableValue.orgId;
-                    tableValue.siteId =
-                        typeof tableValue.siteId === 'undefined'
-                            ? ''
-                            : tableValue.siteId;
-                });
+                tableValue.validtnWhereClause =
+                    typeof tableValue.validtnWhereClause === 'undefined'
+                        ? ''
+                        : tableValue.validtnWhereClause;
+                tableValue.listWhereClause =
+                    typeof tableValue.listWhereClause === 'undefined'
+                        ? ''
+                        : tableValue.listWhereClause;
+                tableValue.errorResourcBundle =
+                    typeof tableValue.errorResourcBundle === 'undefined'
+                        ? ''
+                        : tableValue.errorResourcBundle;
+                tableValue.errorAccessKey =
+                    typeof tableValue.errorAccessKey === 'undefined'
+                        ? ''
+                        : tableValue.errorAccessKey;
+                tableValue.orgId =
+                    typeof tableValue.orgId === 'undefined'
+                        ? ''
+                        : tableValue.orgId;
+                tableValue.siteId =
+                    typeof tableValue.siteId === 'undefined'
+                        ? ''
+                        : tableValue.siteId;
+
                 this.tableDomain = domain.tableDomain;
             } else {
-                this.tableDomain = [];
+                this.tableDomain = {};
             }
             break;
         case 'CROSSOVER':
@@ -5083,31 +5079,49 @@ Domain.prototype.setMboValues = function (mbo) {
         case 'TABLE':
             var tableDomainSet = mbo.getMboSet('MAXTABLEDOMAIN');
             tableDomainSet.deleteAll();
-            this.tableDomain.forEach(function (tableValue) {
-                var tableMbo = tableDomainSet.add();
-                tableMbo.setValue('OBJECTNAME', tableValue.objectName);
+            var tableValue = this.tableDomain;
+
+            var tableMbo = tableDomainSet.add();
+            tableMbo.setValue('OBJECTNAME', tableValue.objectName);
+            if (tableValue.validtnWhereClause != null) {
                 tableMbo.setValue(
                     'VALIDTNWHERECLAUSE',
                     tableValue.validtnWhereClause
                 );
+            }
+            if (tableValue.listWhereClause != null) {
                 tableMbo.setValue(
                     'LISTWHERECLAUSE',
                     tableValue.listWhereClause
                 );
+            }
+            if (tableValue.errorResourcBundle != null) {
                 tableMbo.setValue(
                     'ERRORRESOURCBUNDLE',
                     tableValue.errorResourcBundle
                 );
+            }
+            if (tableValue.errorAccessKey != null) {
                 tableMbo.setValue('ERRORACCESSKEY', tableValue.errorAccessKey);
+            }
+            if (tableValue.orgId != null) {
                 tableMbo.setValue('ORGID', tableValue.orgId);
+            }
+            if (tableValue.siteId != null) {
                 tableMbo.setValue('SITEID', tableValue.siteId);
-            });
+            }
+
             break;
         case 'CROSSOVER':
             var tableDomainSet = mbo.getMboSet('MAXTABLEDOMAINFORCROSSOVER');
             this.crossoverDomain.forEach(function (tableValue) {
                 var tableMbo = tableDomainSet.add();
-                tableMbo.setValue('OBJECTNAME', tableValue.objectName);
+                // set as no-validate to allow for domains to be added before ther table is created.
+                tableMbo.setValue(
+                    'OBJECTNAME',
+                    tableValue.objectName,
+                    MboConstants.NOVALIDATION
+                );
                 tableMbo.setValue(
                     'VALIDTNWHERECLAUSE',
                     tableValue.validtnWhereClause
@@ -5200,10 +5214,14 @@ function deployConfig(config) {
         deployProperties(config.properties);
     }
     if (typeof config.domains !== 'undefined') {
+        Java.type('java.lang.System').out.println('Deploying domain');
         deployDomains(config.domains);
     }
     if (typeof config.maxObjects !== 'undefined') {
         deployMaxObjects(config.maxObjects);
+    }
+    if (typeof config.objects !== 'undefined') {
+        deployMaxObjects(config.objects);
     }
     if (typeof config.integrationObjects !== 'undefined') {
         deployIntegrationObjects(config.integrationObjects);
@@ -6725,12 +6743,19 @@ function addOrUpdateDomain(domain) {
             set.save();
             var obj = set.add();
             domainObj.setMboValues(obj);
+            Java.type('java.lang.System').out.println(
+                'Domain ID: ' + obj.getString('DOMAINTYPE')
+            );
             set.save();
         } else {
             var obj = set.getMbo(0);
             domainObj.setMboValues(obj);
             set.save();
         }
+    } catch (e) {
+        e.printStackTrace();
+        logger.error('Error adding/updating domain: ' + e);
+        throw e;
     } finally {
         __libraryClose(set);
     }
