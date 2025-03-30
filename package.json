@@ -1,289 +1,289 @@
 {
-	"name": "maximo-script-deploy",
-	"displayName": "Maximo Development Tools",
-	"description": "An extension for developing and deploying Maximo automation scripts and screens from Visual Studio Code.",
-	"publisher": "Sharptree",
-	"version": "1.19.2",
-	"galleryBanner": {
-		"color": "#372063",
-		"theme": "dark"
-	},
-	"icon": "app-icon.png",
-	"author": {
-		"name": "Jason VenHuizen",
-		"email": "jason@sharptree.io"
-	},
-	"bugs": {
-		"url": "https://github.com/sharptree/vscode-autoscript-deploy/issues"
-	},
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/sharptree/vscode-autoscript-deploy"
-	},
-	"categories": [
-		"Programming Languages",
-		"Other"
-	],
-	"engines": {
-		"vscode": "^1.73.0"
-	},
-	"activationEvents": [
-		"onCommand:maximo-script-deploy.extract",
-		"onCommand:maximo-script-deploy.extractOne",
-		"onCommand:maximo-script-deploy.deploy",
-		"onCommand:maximo-script-deploy.screens",
-		"onCommand:maximo-script-deploy.screensOne",
-		"onCommand:maximo-script-deploy.compare",
-		"onCommand:maximo-script-deploy.forms",
-		"onCommand:maximo-script-deploy.formsOne",
-		"onCommand:maximo-script-deploy.selectEnvironment",
-		"onStartupFinished"
-	],
-	"main": "./dist/extension",
-	"contributes": {
-		"snippets": [
-			{
-				"language": "javascript",
-				"path": "./snippets/snippets_javascript.json"
-			},
-			{
-				"language": "python",
-				"path": "./snippets/snippets_python.json"
-			}
-		],
-		"configuration": {
-			"title": "Maximo",
-			"properties": {
-				"sharptree.maximo.customCA": {
-					"type": "string",
-					"default": null,
-					"editPresentation": "multilineText",
-					"description": "The full CA chain in PEM format."
-				},
-				"sharptree.maximo.host": {
-					"type": "string",
-					"default": null,
-					"description": "The Maximo host name."
-				},
-				"sharptree.maximo.user": {
-					"type": "string",
-					"default": null,
-					"description": "The Maximo user name."
-				},	
-				"sharptree.maximo.context": {
-					"type": "string",
-					"default": "maximo",
-					"description": "The Maximo URL context."
-				},
-				"sharptree.maximo.extractLocation": {
-					"type": "string",
-					"default": "",
-					"description": "The Maximo script extraction location."
-				},
-				"sharptree.maximo.extractScreenLocation": {
-					"type": "string",
-					"default": "",
-					"description": "The Maximo screens extraction location."
-				},
-				"sharptree.maximo.extractInspectionFormsLocation": {
-					"type": "string",
-					"default": "",
-					"description": "The Maximo inspection forms extraction location."
-				},
-				"sharptree.maximo.extractReportsLocation": {
-					"type": "string",
-					"default": "",
-					"description": "The Maximo BIRT reports extraction location."
-				},
-				"sharptree.maximo.port": {
-					"type": "number",
-					"default": 443,
-					"description": "The Maximo port number."
-				},
-				"sharptree.maximo.useSSL": {
-					"type": "boolean",
-					"default": true,
-					"description": "Connect to Maximo using SSL?"
-				},
-				"sharptree.maximo.timeout": {
-					"type": "number",
-					"default": 30,
-					"description": "The timeout in seconds.",
-					"minimum": 0,
-					"maximum": 300
-				},			
-				"sharptree.maximo.allowUntrustedCerts": {
-					"type": "boolean",
-					"default": false,
-					"description": "Allow untrusted SSL certificates."
-				},
-				"sharptree.maximo.maxauthOnly": {
-					"type": "boolean",
-					"default": false,
-					"description": "Do not send Basic authentication header."
-				},
-				"sharptree.maximo.apiKey": {
-					"type": "string",
-					"default": "",
-					"description": "The Maximo API Key."
-				},
-				"sharptree.maximo.configurationTimeout": {
-					"type": "number",
-					"default": 5,
-					"description": "The Maximo script configuration timeout in minutes.",
-					"minimum": 0,
-					"maximum": 60
-				},
-				"sharptree.maximo.logging.outputFile": {
-					"type": "string",
-					"default": "maximo.log",
-					"description": "The relative or absolute output log file path."
-				},
-				"sharptree.maximo.logging.openEditorOnStart": {
-					"type": "boolean",
-					"default": true,
-					"description": "Open an editor to display the log file on start of log streaming."
-				},
-				"sharptree.maximo.logging.append": {
-					"type": "boolean",
-					"default": false,
-					"description": "Append to the current log file."
-				},
-				"sharptree.maximo.logging.follow": {
-					"type": "boolean",
-					"default": true,
-					"description": "Follow the log file when displayed in an editor."
-				},
-				"sharptree.maximo.logging.timeout": {
-					"type": "number",
-					"default": 30,
-					"description": "Number of seconds between logging requests. The value should be no more than 30 seconds, to avoid server side timeouts."
-				},			
-				"sharptree.maximo.proxy.host": {
-					"type": "string",
-					"default": "",
-					"description": "The proxy host name."
-				},
-				"sharptree.maximo.proxy.port": {
-					"type": "number",
-					"default": 3128,
-					"description": "The proxy port number."
-				},
-				"sharptree.maximo.proxy.user": {
-					"type": "string",
-					"default": "",
-					"description": "The proxy username for proxy authentication."
-				},						
-				"sharptree.maximo.proxy.password": {
-					"type": "string",
-					"default": "",
-					"description": "The proxy password for proxy authentication."
-				}					
-			}
-		},
-		"commands": [
-			{
-				"command": "maximo-script-deploy.deploy",
-				"title": "Deploy to Maximo"
-			},
-			{
-				"command": "maximo-script-deploy.extract",
-				"title": "Extract All Automation Scripts"
-			},
-			{
-				"command": "maximo-script-deploy.extractOne",
-				"title": "Extract Automation Script"
-			},
-			{
-				"command": "maximo-script-deploy.compare",
-				"title": "Compare with Maximo"
-			},
-			{
-				"command": "maximo-script-deploy.screens",
-				"title": "Extract All Screen Definitions"
-			},
-			{
-				"command": "maximo-script-deploy.screensOne",
-				"title": "Extract Screen Definition"
-			},
-			{
-				"command": "maximo-script-deploy.id",
-				"title": "Insert Unique Id for Maximo Presentation Tag"
-			},
-			{
-				"command": "maximo-script-deploy.forms",
-				"title": "Extract All Inspection Forms"
-			},
-			{
-				"command": "maximo-script-deploy.formsOne",
-				"title": "Extract Inspection Form"
-			},
-			{
-				"command": "maximo-script-deploy.reports",
-				"title": "Extract All BIRT Reports"
-			},
-			{
-				"command": "maximo-script-deploy.reportsOne",
-				"title": "Extract BIRT Report"
-			}, 
-			{
-				"command": "maximo-script-deploy.selectEnvironment",
-				"title": "Select Maximo Environment"
-			}
-		],
-		"keybindings": [
-			{
-				"command": "maximo-script-deploy.deploy",
-				"key": "ctrl+alt+m",
-				"mac": "ctrl+cmd+m",
-				"when": "editorFocus"
-			},
-			{
-				"command": "maximo-script-deploy.id",
-				"key": "ctrl+alt+i",
-				"mac": "ctrl+cmd+i",
-				"when": "editorFocus"
-			}
-		]
-	},
-	"scripts": {
-		"lint": "eslint .",
-		"pretest": "npm run lint",
-		"test": "node ./test/runTest.js",
-		"webpack": "webpack --mode production",
-		"webpack-dev": "webpack --mode development --watch",
-		"package": "webpack --mode production --devtool hidden-source-map",
-		"vscode:prepublish": "npm run package",
-		"vsce:package": "vsce package"
-	},
-	"devDependencies": {
-		"@types/glob": "^7.1.4",
-		"@types/mocha": "^9.1.1",
-		"@types/node": "^14.18.48",
-		"@types/vscode": "^1.57",
-		"@vscode/test-electron": "^1.4.6",
-		"eslint": "^8.41.0",
-		"glob": "^7.2.3",
-		"mocha": "^9.2.2",
-		"typescript": "^4.9.5",
-		"webpack": "^5.84.1",
-		"webpack-cli": "^4.10.0"
-	},
-	"dependencies": {
-		"archiver": "^7.0.1",
-		"axios": "^0.26.1",
-		"axios-oauth-client": "^1.5.0",
-		"axios-token-interceptor": "^0.2.0",
-		"is-valid-hostname": "^1.0.2",
-		"readline": "^1.3.0",
-		"semver": "^7.5.1",
-		"temp": "^0.9.4",
-		"text-encoding": "^0.7.0",
-		"tough-cookie": "^4.1.2",
-		"uuid": "^10.0.0",
-		"webpack-node-externals": "^3.0.0",
-		"xml-formatter": "^2.6.1",
-		"xml2js": "^0.6.0",
-		"yauzl": "^3.1.3"
-	}
+    "name": "maximo-script-deploy",
+    "displayName": "Maximo Development Tools",
+    "description": "An extension for developing and deploying Maximo automation scripts and screens from Visual Studio Code.",
+    "publisher": "Sharptree",
+    "version": "1.20.0",
+    "galleryBanner": {
+        "color": "#372063",
+        "theme": "dark"
+    },
+    "icon": "app-icon.png",
+    "author": {
+        "name": "Jason VenHuizen",
+        "email": "jason@sharptree.io"
+    },
+    "bugs": {
+        "url": "https://github.com/sharptree/vscode-autoscript-deploy/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/sharptree/vscode-autoscript-deploy"
+    },
+    "categories": [
+        "Programming Languages",
+        "Other"
+    ],
+    "engines": {
+        "vscode": "^1.73.0"
+    },
+    "activationEvents": [
+        "onCommand:maximo-script-deploy.extract",
+        "onCommand:maximo-script-deploy.extractOne",
+        "onCommand:maximo-script-deploy.deploy",
+        "onCommand:maximo-script-deploy.screens",
+        "onCommand:maximo-script-deploy.screensOne",
+        "onCommand:maximo-script-deploy.compare",
+        "onCommand:maximo-script-deploy.forms",
+        "onCommand:maximo-script-deploy.formsOne",
+        "onCommand:maximo-script-deploy.selectEnvironment",
+        "onStartupFinished"
+    ],
+    "main": "./dist/extension",
+    "contributes": {
+        "snippets": [
+            {
+                "language": "javascript",
+                "path": "./snippets/snippets_javascript.json"
+            },
+            {
+                "language": "python",
+                "path": "./snippets/snippets_python.json"
+            }
+        ],
+        "configuration": {
+            "title": "Maximo",
+            "properties": {
+                "sharptree.maximo.customCA": {
+                    "type": "string",
+                    "default": null,
+                    "editPresentation": "multilineText",
+                    "description": "The full CA chain in PEM format."
+                },
+                "sharptree.maximo.host": {
+                    "type": "string",
+                    "default": null,
+                    "description": "The Maximo host name."
+                },
+                "sharptree.maximo.user": {
+                    "type": "string",
+                    "default": null,
+                    "description": "The Maximo user name."
+                },
+                "sharptree.maximo.context": {
+                    "type": "string",
+                    "default": "maximo",
+                    "description": "The Maximo URL context."
+                },
+                "sharptree.maximo.extractLocation": {
+                    "type": "string",
+                    "default": "",
+                    "description": "The Maximo script extraction location."
+                },
+                "sharptree.maximo.extractScreenLocation": {
+                    "type": "string",
+                    "default": "",
+                    "description": "The Maximo screens extraction location."
+                },
+                "sharptree.maximo.extractInspectionFormsLocation": {
+                    "type": "string",
+                    "default": "",
+                    "description": "The Maximo inspection forms extraction location."
+                },
+                "sharptree.maximo.extractReportsLocation": {
+                    "type": "string",
+                    "default": "",
+                    "description": "The Maximo BIRT reports extraction location."
+                },
+                "sharptree.maximo.port": {
+                    "type": "number",
+                    "default": 443,
+                    "description": "The Maximo port number."
+                },
+                "sharptree.maximo.useSSL": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Connect to Maximo using SSL?"
+                },
+                "sharptree.maximo.timeout": {
+                    "type": "number",
+                    "default": 30,
+                    "description": "The timeout in seconds.",
+                    "minimum": 0,
+                    "maximum": 300
+                },
+                "sharptree.maximo.allowUntrustedCerts": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Allow untrusted SSL certificates."
+                },
+                "sharptree.maximo.maxauthOnly": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Do not send Basic authentication header."
+                },
+                "sharptree.maximo.apiKey": {
+                    "type": "string",
+                    "default": "",
+                    "description": "The Maximo API Key."
+                },
+                "sharptree.maximo.configurationTimeout": {
+                    "type": "number",
+                    "default": 5,
+                    "description": "The Maximo script configuration timeout in minutes.",
+                    "minimum": 0,
+                    "maximum": 60
+                },
+                "sharptree.maximo.logging.outputFile": {
+                    "type": "string",
+                    "default": "maximo.log",
+                    "description": "The relative or absolute output log file path."
+                },
+                "sharptree.maximo.logging.openEditorOnStart": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Open an editor to display the log file on start of log streaming."
+                },
+                "sharptree.maximo.logging.append": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Append to the current log file."
+                },
+                "sharptree.maximo.logging.follow": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Follow the log file when displayed in an editor."
+                },
+                "sharptree.maximo.logging.timeout": {
+                    "type": "number",
+                    "default": 30,
+                    "description": "Number of seconds between logging requests. The value should be no more than 30 seconds, to avoid server side timeouts."
+                },
+                "sharptree.maximo.proxy.host": {
+                    "type": "string",
+                    "default": "",
+                    "description": "The proxy host name."
+                },
+                "sharptree.maximo.proxy.port": {
+                    "type": "number",
+                    "default": 3128,
+                    "description": "The proxy port number."
+                },
+                "sharptree.maximo.proxy.user": {
+                    "type": "string",
+                    "default": "",
+                    "description": "The proxy username for proxy authentication."
+                },
+                "sharptree.maximo.proxy.password": {
+                    "type": "string",
+                    "default": "",
+                    "description": "The proxy password for proxy authentication."
+                }
+            }
+        },
+        "commands": [
+            {
+                "command": "maximo-script-deploy.deploy",
+                "title": "Deploy to Maximo"
+            },
+            {
+                "command": "maximo-script-deploy.extract",
+                "title": "Extract All Automation Scripts"
+            },
+            {
+                "command": "maximo-script-deploy.extractOne",
+                "title": "Extract Automation Script"
+            },
+            {
+                "command": "maximo-script-deploy.compare",
+                "title": "Compare with Maximo"
+            },
+            {
+                "command": "maximo-script-deploy.screens",
+                "title": "Extract All Screen Definitions"
+            },
+            {
+                "command": "maximo-script-deploy.screensOne",
+                "title": "Extract Screen Definition"
+            },
+            {
+                "command": "maximo-script-deploy.id",
+                "title": "Insert Unique Id for Maximo Presentation Tag"
+            },
+            {
+                "command": "maximo-script-deploy.forms",
+                "title": "Extract All Inspection Forms"
+            },
+            {
+                "command": "maximo-script-deploy.formsOne",
+                "title": "Extract Inspection Form"
+            },
+            {
+                "command": "maximo-script-deploy.reports",
+                "title": "Extract All BIRT Reports"
+            },
+            {
+                "command": "maximo-script-deploy.reportsOne",
+                "title": "Extract BIRT Report"
+            },
+            {
+                "command": "maximo-script-deploy.selectEnvironment",
+                "title": "Select Maximo Environment"
+            }
+        ],
+        "keybindings": [
+            {
+                "command": "maximo-script-deploy.deploy",
+                "key": "ctrl+alt+m",
+                "mac": "ctrl+cmd+m",
+                "when": "editorFocus"
+            },
+            {
+                "command": "maximo-script-deploy.id",
+                "key": "ctrl+alt+i",
+                "mac": "ctrl+cmd+i",
+                "when": "editorFocus"
+            }
+        ]
+    },
+    "scripts": {
+        "lint": "eslint .",
+        "pretest": "npm run lint",
+        "test": "node ./test/runTest.js",
+        "webpack": "webpack --mode production",
+        "webpack-dev": "webpack --mode development --watch",
+        "package": "webpack --mode production --devtool hidden-source-map",
+        "vscode:prepublish": "npm run package",
+        "vsce:package": "vsce package"
+    },
+    "devDependencies": {
+        "@types/glob": "^7.1.4",
+        "@types/mocha": "^9.1.1",
+        "@types/node": "^14.18.48",
+        "@types/vscode": "^1.57",
+        "@vscode/test-electron": "^1.4.6",
+        "eslint": "^8.41.0",
+        "glob": "^7.2.3",
+        "mocha": "^9.2.2",
+        "typescript": "^4.9.5",
+        "webpack": "^5.84.1",
+        "webpack-cli": "^4.10.0"
+    },
+    "dependencies": {
+        "archiver": "^7.0.1",
+        "axios": "^0.26.1",
+        "axios-oauth-client": "^1.5.0",
+        "axios-token-interceptor": "^0.2.0",
+        "is-valid-hostname": "^1.0.2",
+        "readline": "^1.3.0",
+        "semver": "^7.5.1",
+        "temp": "^0.9.4",
+        "text-encoding": "^0.7.0",
+        "tough-cookie": "^4.1.2",
+        "uuid": "^10.0.0",
+        "webpack-node-externals": "^3.0.0",
+        "xml-formatter": "^2.6.1",
+        "xml2js": "^0.6.0",
+        "yauzl": "^3.1.3"
+    }
 }

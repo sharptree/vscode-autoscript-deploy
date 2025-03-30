@@ -35,10 +35,21 @@ export default async function deployCommand(client) {
                     ) {
                         const directory = path.dirname(filePath);
                         for (const item of manifest.manifest) {
-                            if (typeof item === 'string') {
-                                let itemPath = fs.existsSync(item)
-                                    ? item
-                                    : path.join(directory, item);
+                            let itemValue = item;
+                            if (
+                                typeof item === 'object' &&
+                                Object.prototype.hasOwnProperty.call(
+                                    item,
+                                    'path'
+                                )
+                            ) {
+                                itemValue = item.path;
+                            }
+
+                            if (typeof itemValue === 'string') {
+                                let itemPath = fs.existsSync(itemValue)
+                                    ? itemValue
+                                    : path.join(directory, itemValue);
                                 if (fs.existsSync(itemPath)) {
                                     let content = fs.readFileSync(
                                         itemPath,
