@@ -22,8 +22,8 @@ export default class MaximoConfig {
         extractLocationReports,
         proxyHost,
         proxyPort = 3128,
-        proxyUsername, 
-        proxyPassword
+        proxyUsername,
+        proxyPassword,
     }) {
         this.username = username;
         this.password = password;
@@ -31,7 +31,7 @@ export default class MaximoConfig {
         this.port = port;
         this.useSSL = useSSL;
         this.configurationTimeout = configurationTimeout;
-        this.context = context;        
+        this.context = context;
         this.allowUntrustedCerts = allowUntrustedCerts;
         this.connectTimeout = connectTimeout;
         this.responseTimeout = responseTimeout;
@@ -50,14 +50,19 @@ export default class MaximoConfig {
     }
 
     get maxauth() {
-        return Buffer.from(this.username + ':' + this.password).toString('base64');
+        return Buffer.from(this.username + ':' + this.password).toString(
+            'base64'
+        );
     }
 
     get baseURL() {
         return (
             (this.useSSL ? 'https://' : 'http://') +
             this.host +
-            ((this.port === 443 && this.useSSL) || (this.port === 80 && !this.useSSL) ? '' : ':' + this.port) +
+            ((this.port === 443 && this.useSSL) ||
+            (this.port === 80 && !this.useSSL)
+                ? ''
+                : ':' + this.port) +
             '/' +
             this.context +
             (this.apiKey ? '/api' : '/oslc')
@@ -68,7 +73,15 @@ export default class MaximoConfig {
         if (!this.proxyHost) {
             return null;
         } else {
-            return (this.useSSL ? 'https://' : 'http://') + this.proxyHost + ':' + this.proxyPort + '/' + this.context + (this.apiKey ? '/api' : '/oslc');
+            return (
+                (this.useSSL ? 'https://' : 'http://') +
+                this.proxyHost +
+                ':' +
+                this.proxyPort +
+                '/' +
+                this.context +
+                (this.apiKey ? '/api' : '/oslc')
+            );
         }
     }
 
@@ -76,14 +89,22 @@ export default class MaximoConfig {
         return (
             (this.useSSL ? 'https://' : 'http://') +
             this.host +
-            ((this.port === 443 && this.useSSL) || (this.port === 80 && !this.useSSL) ? '' : ':' + this.port) +
+            ((this.port === 443 && this.useSSL) ||
+            (this.port === 80 && !this.useSSL)
+                ? ''
+                : ':' + this.port) +
             '/' +
             this.context +
             '/j_security_check'
         );
     }
 
-    get proxyConfigured(){
-        return this.proxyHost && this.proxyPort && this.proxyPort > 0 && this.proxyPort < 65536;
+    get proxyConfigured() {
+        return (
+            this.proxyHost &&
+            this.proxyPort &&
+            this.proxyPort > 0 &&
+            this.proxyPort < 65536
+        );
     }
 }

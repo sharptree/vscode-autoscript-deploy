@@ -333,6 +333,25 @@ When deploying a report, the report must be registered in the `reports.xml` file
 
 > When a report is deployed its request page is automatically generated.
 
+
+### Deployment Manifest
+As of version `1.20.0` a JSON document may be used to define multiple files to deploy in order.  The file must have a `.json` file extension and contain a JSON object with a property named `manifest` that is an array of `string` type file paths or a JSON object with a `path` property.  The file paths may be relative or fully qualified. Using the `Deploy to Maximo` command will deploy each file in the manifest in order. You can mix `string` and `object` path elements in the array. 
+
+#### Example Manifest
+```json
+{
+    "manifest": [
+        "file_1.js",
+        { "path": "subfolder/file_1.js" },
+        "subfolder/file_2.js",
+        "c:/fully/qualified/path/file_1.js",
+        { "path": "inspection_form.json" },
+        "REPORT_FOLDER/birt_report_name.rptdesign"
+    ]
+}
+
+```
+
 ## Extract Automation Scripts
 To extract the scripts currently deployed to Maximo, bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Extract All Automation Scripts`. The extension will query Maximo for the available scripts and then prompt for confirmation to extract the scripts as shown below. Scripts are saved to the directory specified in the `Extract Location` setting. If the setting has not been configured, the scripts are extracted to the current workspace folder.
 
@@ -351,7 +370,7 @@ To extract a single screen, bring up the Visual Studio Code Command Palette (`Vi
 > ![Empty Close Tag Setting](./images/empty_close_tag_setting.png)
 
 ### Extracted Metadata
-As of version 1.6.0 extracted screens will include a `metadata` tag that contains the conditional properties configuration. It also includes the security group and condition definitions that support creating the security group if it doesn't exist and creating *or* updating the conditional expressions. The `metadata` tag is removed as part of the import process and will error if you attempt to import the exported presentation XML through the front end user interface.
+As of version `1.6.0` extracted screens will include a `metadata` tag that contains the conditional properties configuration. It also includes the security group and condition definitions that support creating the security group if it doesn't exist and creating *or* updating the conditional expressions. The `metadata` tag is removed as part of the import process and will error if you attempt to import the exported presentation XML through the front end user interface.
 
 ## Extract Inspection Forms
 To extract inspection forms from Maximo, bring up the Visual Studio Code Command Palette (`View > Command Palette...` or `⌘ + shift + p` or `ctrl + shift + p`) and select `Extract All Inspection Forms`. The extension will query Maximo for the latest inspection forms and then prompt for confirmation to extract the inspection forms as shown below. Inspection forms are saved to the directory specified in the `Extract Inspection Forms Location` setting. If the setting has not been configured, the inspection forms are extracted to the current workspace folder. The extract files are named with the inspection form name, with dashes `-` replacing spaces and with a `.json` file extension.

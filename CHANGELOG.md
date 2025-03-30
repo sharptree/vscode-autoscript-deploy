@@ -1,4 +1,14 @@
 # Release Notes
+## 1.20.0
+- Add support for manifest files to specify multiple files to deploy at once.
+- Fixed case comparison of object attributes.
+- Fixed issue where an object description was required otherwise the object description would be removed.
+- Fixed screen deployment to finally not require a WebClientSession object, which has been a source of issues forever.
+- Allow Table Domain types to be created against a non-existent table that is created as part of the deployment.
+- Fixed bug that caused the extension to fail to load if a folder was not selected on load.
+- Removed references to Nashorn and switched to the more generic "javascript"
+- Add support for "object" instead of "maxObject" in deployment descriptor to be more consistent
+  
 ## 1.19.2
 - Fixed issue where single environment configurations would not encrypt the password on save.
 - Added extract support for the allowInvokingScriptFunctions (INTERFACE) attribute.

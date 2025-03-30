@@ -36,9 +36,13 @@ export default class LocalConfiguration {
             fs.readFile(gitIgnorePath, function (err, data) {
                 if (err) throw err;
                 if (data.indexOf('.devtools-config.json') < 0) {
-                    fs.appendFile(gitIgnorePath, '\n.devtools-config.json', function (err) {
-                        if (err) throw err;
-                    });
+                    fs.appendFile(
+                        gitIgnorePath,
+                        '\n.devtools-config.json',
+                        function (err) {
+                            if (err) throw err;
+                        }
+                    );
                 }
             });
         } else {
@@ -47,23 +51,26 @@ export default class LocalConfiguration {
     }
 
     async encrypt(config) {
-
-        if(Array.isArray(config)){
-            config = await Promise.all(config.map(async (item) => {
-                return await this._encrypt(item);
-            }));
-        }else{
+        if (Array.isArray(config)) {
+            config = await Promise.all(
+                config.map(async (item) => {
+                    return await this._encrypt(item);
+                })
+            );
+        } else {
             await this._encrypt(config);
         }
 
         fs.writeFileSync(this.path, JSON.stringify(config, null, 4));
     }
 
-    async _encrypt(config){
+    async _encrypt(config) {
         let encryptKey = await this.secretStorage.get('encryptKey');
 
         if (!encryptKey) {
-            encryptKey = new Buffer.from(crypto.randomBytes(16)).toString('hex') + new Buffer.from(crypto.randomBytes(32)).toString('hex');
+            encryptKey =
+                new Buffer.from(crypto.randomBytes(16)).toString('hex') +
+                new Buffer.from(crypto.randomBytes(32)).toString('hex');
             await this.secretStorage.store('encryptKey', encryptKey);
         }
 
@@ -85,56 +92,77 @@ export default class LocalConfiguration {
             config.apiKey = '{encrypted}' + encApiKey;
         }
 
-        if (config.proxyPassword && !config.proxyPassword.startsWith('{encrypted}')) {
+        if (
+            config.proxyPassword &&
+            !config.proxyPassword.startsWith('{encrypted}')
+        ) {
             const cipher = crypto.createCipheriv(this.algorithm, key, iv);
-            let encProxyPassword = cipher.update(config.proxyPassword, 'utf-8', 'hex');
+            let encProxyPassword = cipher.update(
+                config.proxyPassword,
+                'utf-8',
+                'hex'
+            );
             encProxyPassword += cipher.final('hex');
 
             config.proxyPassword = '{encrypted}' + encProxyPassword;
         }
         return config;
     }
-    
 
     async decrypt(config) {
-        if(Array.isArray(config)){
-            return await Promise.all(config.map(async (item) => {
-                return await this._decrypt(item);
-            }));
-        }else{
+        if (Array.isArray(config)) {
+            return await Promise.all(
+                config.map(async (item) => {
+                    return await this._decrypt(item);
+                })
+            );
+        } else {
             return await this._decrypt(config);
         }
     }
 
-
-    async _decrypt(config){
+    async _decrypt(config) {
         let encryptKey = await this.secretStorage.get('encryptKey');
 
         if (!encryptKey) {
             return config;
         }
 
-
         const iv = Buffer.from(encryptKey.slice(0, 32), 'hex');
         const key = Buffer.from(encryptKey.slice(32), 'hex');
 
         if (config.password && config.password.startsWith('{encrypted}')) {
             const decipher = crypto.createDecipheriv(this.algorithm, key, iv);
-            let decryptedPassword = decipher.update(config.password.substring(11), 'hex', 'utf-8');
+            let decryptedPassword = decipher.update(
+                config.password.substring(11),
+                'hex',
+                'utf-8'
+            );
             decryptedPassword += decipher.final('utf8');
             config.password = decryptedPassword;
         }
 
         if (config.apiKey && config.apiKey.startsWith('{encrypted}')) {
             const decipher = crypto.createDecipheriv(this.algorithm, key, iv);
-            let decryptedApiKey = decipher.update(config.apiKey.substring(11), 'hex', 'utf-8');
+            let decryptedApiKey = decipher.update(
+                config.apiKey.substring(11),
+                'hex',
+                'utf-8'
+            );
             decryptedApiKey += decipher.final('utf8');
             config.apiKey = decryptedApiKey;
         }
 
-        if (config.proxyPassword && config.proxyPassword.startsWith('{encrypted}')) {
+        if (
+            config.proxyPassword &&
+            config.proxyPassword.startsWith('{encrypted}')
+        ) {
             const decipher = crypto.createDecipheriv(this.algorithm, key, iv);
-            let decryptedProxyPassword = decipher.update(config.proxyPassword.substring(11), 'hex', 'utf-8');
+            let decryptedProxyPassword = decipher.update(
+                config.proxyPassword.substring(11),
+                'hex',
+                'utf-8'
+            );
             decryptedProxyPassword += decipher.final('utf8');
             config.proxyPassword = decryptedProxyPassword;
         }
