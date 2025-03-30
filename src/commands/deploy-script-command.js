@@ -85,9 +85,12 @@ export default async function deployScript(client, filePath, script) {
 
             const preDeployConfig = JSON.parse(preConfigDeploy);
             if (
-                typeof preDeployConfig.maxObjects !== 'undefined' &&
-                Array.isArray(preDeployConfig.maxObjects) &&
-                preDeployConfig.maxObjects.length > 0
+                (typeof preDeployConfig.maxObjects !== 'undefined' &&
+                    Array.isArray(preDeployConfig.maxObjects) &&
+                    preDeployConfig.maxObjects.length > 0) ||
+                (typeof preDeployConfig.objects !== 'undefined' &&
+                    Array.isArray(preDeployConfig.objects) &&
+                    preDeployConfig.objects.length > 0)
             ) {
                 if (
                     typeof preDeployConfig.noDBConfig === 'undefined' ||
