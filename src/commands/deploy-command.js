@@ -81,7 +81,7 @@ export default async function deployCommand(client) {
                         await deployForm(client, filePath, document.getText());
                     }
                 } catch (error) {
-                    window.showErrorMessage('Invalid JSON file.');
+                    window.showErrorMessage('Unexpected Error: ' + error);
                     return;
                 }
             } else if (fileExt === '.rptdesign') {
