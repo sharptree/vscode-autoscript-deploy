@@ -3783,7 +3783,7 @@ MaxObject.prototype.setMboValues = function (mbo) {
         mbo.isNull('DESCRIPTION')
     ) {
         mbo.setValue('DESCRIPTION', this.object + 'Table');
-    } else if (this.description != null) {
+    } else if (this.description != null && this.description != '') {
         mbo.setValue('DESCRIPTION', this.description);
     }
 
