@@ -3,7 +3,6 @@
 RESTRequest = Java.type('com.ibm.tivoli.oslc.RESTRequest');
 
 RuntimeException = Java.type('java.lang.RuntimeException');
-System = Java.type('java.lang.System');
 
 URLDecoder = Java.type('java.net.URLDecoder');
 StandardCharsets = Java.type('java.nio.charset.StandardCharsets');
@@ -12,17 +11,18 @@ MboConstants = Java.type('psdi.mbo.MboConstants');
 SqlFormat = Java.type('psdi.mbo.SqlFormat');
 MXServer = Java.type('psdi.server.MXServer');
 
+MXSession = Java.type('psdi.util.MXSession');
+
 MXException = Java.type('psdi.util.MXException');
 MXAccessException = Java.type('psdi.util.MXAccessException');
 MXApplicationException = Java.type('psdi.util.MXApplicationException');
 
 try {
-    PresentationLoader = Java.type(
-        'psdi.webclient.system.controller.PresentationLoader'
+    PresentationParser = Java.type(
+        'psdi.webclient.system.controller.PresentationParser'
     );
-    WebClientSessionFactory = Java.type(
-        'psdi.webclient.system.session.WebClientSessionFactory'
-    );
+    LabelCacheMgr = Java.type('psdi.webclient.system.controller.LabelCacheMgr');
+    IdProperty = Java.type('psdi.webclient.system.controller.IdProperty');
 } catch (ignored) {
     //ignored
 }
@@ -149,9 +149,9 @@ function main() {
                             createControlGroup(controlGroupInfo);
                         });
                     }
-                    //Remove the meta data from the XML so the Maximo screen parser doesn't process it.
-                    screen.getRootElement().removeChild('metadata');
                 }
+                //Remove the meta data from the XML so the Maximo screen parser doesn't process it.
+                screen.getRootElement().removeChild('metadata');
 
                 var writer = new StringWriter();
 
@@ -161,52 +161,112 @@ function main() {
                 );
 
                 if (
-                    typeof PresentationLoader !== 'undefined' &&
-                    typeof WebClientSessionFactory !== 'undefined'
+                    typeof PresentationParser !== 'undefined' &&
+                    typeof LabelCacheMgr !== 'undefined'
                 ) {
-                    var loader = new PresentationLoader();
-                    var wcsf =
-                        WebClientSessionFactory.getWebClientSessionFactory();
-                    var wcs = wcsf.createSession(
-                        request.getHttpServletRequest(),
-                        request.getHttpServletResponse()
-                    );
+                    var xml = writer.toString();
+                    var pp = new PresentationParser(xml);
+                    var appId = pp.getApplication();
+                    writePresentation(pp.getTrimmedXML(), appId);
 
-                    loader.importApp(wcs, writer.toString());
-                } else {
-                    var maxPresentationSet;
+                    var labels = pp.getLabels();
+                    var labelSet;
                     try {
-                        maxPresentationSet = MXServer.getMXServer().getMboSet(
-                            'MAXPRESENTATION',
+                        labelSet = MXServer.getMXServer().getMboSet(
+                            'MAXLABELS',
                             MXServer.getMXServer().getSystemUserInfo()
                         );
+                        labelSet.setQbe('app', appId);
+                        labelSet.setQbeExactMatch(true);
+                        labelSet.reset();
+                        labelSet.setLogLargFetchResultDisabled(true);
 
-                        // Query to see if the option has already been assigned to the group.
-                        var sqlFormat = new SqlFormat('app = :1 ');
-                        sqlFormat.setObject(1, 'MAXPRESENTATION', 'APP', app);
+                        var label = labelSet.moveFirst();
+                        while (label) {
+                            var existingLabel = new IdProperty(
+                                label.getString('id'),
+                                label.getString('property')
+                            );
+                            newValue = labels.get(existingLabel);
+                            if (newValue == null) {
+                                label.delete();
+                            } else {
+                                label.setValue(
+                                    'APP',
+                                    appId,
+                                    MboConstants.NOACCESSCHECK |
+                                        MboConstants.NOVALIDATION_AND_NOACTION
+                                );
+                                label.setValue(
+                                    'ID',
+                                    existingLabel.getId(),
+                                    MboConstants.NOACCESSCHECK |
+                                        MboConstants.NOVALIDATION_AND_NOACTION
+                                );
+                                label.setValue(
+                                    'PROPERTY',
+                                    existingLabel.getProperty(),
+                                    MboConstants.NOACCESSCHECK |
+                                        MboConstants.NOVALIDATION_AND_NOACTION
+                                );
+                                label.setValue(
+                                    'VALUE',
+                                    newValue,
+                                    MboConstants.NOACCESSCHECK |
+                                        MboConstants.NOVALIDATION_AND_NOACTION
+                                );
+                            }
 
-                        maxPresentationSet.setWhere(sqlFormat.format());
-                        maxPresentation = maxPresentationSet.moveFirst();
-                        if (maxPresentation) {
-                            maxPresentation.setValue(
-                                'PRESENTATION',
-                                writer.toString()
-                            );
-                            maxPresentationSet.save();
-                        } else {
-                            throw new MXApplicationException(
-                                'designer',
-                                'noapp',
-                                Java.to(
-                                    [app.toUpperCase()],
-                                    'java.lang.String[]'
-                                )
-                            );
+                            labels.remove(existingLabel);
+
+                            label = labelSet.moveNext();
+                        }
+                        labelSet.save();
+
+                        for (
+                            var iterator = labels.entrySet().iterator();
+                            iterator.hasNext();
+
+                        ) {
+                            entry = iterator.next();
+                            var l = entry.getKey();
+                            var v = entry.getValue();
+                            labelSet.resetQbe();
+                            labelSet.setQbe('APP', appId);
+                            labelSet.setQbe('ID', l.getId());
+                            labelSet.setQbe('PROPERTY', l.getProperty());
+
+                            labelSet.reset();
+                            if (labelSet.isEmpty()) {
+                                var labelMbo = labelSet.add();
+                                labelMbo.setValue(
+                                    'APP',
+                                    appId,
+                                    MboConstants.NOVALIDATION_AND_NOACTION
+                                );
+                                labelMbo.setValue('ID', l.getId());
+                                labelMbo.setValue('PROPERTY', l.getProperty());
+                                labelMbo.setValue('VALUE', v);
+                            }
+                            labelSet.save();
                         }
                     } finally {
-                        _close(maxPresentationSet);
+                        _close(labelSet);
                     }
+
+                    LabelCacheMgr.clearAll();
+                    MXServer.getMXServer().reloadMaximoCache(
+                        'PRESENTATION',
+                        true
+                    );
+                } else {
+                    writePresentation(xml, app);
+                    MXServer.getMXServer().reloadMaximoCache(
+                        'PRESENTATION',
+                        true
+                    );
                 }
+
                 response.status = 'success';
                 responseBody = JSON.stringify(response);
             } else {
@@ -254,6 +314,35 @@ function main() {
 
             return;
         }
+    }
+}
+
+function writePresentation(xml, app) {
+    var maxPresentationSet;
+    try {
+        maxPresentationSet = MXServer.getMXServer().getMboSet(
+            'MAXPRESENTATION',
+            MXServer.getMXServer().getSystemUserInfo()
+        );
+
+        // Query to see if the option has already been assigned to the group.
+        var sqlFormat = new SqlFormat('app = :1 ');
+        sqlFormat.setObject(1, 'MAXPRESENTATION', 'APP', app);
+
+        maxPresentationSet.setWhere(sqlFormat.format());
+        maxPresentation = maxPresentationSet.moveFirst();
+        if (maxPresentation) {
+            maxPresentation.setValue('PRESENTATION', xml);
+            maxPresentationSet.save();
+        } else {
+            throw new MXApplicationException(
+                'designer',
+                'noapp',
+                Java.to([app.toUpperCase()], 'java.lang.String[]')
+            );
+        }
+    } finally {
+        _close(maxPresentationSet);
     }
 }
 
