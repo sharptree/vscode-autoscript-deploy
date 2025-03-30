@@ -5082,7 +5082,11 @@ Domain.prototype.setMboValues = function (mbo) {
             var tableValue = this.tableDomain;
 
             var tableMbo = tableDomainSet.add();
-            tableMbo.setValue('OBJECTNAME', tableValue.objectName);
+            tableMbo.setValue(
+                'OBJECTNAME',
+                tableValue.objectName,
+                MboConstants.NOVALIDATION
+            );
             if (tableValue.validtnWhereClause != null) {
                 tableMbo.setValue(
                     'VALIDTNWHERECLAUSE',
