@@ -1,4 +1,7 @@
 # Release Notes
+## 1.20.1
+- Fixed bug that caused reports to be extracted to the forms extraction folder. Thank you to Jason Pun for pointing this out.
+  
 ## 1.20.0
 - Add support for manifest files to specify multiple files to deploy at once.
 - Fixed case comparison of object attributes.
