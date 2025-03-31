@@ -661,7 +661,7 @@ export async function getMaximoConfig() {
             selectedConfig.extractLocationForms ??
             settings.get('maximo.extractInspectionFormsLocation');
         let extractLocationReports =
-            selectedConfig.extractLocationForms ??
+            selectedConfig.extractLocationReports ??
             settings.get('maximo.extractReportsLocation');
         let proxyHost =
             selectedConfig.proxyHost ?? settings.get('maximo.proxy.host');
