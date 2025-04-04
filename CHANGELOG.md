@@ -1,4 +1,7 @@
 # Release Notes
+## 1.21.2
+- Fixed table domain handling and property refreshing.
+  
 ## 1.20.1
 - Fixed bug that caused reports to be extracted to the forms extraction folder. Thank you to Jason Pun for pointing this out.
   
