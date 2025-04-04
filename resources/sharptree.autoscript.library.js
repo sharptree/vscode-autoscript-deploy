@@ -4772,10 +4772,14 @@ Domain.prototype.setMboValues = function (mbo) {
         );
     }
     if (this.domainType != 'SYNONYM') {
-        mbo.setValue('DOMAINID', this.domainId);
-        mbo.setValue('DOMAINTYPE', this.domainType);
+        if (mbo.isNull('DOMAINID')) {
+            mbo.setValue('DOMAINID', this.domainId);
+            mbo.setValue('DOMAINTYPE', this.domainType);
+        }
         if (this.domainType != 'TABLE' && this.domainType != 'CROSSOVER') {
-            mbo.setValue('MAXTYPE', this.maxType);
+            if (mbo.isNull('MAXTYPE')) {
+                mbo.setValue('MAXTYPE', this.maxType);
+            }
         } else if (this.domainType == 'ALN') {
             mbo.setValue('LENGTH', this.length);
         } else if (this.maxType == 'FLOAT' || this.maxType == 'DECIMAL') {
@@ -6637,10 +6641,14 @@ function addOrUpdateProperty(property) {
         propertyObj.setMboValues(maxProperty);
 
         maxPropertySet.save();
-
+        maxProperty.select();
         if (maxProperty.getBoolean('LIVEREFRESH')) {
             // refresh the properties so the current value is available.
-            maxPropertySet.liveRefresh();
+            MXServer.getMXServer().reloadMaximoCache(
+                'MAXPROP',
+                propertyObj.propName,
+                true
+            );
         }
     } finally {
         __libraryClose(maxPropertySet);
@@ -6742,20 +6750,10 @@ function addOrUpdateDomain(domain) {
         var sqlFormat = new SqlFormat('domainid = :1');
         sqlFormat.setObject(1, 'MAXDOMAIN', 'DOMAINID', domainObj.domainId);
         set.setWhere(sqlFormat.format());
-        if (domain.domainType != 'SYNONYM') {
-            set.deleteAll();
-            set.save();
-            var obj = set.add();
-            domainObj.setMboValues(obj);
-            Java.type('java.lang.System').out.println(
-                'Domain ID: ' + obj.getString('DOMAINTYPE')
-            );
-            set.save();
-        } else {
-            var obj = set.getMbo(0);
-            domainObj.setMboValues(obj);
-            set.save();
-        }
+
+        var obj = set.getMbo(0);
+        domainObj.setMboValues(obj);
+        set.save();
     } catch (e) {
         e.printStackTrace();
         logger.error('Error adding/updating domain: ' + e);
