@@ -33,8 +33,8 @@ export default class MaximoClient {
         // keep a reference to the config for later use.
         this.config = config;
 
-        this.requiredScriptVersion = '1.47.0';
-        this.currentScriptVersion = '1.47.0';
+        this.requiredScriptVersion = '1.48.0';
+        this.currentScriptVersion = '1.48.0';
 
         this.scriptEndpoint = 'mxscript';
 

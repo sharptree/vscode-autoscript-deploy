@@ -1468,7 +1468,6 @@ function createOrUpdateProperty(property) {
                 );
 
             // refresh the properties so the current value is available.
-            maxPropertySet.liveRefresh();
             maxPropSet.save();
         }
 
