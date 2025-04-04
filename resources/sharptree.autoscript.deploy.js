@@ -5,38 +5,32 @@
 // @ts-nocheck
 load('nashorn:parser.js');
 
-RESTRequest = Java.type('com.ibm.tivoli.oslc.RESTRequest');
+var MboConstants = Java.type('psdi.mbo.MboConstants');
+var SqlFormat = Java.type('psdi.mbo.SqlFormat');
+var MXServer = Java.type('psdi.server.MXServer');
 
-MboConstants = Java.type('psdi.mbo.MboConstants');
-SqlFormat = Java.type('psdi.mbo.SqlFormat');
-MXServer = Java.type('psdi.server.MXServer');
+var MXException = Java.type('psdi.util.MXException');
 
-MXAccessException = Java.type('psdi.util.MXAccessException');
-MXApplicationException = Java.type('psdi.util.MXApplicationException');
-MXException = Java.type('psdi.util.MXException');
-Version = Java.type('psdi.util.Version');
-
-ScriptBinding = Java.type('com.ibm.tivoli.maximo.script.ScriptBinding');
-ScriptCache = Java.type('com.ibm.tivoli.maximo.script.ScriptCache');
-ScriptDriverFactory = Java.type(
+var ScriptBinding = Java.type('com.ibm.tivoli.maximo.script.ScriptBinding');
+var ScriptCache = Java.type('com.ibm.tivoli.maximo.script.ScriptCache');
+var ScriptDriverFactory = Java.type(
     'com.ibm.tivoli.maximo.script.ScriptDriverFactory'
 );
 
-ScriptContext = Java.type('javax.script.ScriptContext');
-ScriptEngineManager = Java.type('javax.script.ScriptEngineManager');
-SimpleScriptContext = Java.type('javax.script.SimpleScriptContext');
-ScriptException = Java.type('javax.script.ScriptException');
+var ScriptContext = Java.type('javax.script.ScriptContext');
+var ScriptEngineManager = Java.type('javax.script.ScriptEngineManager');
 
-Integer = Java.type('java.lang.Integer');
-RuntimeException = Java.type('java.lang.RuntimeException');
-Runnable = Java.type('java.lang.Runnable');
-System = Java.type('java.lang.System');
-Thread = Java.type('java.lang.Thread');
+var ScriptException = Java.type('javax.script.ScriptException');
 
-Calendar = Java.type('java.util.Calendar');
-HashMap = Java.type('java.util.HashMap');
+var RuntimeException = Java.type('java.lang.RuntimeException');
+var Runnable = Java.type('java.lang.Runnable');
 
-NoSuchMethodException = Java.type('java.lang.NoSuchMethodException');
+var Thread = Java.type('java.lang.Thread');
+
+var Calendar = Java.type('java.util.Calendar');
+var HashMap = Java.type('java.util.HashMap');
+
+var NoSuchMethodException = Java.type('java.lang.NoSuchMethodException');
 
 // Global input variables
 scriptSource = '';
@@ -1089,7 +1083,7 @@ function deployScript(scriptSource, language) {
                                         deployAutoScriptSet =
                                             MXServer.getMXServer().getMboSet(
                                                 'AUTOSCRIPT',
-                                                userInfo
+                                                MXServer.getMXServer().getSystemUserInfo()
                                             );
                                         var deploySqlf = new SqlFormat(
                                             'autoscript = :1'
@@ -1472,6 +1466,9 @@ function createOrUpdateProperty(property) {
                     property.initialPropValue,
                     MboConstants.NOACCESSCHECK
                 );
+
+            // refresh the properties so the current value is available.
+            maxPropertySet.liveRefresh();
             maxPropSet.save();
         }
 
