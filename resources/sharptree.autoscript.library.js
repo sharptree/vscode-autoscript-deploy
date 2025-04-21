@@ -4030,18 +4030,26 @@ MaxObject.prototype.setMboValues = function (mbo) {
 
             if (typeof attributeConfig.sameAsObject !== 'undefined') {
                 attributeConfig.sameAsObject == null
-                    ? attribute.setValueNull('SAMEASOBJECT')
+                    ? attribute.setValueNull(
+                          'SAMEASOBJECT',
+                          MboConstants.NOACCESSCHECK
+                      )
                     : attribute.setValue(
                           'SAMEASOBJECT',
-                          attributeConfig.sameAsObject
+                          attributeConfig.sameAsObject,
+                          MboConstants.NOACCESSCHECK
                       );
             }
             if (typeof attributeConfig.sameAsAttribute !== 'undefined') {
                 attributeConfig.sameAsAttribute == null
-                    ? attribute.setValueNull('SAMEASATTRIBUTE')
+                    ? attribute.setValueNull(
+                          'SAMEASATTRIBUTE',
+                          MboConstants.NOACCESSCHECK
+                      )
                     : attribute.setValue(
                           'SAMEASATTRIBUTE',
-                          attributeConfig.sameAsAttribute
+                          attributeConfig.sameAsAttribute,
+                          MboConstants.NOACCESSCHECK
                       );
             }
 
