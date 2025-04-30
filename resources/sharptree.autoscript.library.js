@@ -6759,7 +6759,10 @@ function addOrUpdateDomain(domain) {
         sqlFormat.setObject(1, 'MAXDOMAIN', 'DOMAINID', domainObj.domainId);
         set.setWhere(sqlFormat.format());
 
-        var obj = set.getMbo(0);
+        var obj = set.moveFirst();
+        if (!obj) {
+            obj = set.add();
+        }
         domainObj.setMboValues(obj);
         set.save();
     } catch (e) {
