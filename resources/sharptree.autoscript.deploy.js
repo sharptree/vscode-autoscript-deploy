@@ -1031,6 +1031,8 @@ function deployScript(scriptSource, language) {
                                     );
 
                                     if (
+                                        typeof error.getErrorGroup !==
+                                            'undefined' &&
                                         error.getErrorGroup() == 'script' &&
                                         error.getErrorKey() ==
                                             'errorrunningscript'
@@ -1045,6 +1047,12 @@ function deployScript(scriptSource, language) {
                                             ' of script ' +
                                             error.getParameters()[0];
                                     } else {
+                                        if (
+                                            typeof error.printStackTrace ===
+                                            'function'
+                                        ) {
+                                            error.printStackTrace();
+                                        }
                                         progress.error = error.getMessage();
                                     }
 
